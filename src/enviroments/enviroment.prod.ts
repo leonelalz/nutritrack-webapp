@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://nutritrack-u3ys.onrender.com/api/v1/'
-}
+  apiUrl: 'https://api.example.com',
+  apiKey: 'your-api-key'
+};

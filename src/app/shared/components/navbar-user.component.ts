@@ -2,10 +2,10 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-landing-layout',
+  selector: 'app-navbar-user',
   standalone: true,
   imports: [CommonModule],
   template: ``,
   styles: []
 })
-export class LandingLayoutComponent {}
+export class NavbarUserComponent {}

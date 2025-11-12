@@ -4,6 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../enviroments/enviroment';
 import { StorageService } from './storage.service';
+import { LoginRequest, RegisterRequest, AuthResponse, UserResponse, RoleType } from '../models/user.model';
 
 
 @Injectable({
@@ -39,7 +40,7 @@ export class AuthService {
 
   // POST - Register
   register(data: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/registro`, data).pipe(
       tap(response => {
         this.saveAuthData(response);
       })
