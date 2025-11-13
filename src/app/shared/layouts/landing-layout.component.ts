@@ -11,8 +11,8 @@ import { RouterOutlet, RouterLink } from '@angular/router';
       <header class="landing-header">
         <div class="header-content">
           <a routerLink="/" class="logo">
-            <span class="logo-icon">💎</span>
-            <span class="logo-text">FinTech<span class="logo-highlight">App</span></span>
+            <span class="logo-icon">🥗</span>
+            <span class="logo-text">Nutri<span class="logo-highlight">Track</span></span>
           </a>
         </div>
       </header>
@@ -22,14 +22,14 @@ import { RouterOutlet, RouterLink } from '@angular/router';
       </main>
 
       <footer class="landing-footer">
-        <p>&copy; 2025 FinTech App. Todos los derechos reservados by HampCode.</p>
+        <p>&copy; 2025 Nutritrack App. Todos los derechos reservados por el equipo de nutritrack.</p>
       </footer>
     </div>
   `,
   styles: [`
     :host {
-      --color-primary: #003D7A;
-      --color-secondary: #00A859;
+      --color-primary: #16a34a;
+      --color-secondary: #64748B;
       --color-light: #F5F5F5;
       --color-white: #FFFFFF;
     }
@@ -78,7 +78,8 @@ import { RouterOutlet, RouterLink } from '@angular/router';
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 2rem;
+      background: linear-gradient(148deg, #667EEA 0%, #764BA2 100%);
+
     }
 
     .landing-footer {

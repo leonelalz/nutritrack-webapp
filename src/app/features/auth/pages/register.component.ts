@@ -15,578 +15,531 @@ import { NATIONALITIES } from '../../../core/constants/nationalities';
   template: `
     <div class="register-container">
       <div class="register-wrapper">
-        <div class="register-image">
-          <div class="image-content">
-            <div class="floating-icon icon-1">🎯</div>
-            <div class="floating-icon icon-2">🔒</div>
-            <div class="floating-icon icon-3">💰</div>
-            <div class="floating-icon icon-4">📈</div>
-            <div class="main-illustration">
-              <div class="success-badge">
-                <div class="badge-check">✓</div>
-                <div class="badge-text">
-                  <div class="badge-title">Cuenta creada</div>
-                  <div class="badge-subtitle">¡Bienvenido a FinTech!</div>
-                </div>
+        <!-- Left Side - Features -->
+        <div class="register-sidebar">
+          <div class="pattern-overlay"></div>
+          <div class="sidebar-content">
+            <div class="brand-header">
+              <div class="brand-icon">🥗</div>
+              <h2 class="brand-name">Nutritrack</h2>
+            </div>
+            
+            <div class="sidebar-info">
+              <h3 class="sidebar-title">¡Únete a Nutritrack!</h3>
+              <p class="sidebar-description">
+                Comienza tu transformación hacia una vida más saludable con la plataforma de nutrición más completa.
+              </p>
+            </div>
+            
+            <div class="features-list">
+              <div class="feature-item">
+                <div class="feature-icon">🥗</div>
+                <span>Seguimiento detallado de nutrición</span>
               </div>
-              <div class="features-list">
-                <div class="feature-item">
-                  <span class="feature-check">✓</span>
-                  <span>Sin comisiones</span>
-                </div>
-                <div class="feature-item">
-                  <span class="feature-check">✓</span>
-                  <span>100% seguro</span>
-                </div>
-                <div class="feature-item">
-                  <span class="feature-check">✓</span>
-                  <span>Transferencias gratis</span>
-                </div>
-                <div class="feature-item">
-                  <span class="feature-check">✓</span>
-                  <span>Soporte 24/7</span>
-                </div>
+              <div class="feature-item">
+                <div class="feature-icon">🎯</div>
+                <span>Metas personalizadas para tu estilo de vida</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">📊</div>
+                <span>Reportes y análisis de tu progreso</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">👥</div>
+                <span>Comunidad de apoyo y motivación</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">🔄</div>
+                <span>Sincronización multiplataforma</span>
               </div>
             </div>
           </div>
         </div>
-        <div class="register-card">
-          <div class="register-header">
-            <div class="logo-icon">💎</div>
-            <h1>Crea tu cuenta</h1>
-            <p>Únete a FinTechApp y empieza a gestionar tus finanzas</p>
+
+        <!-- Right Side - Form -->
+        <div class="register-form-container">
+          <div class="form-header">
+            <h1>Crear Cuenta</h1>
+            <p>Completa la información para comenzar tu viaje</p>
           </div>
 
           <!-- Stepper -->
           <div class="stepper">
-            <div class="step" [class.active]="currentStep() >= 1" [class.completed]="currentStep() > 1">
-              <div class="step-number">1</div>
-              <div class="step-label">Cuenta</div>
+            <div class="step-item">
+              <div class="step-circle" [class.active]="currentStep() >= 1" [class.completed]="currentStep() > 1">
+                1
+              </div>
+              <div class="step-line" [class.completed]="currentStep() > 1"></div>
             </div>
-            <div class="step-line" [class.completed]="currentStep() > 1"></div>
-            <div class="step" [class.active]="currentStep() >= 2" [class.completed]="currentStep() > 2">
-              <div class="step-number">2</div>
-              <div class="step-label">Datos Personales</div>
+            <div class="step-item">
+              <div class="step-circle" [class.active]="currentStep() >= 2" [class.completed]="currentStep() > 2">
+                2
+              </div>
+              <div class="step-line" [class.completed]="currentStep() > 2"></div>
             </div>
-            <div class="step-line" [class.completed]="currentStep() > 2"></div>
-            <div class="step" [class.active]="currentStep() >= 3">
-              <div class="step-number">3</div>
-              <div class="step-label">Información Adicional</div>
+            <div class="step-item">
+              <div class="step-circle" [class.active]="currentStep() >= 3">
+                3
+              </div>
             </div>
           </div>
 
           <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+            <!-- Step 1: Información Básica -->
+            @if (currentStep() === 1) {
+              <div class="form-content">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>
+                      Nombre
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      formControlName="nombre"
+                      class="form-input"
+                      placeholder="Tu nombre"
+                      [class.error]="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched">
+                    @if (registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched) {
+                      <span class="error-text">El nombre es requerido</span>
+                    }
+                  </div>
+                  
+                  <div class="form-group">
+                    <label>
+                      Apellido
+                      <span class="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      formControlName="apellido"
+                      class="form-input"
+                      placeholder="Tu apellido"
+                      [class.error]="registerForm.get('apellido')?.invalid && registerForm.get('apellido')?.touched">
+                    @if (registerForm.get('apellido')?.invalid && registerForm.get('apellido')?.touched) {
+                      <span class="error-text">El apellido es requerido</span>
+                    }
+                  </div>
+                </div>
 
-          <!-- Paso 1: Datos de Cuenta -->
-          @if (currentStep() === 1) {
-            <div class="form-grid">
-            <div class="form-group full-width">
-              <label for="email">Correo electrónico <span class="required">*</span></label>
-              <input
-                id="email"
-                type="email"
-                formControlName="email"
-                class="form-control"
-                placeholder="tucorreo@ejemplo.com"
-                [class.error-input]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
-              @if (registerForm.get('email')?.invalid && registerForm.get('email')?.touched) {
-                <small class="error-message">
-                  @if (registerForm.get('email')?.errors?.['required']) {
-                    El correo es requerido
-                  } @else if (registerForm.get('email')?.errors?.['email']) {
-                    Ingresa un correo válido
+                <div class="form-group full-width">
+                  <label>
+                    Correo Electrónico
+                    <span class="required">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    formControlName="email"
+                    class="form-input"
+                    placeholder="tu@email.com"
+                    [class.error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+                  @if (registerForm.get('email')?.invalid && registerForm.get('email')?.touched) {
+                    <span class="error-text">
+                      @if (registerForm.get('email')?.errors?.['required']) {
+                        El correo es requerido
+                      } @else if (registerForm.get('email')?.errors?.['email']) {
+                        Ingresa un correo válido
+                      }
+                    </span>
                   }
-                </small>
-              }
-            </div>
+                </div>
 
-            <div class="form-group full-width">
-              <label for="password">Contraseña <span class="required">*</span></label>
-              <div class="password-input-wrapper">
-                <input
-                  id="password"
-                  [type]="showPassword() ? 'text' : 'password'"
-                  formControlName="password"
-                  class="form-control password-input"
-                  placeholder="Mínimo 6 caracteres"
-                  [class.error-input]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
-                <button type="button" class="toggle-password" (click)="togglePassword()" title="Mostrar/Ocultar contraseña">
-                  @if (showPassword()) {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                      <line x1="1" y1="1" x2="23" y2="23"></line>
-                    </svg>
+                <div class="form-group full-width">
+                  <label>
+                    Contraseña
+                    <span class="required">*</span>
+                  </label>
+                  <div class="password-wrapper">
+                    <input
+                      [type]="showPassword() ? 'text' : 'password'"
+                      formControlName="password"
+                      class="form-input"
+                      placeholder="Mínimo 6 caracteres"
+                      [class.error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                    <button type="button" class="toggle-password" (click)="togglePassword()">
+                      @if (showPassword()) {
+                        👁️
+                      } @else {
+                        👁️‍🗨️
+                      }
+                    </button>
+                  </div>
+                  @if (registerForm.get('password')?.invalid && registerForm.get('password')?.touched) {
+                    <span class="error-text">
+                      @if (registerForm.get('password')?.errors?.['required']) {
+                        La contraseña es requerida
+                      } @else if (registerForm.get('password')?.errors?.['minlength']) {
+                        La contraseña debe tener al menos 6 caracteres
+                      } @else if (registerForm.get('password')?.errors?.['weakPassword']) {
+                        La contraseña debe contener mayúsculas, minúsculas, números y mínimo 8 caracteres
+                      }
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Step 2: Información Personal -->
+            @if (currentStep() === 2) {
+              <div class="form-content">
+                <div class="form-group full-width">
+                  <label>Teléfono (Opcional)</label>
+                  <input
+                    type="tel"
+                    formControlName="phone"
+                    class="form-input"
+                    placeholder="+51 999 999 999"
+                    [class.error]="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched">
+                  @if (registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched) {
+                    <span class="error-text">El teléfono debe tener 9 dígitos</span>
+                  }
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>DNI (Opcional)</label>
+                    <input
+                      type="text"
+                      formControlName="dni"
+                      class="form-input"
+                      placeholder="12345678"
+                      [class.error]="registerForm.get('dni')?.invalid && registerForm.get('dni')?.touched">
+                    @if (registerForm.get('dni')?.invalid && registerForm.get('dni')?.touched) {
+                      <span class="error-text">El DNI debe tener 8 dígitos</span>
+                    }
+                  </div>
+
+                  <div class="form-group">
+                    <label>Fecha de Nacimiento</label>
+                    <input
+                      type="date"
+                      formControlName="dateOfBirth"
+                      class="form-input"
+                      [class.error]="registerForm.get('dateOfBirth')?.invalid && registerForm.get('dateOfBirth')?.touched">
+                    @if (registerForm.get('dateOfBirth')?.invalid && registerForm.get('dateOfBirth')?.touched) {
+                      <span class="error-text">Debes ser mayor de 18 años</span>
+                    }
+                  </div>
+                </div>
+
+                <div class="form-group full-width">
+                  <label>Nacionalidad</label>
+                  <select formControlName="nationality" class="form-input">
+                    <option value="">Selecciona tu nacionalidad</option>
+                    @for (nationality of nationalities; track nationality) {
+                      <option [value]="nationality">{{ nationality }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+            }
+
+            <!-- Step 3: Información Adicional -->
+            @if (currentStep() === 3) {
+              <div class="form-content">
+                <div class="form-group full-width">
+                  <label>Dirección (Opcional)</label>
+                  <input
+                    type="text"
+                    formControlName="address"
+                    class="form-input"
+                    placeholder="Calle, número, distrito, ciudad">
+                </div>
+
+                <div class="form-group full-width">
+                  <label>Ocupación (Opcional)</label>
+                  <input
+                    type="text"
+                    formControlName="occupation"
+                    class="form-input"
+                    placeholder="Ingeniero, Contador, Estudiante, etc.">
+                </div>
+
+                <div class="info-box">
+                  <span class="info-icon">ℹ️</span>
+                  <p>Esta información nos ayuda a personalizar tu experiencia nutricional y establecer metas realistas.</p>
+                </div>
+              </div>
+            }
+
+            @if (errorMessage()) {
+              <div class="alert-error">
+                <span class="alert-icon">⚠️</span>
+                <span>{{ errorMessage() }}</span>
+              </div>
+            }
+
+            <!-- Navigation Buttons -->
+            <div class="form-actions">
+              @if (currentStep() > 1) {
+                <button type="button" class="btn-secondary" (click)="previousStep()">
+                  ← Anterior
+                </button>
+              }
+
+              @if (currentStep() < 3) {
+                <button type="button" class="btn-primary" (click)="nextStep()">
+                  Continuar
+                </button>
+              }
+
+              @if (currentStep() === 3) {
+                <button type="submit" class="btn-primary" [disabled]="registerForm.invalid || loading()">
+                  @if (loading()) {
+                    <span class="spinner"></span>
+                    <span>Creando cuenta...</span>
                   } @else {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
+                    <span>Crear Cuenta</span>
                   }
                 </button>
-              </div>
-              @if (registerForm.get('password')?.invalid && registerForm.get('password')?.touched) {
-                <small class="error-message">
-                  @if (registerForm.get('password')?.errors?.['required']) {
-                    La contraseña es requerida
-                  } @else if (registerForm.get('password')?.errors?.['minlength']) {
-                    La contraseña debe tener al menos 6 caracteres
-                  } @else if (registerForm.get('password')?.errors?.['weakPassword']) {
-                    La contraseña debe contener mayúsculas, minúsculas, números y mínimo 8 caracteres
-                  }
-                </small>
-              }
-            </div>
-            </div>
-          }
-
-          <!-- Paso 2: Datos Personales -->
-          @if (currentStep() === 2) {
-            <div class="form-grid">
-            <div class="form-group">
-              <label for="nombre">Nombre <span class="required">*</span></label>
-              <input
-                id="nombre"
-                type="text"
-                formControlName="nombre"
-                class="form-control"
-                placeholder="Juan"
-                [class.error-input]="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched">
-              @if (registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched) {
-                <small class="error-message">El nombre es requerido</small>
-              }
-            </div>
-            <div class="form-group">
-            <label for="apellido">Apellido <span class="required">*</span></label>
-              <input
-                id="apellido"
-                type="text"
-                formControlName="apellido"
-                class="form-control"
-                placeholder="Pérez"
-                [class.error-input]="registerForm.get('apellido')?.invalid && registerForm.get('apellido')?.touched">
-              @if (registerForm.get('apellido')?.invalid && registerForm.get('apellido')?.touched) {
-                <small class="error-message">El apellido es requerido</small>
-              }
-            </div>
-            <div class="form-group">
-              <label for="dni">DNI</label>
-              <input
-                id="dni"
-                type="text"
-                formControlName="dni"
-                class="form-control"
-                placeholder="12345678"
-                [class.error-input]="registerForm.get('dni')?.invalid && registerForm.get('dni')?.touched">
-              @if (registerForm.get('dni')?.invalid && registerForm.get('dni')?.touched) {
-                <small class="error-message">
-                  @if (registerForm.get('dni')?.errors?.['invalidDni']) {
-                    El DNI debe tener 8 dígitos
-                  }
-                </small>
               }
             </div>
 
-            <div class="form-group">
-              <label for="phone">Teléfono</label>
-              <input
-                id="phone"
-                type="tel"
-                formControlName="phone"
-                class="form-control"
-                placeholder="999999999"
-                [class.error-input]="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched">
-              @if (registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched) {
-                <small class="error-message">
-                  @if (registerForm.get('phone')?.errors?.['invalidPhone']) {
-                    El teléfono debe tener 9 dígitos
-                  }
-                </small>
-              }
+            <div class="login-link">
+              <span>¿Ya tienes una cuenta?</span>
+              <a routerLink="/login">Iniciar sesión</a>
             </div>
-
-            <div class="form-group">
-              <label for="dateOfBirth">Fecha de nacimiento</label>
-              <input
-                id="dateOfBirth"
-                type="date"
-                formControlName="dateOfBirth"
-                class="form-control"
-                [class.error-input]="registerForm.get('dateOfBirth')?.invalid && registerForm.get('dateOfBirth')?.touched">
-              @if (registerForm.get('dateOfBirth')?.invalid && registerForm.get('dateOfBirth')?.touched) {
-                <small class="error-message">
-                  @if (registerForm.get('dateOfBirth')?.errors?.['minAge']) {
-                    Debes ser mayor de 18 años
-                  }
-                </small>
-              }
-            </div>
-            </div>
-          }
-
-          <!-- Paso 3: Información Adicional -->
-          @if (currentStep() === 3) {
-            <div class="form-grid">
-            <div class="form-group full-width">
-              <label for="nationality">Nacionalidad</label>
-              <select
-                id="nationality"
-                formControlName="nationality"
-                class="form-control">
-                <option value="">Selecciona tu nacionalidad</option>
-                @for (nationality of nationalities; track nationality) {
-                  <option [value]="nationality">{{ nationality }}</option>
-                }
-              </select>
-            </div>
-
-            <div class="form-group full-width">
-              <label for="address">Dirección</label>
-              <input
-                id="address"
-                type="text"
-                formControlName="address"
-                class="form-control"
-                placeholder="Calle, número, distrito, ciudad">
-            </div>
-
-            <div class="form-group full-width">
-              <label for="occupation">Ocupación</label>
-              <input
-                id="occupation"
-                type="text"
-                formControlName="occupation"
-                class="form-control"
-                placeholder="Ingeniero, Contador, Estudiante, etc.">
-            </div>
-            </div>
-          }
-
-          @if (errorMessage()) {
-            <div class="alert alert-error">
-              <span class="alert-icon">⚠️</span>
-              <span>{{ errorMessage() }}</span>
-            </div>
-          }
-
-          <!-- Botones de navegación -->
-          <div class="step-buttons">
-            @if (currentStep() > 1) {
-              <button type="button" class="btn-secondary" (click)="previousStep()">
-                ← Anterior
-              </button>
-            }
-
-            @if (currentStep() < 3) {
-              <button type="button" class="btn-primary" (click)="nextStep()">
-                Siguiente →
-              </button>
-            }
-
-            @if (currentStep() === 3) {
-              <button type="submit" class="btn-primary" [disabled]="registerForm.invalid || loading()">
-                @if (loading()) {
-                  <span class="spinner"></span>
-                  <span>Creando cuenta...</span>
-                } @else {
-                  <span>Crear cuenta</span>
-                }
-              </button>
-            }
-          </div>
-
-          <div class="divider">
-            <span>o</span>
-          </div>
-
-          <p class="login-link">
-            ¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a>
-          </p>
-        </form>
-      </div>
+          </form>
+        </div>
       </div>
     </div>
   `,
   styles: [`
     .register-container {
-      min-height: calc(100vh - 200px);
+      min-height: 100vh;
+      padding: 100px 32px;
       display: flex;
-      align-items: center;
       justify-content: center;
-      padding: var(--spacing-xl) var(--spacing-md);
+      align-items: center;
     }
 
     .register-wrapper {
+      width: 100%;
+      max-width: 1000px;
+      min-height: 700px;
+      background: white;
+      box-shadow: 0px 20px 40px rgba(0, 0, 0, 0.1);
+      border-radius: 20px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      max-width: 1400px;
-      width: 100%;
-      gap: var(--spacing-3xl);
-      align-items: center;
+      grid-template-columns: 460px 1fr;
+      overflow: hidden;
     }
 
-    .register-image {
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    /* Left Sidebar */
+    .register-sidebar {
+      background: linear-gradient(123deg, #28A745 0%, #20C997 100%);
+      padding: 60px 40px;
       position: relative;
-      padding: var(--spacing-xl);
+      overflow: hidden;
     }
 
-    .image-content {
+    .pattern-overlay {
+      position: absolute;
+      top: -350px;
+      left: -230px;
+      width: 924px;
+      height: 1404px;
+      pointer-events: none;
+    }
+
+    .pattern-overlay::before,
+    .pattern-overlay::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    .pattern-overlay::before {
+      width: 37px;
+      height: 37px;
+      top: 516px;
+      left: 396px;
+    }
+
+    .pattern-overlay::after {
+      width: 28px;
+      height: 28px;
+      top: 706px;
+      left: 955px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .sidebar-content {
       position: relative;
-      width: 100%;
-      max-width: 500px;
-      height: 600px;
-    }
-
-    .floating-icon {
-      position: absolute;
-      font-size: 3.5rem;
-      z-index: 2;
-      opacity: 0.15;
-    }
-
-    .icon-1 {
-      top: 5%;
-      left: 10%;
-    }
-
-    .icon-2 {
-      top: 10%;
-      right: 5%;
-    }
-
-    .icon-3 {
-      bottom: 20%;
-      left: 5%;
-    }
-
-    .icon-4 {
-      bottom: 10%;
-      right: 15%;
-    }
-
-    .main-illustration {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 100%;
-      max-width: 400px;
       z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
     }
 
-    .success-badge {
-      background: var(--color-background-light);
-      padding: 2.5rem var(--spacing-xl);
-      border-radius: var(--border-radius-2xl);
-      box-shadow: 0 20px 50px rgba(0, 168, 89, 0.25);
+    .brand-header {
       display: flex;
       align-items: center;
-      gap: var(--spacing-lg);
-      margin-bottom: var(--spacing-xl);
-      border: 3px solid var(--color-secondary);
+      gap: 15px;
     }
 
-    .badge-check {
-      width: 60px;
-      height: 60px;
-      background: var(--gradient-success);
-      color: var(--color-text-light);
-      border-radius: var(--border-radius-round);
+    .brand-icon {
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: var(--font-size-3xl);
-      font-weight: var(--font-weight-bold);
-      flex-shrink: 0;
+      font-size: 40px;
     }
 
-    .badge-title {
-      font-size: var(--font-size-2xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-primary);
-      margin-bottom: var(--spacing-xs);
+    .brand-name {
+      color: white;
+      font-size: 36px;
+      font-weight: 700;
+      margin: 0;
     }
 
-    .badge-subtitle {
-      font-size: var(--font-size-base);
-      color: var(--color-secondary);
-      font-weight: var(--font-weight-semibold);
+    .sidebar-info {
+      margin-top: 20px;
+    }
+
+    .sidebar-title {
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin: 0 0 16px 0;
+    }
+
+    .sidebar-description {
+      color: white;
+      font-size: 16px;
+      line-height: 1.5;
+      opacity: 0.9;
+      margin: 0;
     }
 
     .features-list {
-      background: var(--color-background-light);
-      padding: var(--spacing-xl);
-      border-radius: var(--border-radius-xl);
-      box-shadow: 0 10px 30px rgba(0, 61, 122, 0.15);
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      gap: 15px;
+      margin-top: 40px;
     }
 
     .feature-item {
       display: flex;
       align-items: center;
-      gap: var(--spacing-md);
-      font-size: 1.1rem;
-      color: var(--color-text-primary);
-      font-weight: var(--font-weight-medium);
+      gap: 12px;
+      color: white;
+      font-size: 14px;
     }
 
-    .feature-check {
-      width: 28px;
-      height: 28px;
-      background: var(--color-secondary);
-      color: var(--color-text-light);
-      border-radius: var(--border-radius-round);
+    .feature-icon {
+      width: 24px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: var(--font-weight-bold);
+      font-size: 16px;
       flex-shrink: 0;
     }
 
-    .register-card {
-      width: 100%;
-      max-width: 750px;
-      background: var(--color-background-light);
-      border-radius: var(--border-radius-2xl);
-      box-shadow: var(--shadow-xl);
-      padding: var(--spacing-3xl) 2.5rem;
-    }
-
-    .register-header {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-
-    /* Stepper Styles */
-    .stepper {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 2rem;
-      padding: 0 1rem;
-    }
-
-    .step {
+    /* Right Form Container */
+    .register-form-container {
+      padding: 40px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
-      flex: 0 0 auto;
+      justify-content: center;
+      max-height: 900px;
+      overflow-y: auto;
     }
 
-    .step-number {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--color-gray-light);
-      color: var(--color-text-secondary);
+    .form-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .form-header h1 {
+      color: #333333;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+    }
+
+    .form-header p {
+      color: #6C757D;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    /* Stepper */
+    .stepper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 32px;
+      gap: 0;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+    }
+
+    .step-circle {
+      width: 30px;
+      height: 30px;
+      background: #E9ECEF;
+      color: #6C757D;
+      border-radius: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: var(--font-weight-bold);
-      font-size: var(--font-size-base);
+      font-size: 12px;
+      font-weight: 700;
+      position: relative;
       transition: all 0.3s ease;
     }
 
-    .step.active .step-number {
-      background: var(--color-secondary);
-      color: var(--color-text-light);
-      box-shadow: 0 4px 12px rgba(0, 168, 89, 0.3);
+    .step-circle.active {
+      background: #28A745;
+      color: white;
     }
 
-    .step.completed .step-number {
-      background: var(--color-success);
-      color: var(--color-text-light);
-    }
-
-    .step-label {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      font-weight: var(--font-weight-medium);
-      text-align: center;
-    }
-
-    .step.active .step-label {
-      color: var(--color-secondary);
-      font-weight: var(--font-weight-semibold);
-    }
-
-    .step.completed .step-label {
-      color: var(--color-success);
+    .step-circle.completed {
+      background: #28A745;
+      color: white;
     }
 
     .step-line {
-      flex: 1;
+      width: 30px;
       height: 2px;
-      background: var(--color-border-light);
-      margin: 0 0.5rem;
-      position: relative;
-      top: -15px;
+      background: #E9ECEF;
+      transition: all 0.3s ease;
     }
 
     .step-line.completed {
-      background: var(--color-success);
+      background: #28A745;
     }
 
-    .step-buttons {
+    /* Form */
+    .form-content {
       display: flex;
-      gap: var(--spacing-md);
-      margin-top: var(--spacing-lg);
+      flex-direction: column;
+      gap: 20px;
+      margin-bottom: 24px;
     }
 
-    .step-buttons .btn-secondary {
-      flex: 1;
-      background: var(--color-gray);
-      color: var(--color-text-light);
-      padding: var(--spacing-md);
-      border: none;
-      border-radius: var(--border-radius-lg);
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-bold);
-      cursor: pointer;
-      transition: var(--transition-base);
-    }
-
-    .step-buttons .btn-secondary:hover {
-      background: var(--color-gray-dark);
-    }
-
-    .step-buttons .btn-primary {
-      flex: 1;
-    }
-
-    .logo-icon {
-      font-size: var(--font-size-3xl);
-      margin-bottom: var(--spacing-md);
-    }
-
-    .register-header h1 {
-      font-size: 1.875rem;
-      font-weight: var(--font-weight-bold);
-      color: var(--color-primary);
-      margin: 0 0 var(--spacing-sm) 0;
-    }
-
-    .register-header p {
-      color: var(--color-text-secondary);
-      margin: 0;
-      font-size: 0.95rem;
-    }
-
-    .form-grid {
+    .form-row {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.25rem;
-      margin-bottom: var(--spacing-lg);
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
+      gap: 8px;
     }
 
     .form-group.full-width {
@@ -594,23 +547,46 @@ import { NATIONALITIES } from '../../../core/constants/nationalities';
     }
 
     label {
-      display: block;
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin-bottom: var(--spacing-sm);
-      font-size: 0.9rem;
+      color: #333333;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .required {
-      color: var(--color-danger);
+      color: #DC3545;
     }
 
-    .password-input-wrapper {
+    .form-input {
+      width: 100%;
+      padding: 14px 18px;
+      background: #F8F9FA;
+      border: 2px solid #E9ECEF;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #333333;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+
+    .form-input::placeholder {
+      color: #757575;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #28A745;
+      background: white;
+    }
+
+    .form-input.error {
+      border-color: #DC3545;
+    }
+
+    .password-wrapper {
       position: relative;
-    }
-
-    .password-input {
-      padding-right: 45px;
     }
 
     .toggle-password {
@@ -621,114 +597,113 @@ import { NATIONALITIES } from '../../../core/constants/nationalities';
       background: none;
       border: none;
       cursor: pointer;
-      padding: 6px;
+      font-size: 18px;
+      padding: 4px;
+    }
+
+    .error-text {
+      color: #DC3545;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: -4px;
+    }
+
+    .info-box {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--color-text-secondary);
-      transition: var(--transition-base);
-      border-radius: var(--border-radius-sm);
+      align-items: flex-start;
+      gap: 12px;
+      background: #E7F3FF;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid #B3D9FF;
     }
 
-    .toggle-password:hover {
-      color: var(--color-secondary);
-      background: rgba(0, 168, 89, 0.1);
+    .info-icon {
+      font-size: 20px;
+      flex-shrink: 0;
     }
 
-    .toggle-password svg {
-      display: block;
-    }
-
-    .form-control {
-      width: 100%;
-      padding: 0.75rem var(--spacing-md);
-      border: 2px solid var(--color-border-light);
-      border-radius: var(--border-radius-lg);
-      font-size: 0.95rem;
-      transition: var(--transition-base);
-      box-sizing: border-box;
-    }
-
-    .form-control:focus {
-      outline: none;
-      border-color: var(--color-secondary);
-      box-shadow: 0 0 0 3px rgba(0, 168, 89, 0.1);
-    }
-
-    .form-control::placeholder {
-      color: var(--color-text-muted);
-    }
-
-    .error-input {
-      border-color: var(--color-danger);
-    }
-
-    .error-input:focus {
-      box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
-    }
-
-    .error-message {
-      display: block;
-      color: var(--color-danger);
-      font-size: var(--font-size-sm);
-      margin-top: 0.4rem;
-      font-weight: var(--font-weight-medium);
-    }
-
-    .alert {
-      padding: var(--spacing-md);
-      border-radius: var(--border-radius-lg);
-      margin-bottom: var(--spacing-lg);
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
+    .info-box p {
+      margin: 0;
+      color: #0056B3;
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .alert-error {
-      background: var(--color-danger-light);
-      color: var(--color-danger);
-      border: 1px solid #fcc;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #FFE5E8;
+      border: 1px solid #FFCCD3;
+      border-radius: 12px;
+      color: #DC3545;
+      font-size: 13px;
+      margin-bottom: 20px;
     }
 
     .alert-icon {
-      font-size: 1.2rem;
+      font-size: 20px;
+    }
+
+    /* Buttons */
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
     }
 
     .btn-primary {
-      width: 100%;
-      padding: var(--spacing-md);
-      background: var(--color-secondary);
-      color: var(--color-text-light);
+      flex: 1;
+      padding: 12px;
+      background: linear-gradient(174deg, #28A745 0%, #20C997 100%);
+      color: white;
       border: none;
-      border-radius: var(--border-radius-lg);
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-bold);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
       cursor: pointer;
-      transition: var(--transition-base);
+      transition: all 0.3s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: var(--spacing-sm);
+      gap: 8px;
     }
 
     .btn-primary:hover:not(:disabled) {
-      background: var(--color-secondary-light);
       transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(0, 168, 89, 0.3);
+      box-shadow: 0 8px 16px rgba(40, 167, 69, 0.3);
     }
 
     .btn-primary:disabled {
       opacity: 0.6;
       cursor: not-allowed;
-      transform: none;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 12px;
+      background: #E9ECEF;
+      color: #495057;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #DEE2E6;
     }
 
     .spinner {
       width: 16px;
       height: 16px;
-      border: 2px solid var(--color-text-light);
+      border: 2px solid white;
       border-top-color: transparent;
-      border-radius: var(--border-radius-round);
+      border-radius: 50%;
       animation: spin 0.6s linear infinite;
     }
 
@@ -736,82 +711,63 @@ import { NATIONALITIES } from '../../../core/constants/nationalities';
       to { transform: rotate(360deg); }
     }
 
-    .divider {
-      text-align: center;
-      margin: var(--spacing-xl) 0;
-      position: relative;
-    }
-
-    .divider::before,
-    .divider::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      width: 45%;
-      height: 1px;
-      background: var(--color-border-light);
-    }
-
-    .divider::before {
-      left: 0;
-    }
-
-    .divider::after {
-      right: 0;
-    }
-
-    .divider span {
-      background: var(--color-background-light);
-      padding: 0 var(--spacing-md);
-      color: var(--color-text-secondary);
-      font-size: 0.9rem;
-    }
-
     .login-link {
       text-align: center;
-      color: var(--color-text-secondary);
-      margin: 0;
-      font-size: 0.95rem;
+      margin-top: 20px;
+      color: #6C757D;
+      font-size: 13px;
     }
 
     .login-link a {
-      color: var(--color-secondary);
+      color: #28A745;
       text-decoration: none;
-      font-weight: var(--font-weight-semibold);
-      transition: var(--transition-base);
+      font-weight: 700;
+      margin-left: 4px;
     }
 
     .login-link a:hover {
-      color: var(--color-secondary-light);
       text-decoration: underline;
     }
 
+    /* Responsive */
     @media (max-width: 992px) {
       .register-wrapper {
         grid-template-columns: 1fr;
+        max-width: 600px;
       }
 
-      .register-image {
+      .register-sidebar {
         display: none;
       }
 
-      .register-card {
-        max-width: 750px;
-        margin: 0 auto;
+      .register-form-container {
+        max-height: none;
       }
     }
 
-    @media (max-width: 768px) {
-      .form-grid {
+    @media (max-width: 640px) {
+      .register-container {
+        padding: 40px 16px;
+      }
+
+      .register-form-container {
+        padding: 32px 24px;
+      }
+
+      .form-row {
         grid-template-columns: 1fr;
       }
 
-      .register-card {
-        padding: var(--spacing-xl) var(--spacing-lg);
+      .form-header h1 {
+        font-size: 24px;
       }
 
-      .register-header h1 {
-        font-size: 1.5rem;
+      .brand-name {
+        font-size: 28px;
+      }
+
+      .sidebar-title {
+        font-size: 20px;
       }
     }
   `]
@@ -827,14 +783,12 @@ export class RegisterComponent {
   nationalities = NATIONALITIES;
   currentStep = signal(1);
 
-  
-
   registerForm: FormGroup = this.fb.group({
     // Campos requeridos
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6), AuthValidators.strongPassword()]],
     nombre: ['', [Validators.required, Validators.minLength(3)]],
-    apellido: ['',[ Validators.required, Validators.minLength(3)]],
+    apellido: ['', [Validators.required, Validators.minLength(3)]],
     // Campos opcionales con validaciones
     phone: ['', [CommonValidators.phone(9)]],
     dni: ['', [AuthValidators.peruvianDNI()]],
@@ -861,23 +815,24 @@ export class RegisterComponent {
     const step = this.currentStep();
 
     if (step === 1) {
-      // Paso 1: Validar email y password
-      const email = this.registerForm.get('email');
-      const password = this.registerForm.get('password');
-      return (email?.valid ?? false) && (password?.valid ?? false);
-    } else if (step === 2) {
-      // Paso 2: Validar nombre (requerido)
+      // Paso 1: Validar nombre, apellido, email y password
       const nombre = this.registerForm.get('nombre');
       const apellido = this.registerForm.get('apellido');
-      // Los demás campos son opcionales pero deben ser válidos si tienen valor
-      const dni = this.registerForm.get('dni');
+      const email = this.registerForm.get('email');
+      const password = this.registerForm.get('password');
+      
+      return (nombre?.valid ?? false) && 
+             (apellido?.valid ?? false) && 
+             (email?.valid ?? false) &&
+             (password?.valid ?? false);
+    } else if (step === 2) {
+      // Paso 2: Validar teléfono y campos opcionales
       const phone = this.registerForm.get('phone');
+      const dni = this.registerForm.get('dni');
       const dateOfBirth = this.registerForm.get('dateOfBirth');
 
-      return (nombre?.valid ?? false) &&
-             (apellido?.valid ?? false) &&
+      return (phone?.value === '' || (phone?.valid ?? true)) &&
              (dni?.value === '' || (dni?.valid ?? true)) &&
-             (phone?.value === '' || (phone?.valid ?? true)) &&
              (dateOfBirth?.value === '' || (dateOfBirth?.valid ?? true));
     }
 
@@ -888,13 +843,13 @@ export class RegisterComponent {
     const step = this.currentStep();
 
     if (step === 1) {
+      this.registerForm.get('nombre')?.markAsTouched();
+      this.registerForm.get('apellido')?.markAsTouched();
       this.registerForm.get('email')?.markAsTouched();
       this.registerForm.get('password')?.markAsTouched();
     } else if (step === 2) {
-      this.registerForm.get('nombre')?.markAsTouched();
-      this.registerForm.get('apellido')?.markAsTouched();
-      this.registerForm.get('dni')?.markAsTouched();
       this.registerForm.get('phone')?.markAsTouched();
+      this.registerForm.get('dni')?.markAsTouched();
       this.registerForm.get('dateOfBirth')?.markAsTouched();
     }
   }
