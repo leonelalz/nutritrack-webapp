@@ -23,7 +23,7 @@ export const routes: Routes = [
       {
         path: '',
         loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES)
-      }
+      },
     ]
   },
 
@@ -61,8 +61,36 @@ export const routes: Routes = [
         path: 'admin',
         canActivate: [adminGuard],
         loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES)
+      
+      },
+      
+      //ETIQUETAS
+      {
+      path: 'etiquetas',
+      loadChildren: () => import('./features/etiquetas/etiquetas.routes').then(m => m.ETIQUETAS_ROUTES),
+      canActivate: [adminGuard]
+      },
+      {
+      path: 'ingredientes',
+      loadChildren: () => import('./features/ingredientes/ingredientes.routes').then(m => m.INGREDIENTES_ROUTES),
+      canActivate: [adminGuard]
+      },
+      {
+      path: 'ejercicios',
+      loadChildren: () => import('./features/ejercicios/ejercicios.routes').then(m => m.EJERCICIOS_ROUTES),
+      canActivate: [adminGuard]
+      },
+      {
+      path: 'comidas',
+      loadChildren: () => import('./features/comidas/comidas.routes').then(m => m.COMIDAS_ROUTES),
+      canActivate: [adminGuard]
+      },
+      {
+        path: 'usuario',
+        loadChildren: () => import('./features/usuario/usuario.routes').then(m => m.USUARIO_ROUTES)
       }
-    ]
+    ],
+
   },
 
   // =============================================================================

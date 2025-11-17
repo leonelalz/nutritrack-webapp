@@ -45,18 +45,19 @@ export interface ApiLoginResponse {
 export interface AuthResponse {
   token: string;
   email: string;
-  nombre?: string;
-  apellido?: string;
-  role: string; // "ROLE_USER" o "ROLE_ADMIN"
-  userId?: number;
-  perfilId?: number;
+  nombre: string;
+  apellido: string;
+  role: string;
+  userId: number;
+  perfilId: number;
 }
 
 export interface UserResponse {
   id: string;
   email: string;
-  name: string;
-  id_rol: number; // 1 = Usuario, 2 = Admin
+  nombre: string;
+  apellido: string;
+  role: RoleType;
   active: boolean;
   createdAt: string;
   updatedAt: string;

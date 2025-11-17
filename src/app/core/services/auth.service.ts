@@ -30,17 +30,11 @@ export class AuthService {
   }
 
   // POST - Login
-  login(credentials: LoginRequest): Observable<ApiLoginResponse> {
-    console.log('🚀 Enviando login a:', `${this.apiUrl}/login`);
-    console.log('📧 Credenciales:', credentials.email);
-    
-    return this.http.post<ApiLoginResponse>(`${this.apiUrl}/login`, credentials).pipe(
-      tap(response => {
-        console.log('✅ Respuesta completa recibida:', response);
-        console.log('✅ Response.data:', response.data);
-        
-        // Extraer el data de la respuesta envuelta
-        this.saveAuthData(response.data);
+  login(credentials: LoginRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
+      tap((response: any) => {
+        console.log("LOGIN RAW RESPONSE:", response);
+        this.saveAuthData(response.data);  // <--- IMPORTANTE
       })
     );
   }
@@ -66,30 +60,16 @@ export class AuthService {
   }
 
   // Helpers privados
-  private saveAuthData(response: AuthResponse): void {
-    console.log('🔐 Respuesta del backend:', JSON.stringify(response, null, 2));
-    
-    this.storage.setItem('token', response.token);
-    this._token.set(response.token);
+  private saveAuthData(data: any): void {
+    this.storage.setItem('token', data.token);
+    this._token.set(data.token);
 
-    // Convertir el role string a id_rol numérico
-    let roleId: number;
-    if (response.role === 'ROLE_ADMIN') {
-      roleId = RoleType.ROLE_ADMIN; // 2
-      console.log('✅ Usuario identificado como ADMIN');
-    } else {
-      roleId = RoleType.ROLE_USER; // 1
-      console.log('✅ Usuario identificado como USER');
-    }
-    
-    console.log('📋 id_rol asignado:', roleId);
-
-    // Construir el usuario con los datos del backend (manejo seguro de campos opcionales)
     const user: UserResponse = {
-      id: response.userId?.toString() || '',
-      email: response.email,
-      name: `${response.nombre || ''} ${response.apellido || ''}`.trim() || response.email,
-      id_rol: roleId,
+      id: data.userId,
+      email: data.email,
+      nombre: data.nombre,
+      apellido: data.apellido,
+      role: data.role,
       active: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -119,13 +99,13 @@ export class AuthService {
   isAdmin(): boolean {
     const user = this._currentUser();
     // id_rol = 2 es Admin
-    return user?.id_rol === RoleType.ROLE_ADMIN || user?.id_rol === 2;
+    return user?.role === RoleType.ROLE_ADMIN;
   }
 
   isUser(): boolean {
     const user = this._currentUser();
     // id_rol = 1 es Usuario normal
-    return user?.id_rol === RoleType.ROLE_USER || user?.id_rol === 1;
+    return user?.role === RoleType.ROLE_USER;
   }
 
   getToken(): string | null {
