@@ -32,8 +32,9 @@ export class AuthService {
   // POST - Login
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
-      tap(response => {
-        this.saveAuthData(response);
+      tap((response: any) => {
+        console.log("LOGIN RAW RESPONSE:", response);
+        this.saveAuthData(response.data);  // <--- IMPORTANTE
       })
     );
   }
@@ -58,16 +59,16 @@ export class AuthService {
   }
 
   // Helpers privados
-  private saveAuthData(response: AuthResponse): void {
-    this.storage.setItem('token', response.token);
-    this._token.set(response.token);
+  private saveAuthData(data: any): void {
+    this.storage.setItem('token', data.token);
+    this._token.set(data.token);
 
-    // AuthResponse incluye role si viene del backend
     const user: UserResponse = {
-      id: '', // No disponible desde AuthResponse
-      email: response.email,
-      name: response.name,
-      role: response.role || RoleType.ROLE_USER, // Usar el role del response o ROLE_USER por defecto
+      id: data.userId,
+      email: data.email,
+      nombre: data.nombre,
+      apellido: data.apellido,
+      role: data.role,
       active: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

@@ -23,7 +23,7 @@ export const routes: Routes = [
       {
         path: '',
         loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES)
-      }
+      },
     ]
   },
 
@@ -40,8 +40,13 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadChildren: () => import('./features/dashboard/dashboard.routes').then(m => m.DASHBOARD_ROUTES)
+      },
+      {
+        path: 'usuario',
+        loadChildren: () => import('./features/usuario/usuario.routes').then(m => m.USUARIO_ROUTES)
       }
-    ]
+    ],
+
   },
 
   // =============================================================================

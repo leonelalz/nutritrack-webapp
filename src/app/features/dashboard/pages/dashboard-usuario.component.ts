@@ -8,37 +8,6 @@ import { RouterModule } from '@angular/router';
   imports: [CommonModule, RouterModule],
   template: `
     <div class="dashboard-container">
-      <!-- Welcome Header -->
-      <div class="welcome-card">
-        <div class="welcome-content">
-          <h1>¡Hola, María!</h1>
-          <p>Aquí tienes tu resumen completo de salud y bienestar</p>
-        </div>
-        <div class="welcome-actions">
-          <div class="quick-buttons">
-            <button class="quick-btn">
-              <span>🥗</span>
-              <span>Comida</span>
-            </button>
-            <button class="quick-btn">
-              <span>🏃‍♂️</span>
-              <span>Ejercicio</span>
-            </button>
-            <button class="quick-btn">
-              <span>🎯</span>
-              <span>Meta</span>
-            </button>
-          </div>
-          <div class="user-profile">
-            <div class="avatar">M</div>
-            <div class="user-info">
-              <div class="user-name">María García</div>
-              <div class="user-plan">Premium</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Stats Cards -->
       <div class="stats-grid">
         <div class="stat-card green-border">
@@ -206,36 +175,37 @@ import { RouterModule } from '@angular/router';
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Exercise Summary -->
-        <div class="exercise-card">
-          <div class="exercise-header">
-            <h2>Resumen de Ejercicios</h2>
-            <a href="#" class="view-all">Ver todos</a>
-          </div>
+          <!-- Exercise Summary -->
+          <div class="exercise-card">
+            <div class="exercise-header">
+              <h2>Resumen de Ejercicios</h2>
+              <a href="#" class="view-all">Ver todos</a>
+            </div>
 
-          <div class="exercise-grid">
-            <div class="exercise-stat">
-              <div class="exercise-value">24</div>
-              <div class="exercise-label">ESTE MES</div>
+            <div class="exercise-grid">
+              <div class="exercise-stat">
+                <div class="exercise-value">24</div>
+                <div class="exercise-label">ESTE MES</div>
+              </div>
+              <div class="exercise-stat">
+                <div class="exercise-value">18.5h</div>
+                <div class="exercise-label">TIEMPO TOTAL</div>
+              </div>
+              <div class="exercise-stat">
+                <div class="exercise-value">3,240</div>
+                <div class="exercise-label">CAL QUEMADAS</div>
+              </div>
+              <div class="exercise-stat">
+                <div class="exercise-value">4</div>
+                <div class="exercise-label">ESTA SEMANA</div>
+              </div>
             </div>
-            <div class="exercise-stat">
-              <div class="exercise-value">18.5h</div>
-              <div class="exercise-label">TIEMPO TOTAL</div>
-            </div>
-            <div class="exercise-stat">
-              <div class="exercise-value">3,240</div>
-              <div class="exercise-label">CAL QUEMADAS</div>
-            </div>
-            <div class="exercise-stat">
-              <div class="exercise-value">4</div>
-              <div class="exercise-label">ESTA SEMANA</div>
-            </div>
-          </div>
 
-          <div class="exercise-icon-box">
-            <div class="exercise-icon">💪</div>
+            <div class="exercise-icon-box">
+              <div class="exercise-icon">💪</div>
+            </div>
+            
           </div>
         </div>
       </div>
@@ -243,8 +213,8 @@ import { RouterModule } from '@angular/router';
   `,
   styles: [`
     .dashboard-container {
+      
       padding: 30px;
-      background: #F8F9FA;
       min-height: 100vh;
     }
 
@@ -336,44 +306,36 @@ import { RouterModule } from '@angular/router';
 
     /* Stats Grid */
     .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      display: flex;
+      flex-wrap: wrap;
       gap: 20px;
       margin-bottom: 30px;
     }
 
     .stat-card {
+      flex: 1 1 260px;       /* min = 260px, grow = 1 */
+      max-width: 100%;       /* evita overflow */
       background: white;
       border-radius: 16px;
       padding: 25px;
       box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.04);
-      position: relative;
       overflow: hidden;
     }
 
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
+    .stat-card.green-border {
+      border-top: solid 5px #24B86F;
     }
 
-    .stat-card.green-border::before {
-      background: linear-gradient(179deg, #28A745 0%, #20C997 100%);
+    .stat-card.yellow-border {
+      border-top: solid 5px #FEA00D;
+    }
+    
+    .stat-card.red-border {
+      border-top: solid 5px #E23A69;
     }
 
-    .stat-card.yellow-border::before {
-      background: linear-gradient(179deg, #FFC107 0%, #FD7E14 100%);
-    }
-
-    .stat-card.red-border::before {
-      background: linear-gradient(179deg, #DC3545 0%, #E83E8C 100%);
-    }
-
-    .stat-card.purple-border::before {
-      background: linear-gradient(179deg, #6F42C1 0%, #007BFF 100%);
+    .stat-card.purple-border {
+      border-top: solid 5px #385EE0;
     }
 
     .stat-header {

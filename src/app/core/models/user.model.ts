@@ -26,16 +26,19 @@ export interface RegisterRequest {
 // ===== RESPONSES =====
 export interface AuthResponse {
   token: string;
-  type: string;
   email: string;
-  name: string;
-  role?: RoleType;
+  nombre: string;
+  apellido: string;
+  role: string;
+  userId: number;
+  perfilId: number;
 }
 
 export interface UserResponse {
   id: string;
   email: string;
-  name: string;
+  nombre: string;
+  apellido: string;
   role: RoleType;
   active: boolean;
   createdAt: string;
