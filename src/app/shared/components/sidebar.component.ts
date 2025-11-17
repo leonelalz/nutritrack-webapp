@@ -63,6 +63,47 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
 
         <!-- Sección de Administración - TEMPORALMENTE VISIBLE PARA TODOS (REMOVER @if PARA TESTING) -->
+        <div class="nav-section nav-section-divider admin-section">
+          <div class="section-title">Administración</div>
+          
+          <!-- ETIQUETAS -->
+          <a routerLink="/etiquetas" routerLinkActive="active" class="nav-item">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+              <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
+            <span class="nav-text">Etiquetas</span>
+          </a>
+
+          <a routerLink="/ingredientes" routerLinkActive="active" class="nav-item">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+              <path d="M12 12v10"/>
+              <path d="M8 22h8"/>
+            </svg>
+            <span class="nav-text">Ingredientes</span>
+          </a>
+
+          <a routerLink="/ejercicios" routerLinkActive="active" class="nav-item">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14.4 14.4L9.6 9.6"/>
+              <path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.828l-1.768 1.768a2 2 0 1 1 2.828 2.828z"/>
+              <path d="M21.5 21.5l-1.4-1.4"/>
+              <path d="M3.9 3.9l1.4 1.4"/>
+            </svg>
+            <span class="nav-text">Ejercicios</span>
+          </a>
+
+          <a routerLink="/comidas" routerLinkActive="active" class="nav-item">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="6"/>
+              <path d="M12 14v8"/>
+              <path d="M8.5 14l-1 8"/>
+              <path d="M15.5 14l1 8"/>
+            </svg>
+            <span class="nav-text">Comidas</span>
+          </a>
+        </div>
          @if (isAdmin()) {
           <div class="nav-section nav-section-divider admin-section">
             <div class="section-title">Administración</div>

@@ -40,6 +40,29 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadChildren: () => import('./features/dashboard/dashboard.routes').then(m => m.DASHBOARD_ROUTES)
+      
+      },
+      
+      //ETIQUETAS
+      {
+      path: 'etiquetas',
+      loadChildren: () => import('./features/etiquetas/etiquetas.routes').then(m => m.ETIQUETAS_ROUTES),
+      canActivate: [adminGuard]
+      },
+      {
+      path: 'ingredientes',
+      loadChildren: () => import('./features/ingredientes/ingredientes.routes').then(m => m.INGREDIENTES_ROUTES),
+      canActivate: [adminGuard]
+      },
+      {
+      path: 'ejercicios',
+      loadChildren: () => import('./features/ejercicios/ejercicios.routes').then(m => m.EJERCICIOS_ROUTES),
+      canActivate: [adminGuard]
+      },
+      {
+      path: 'comidas',
+      loadChildren: () => import('./features/comidas/comidas.routes').then(m => m.COMIDAS_ROUTES),
+      canActivate: [adminGuard]
       },
       {
         path: 'usuario',
