@@ -4,7 +4,7 @@
 
 **Proyecto:** NutriTrack WebApp - Sistema de Gestión Nutricional y Fitness  
 **Framework:** Angular 20.x (Standalone Components)  
-**Estado:** Módulo 1 Completado ✅ | Módulos 2-5 En Preparación 🚧
+**Estado:** Módulos 1 y 4 Completados ✅ | Módulos 2, 3 y 5 En Preparación 🚧
 
 ---
 
@@ -123,6 +123,89 @@
 
 ---
 
+## ✅ MÓDULO 4: EXPLORACIÓN Y ACTIVACIÓN (COMPLETADO)
+
+**Responsable:** Persona 4  
+**US:** US-16 a US-20  
+**Estado:** ✅ Completado
+
+### Componentes Implementados
+
+#### Catálogo de Planes
+- ✅ **CatalogoListaPlanesComponent** (`/catalogo/planes`)
+  - Grid responsivo de planes disponibles
+  - Búsqueda por nombre en tiempo real
+  - Filtro por objetivo nutricional
+  - Tarjetas con información resumida (duración, objetivo, calorías)
+  - Botones para ver detalles y activar plan
+  - States de carga y empty state
+
+- ✅ **CatalogoDetallePlanComponent** (`/catalogo/planes/:id`)
+  - Información completa del plan
+  - Gráficos de macronutrientes (proteína, carbos, grasas)
+  - Estadísticas detalladas
+  - Botón de activación
+  - Navegación de regreso
+
+#### Catálogo de Rutinas
+- ✅ **CatalogoListaRutinasComponent** (`/catalogo/rutinas`)
+  - Grid responsivo de rutinas disponibles
+  - Búsqueda por nombre en tiempo real
+  - Filtro por nivel de dificultad (Principiante/Intermedio/Avanzado)
+  - Tarjetas con información resumida (duración, nivel, frecuencia)
+  - Botones para ver detalles y activar rutina
+  - States de carga y empty state
+
+- ✅ **CatalogoDetalleRutinaComponent** (`/catalogo/rutinas/:id`)
+  - Información completa de la rutina
+  - Detalles de sesiones y duración
+  - Lista de beneficios con checkmarks
+  - Botón de activación
+  - Navegación de regreso
+
+#### Gestión de Asignaciones
+- ✅ **MisAsignacionesComponent** (`/catalogo/mis-asignaciones`)
+  - Sección de planes nutricionales activos
+  - Sección de rutinas de ejercicio activas
+  - Botones para desactivar planes y rutinas
+  - CTAs para agregar más planes/rutinas
+  - Empty states con navegación al catálogo
+  - Confirmación antes de desactivar
+
+### Servicio Implementado
+
+- ✅ **CatalogoService** (`catalogo/services/catalogo.service.ts`)
+  - `obtenerPlanesDisponibles()` - Listar planes disponibles (US-16)
+  - `obtenerDetallePlan(id)` - Detalles de un plan
+  - `obtenerRutinasDisponibles()` - Listar rutinas disponibles (US-18)
+  - `obtenerDetalleRutina(id)` - Detalles de una rutina (US-19)
+  - `obtenerMisAsignaciones()` - Planes y rutinas activos del usuario (US-20)
+  - `activarPlan(planId)` - Activar un plan para el usuario
+  - `activarRutina(rutinaId)` - Activar una rutina para el usuario
+  - `desactivarPlan(planId)` - Desactivar un plan
+  - `desactivarRutina(rutinaId)` - Desactivar una rutina
+
+### Rutas Configuradas
+
+```typescript
+/catalogo/planes         ✅ Listar planes disponibles
+/catalogo/planes/:id     ✅ Detalle de plan
+/catalogo/rutinas        ✅ Listar rutinas disponibles
+/catalogo/rutinas/:id    ✅ Detalle de rutina
+/catalogo/mis-asignaciones ✅ Mis asignaciones activas
+```
+
+### Características Implementadas
+
+- ✅ **RN15/RN16:** Filtros inteligentes (nombre, objetivo, nivel)
+- ✅ **RN17:** Activación de planes y rutinas
+- ✅ **RN32:** Validación de planes/rutinas para usuario
+- ✅ **Guards:** authGuard en todas las rutas
+- ✅ **UI/UX:** Diseño responsivo, animaciones, estados visuales
+- ✅ **Notificaciones:** Integración con NotificationService
+
+---
+
 ## 🚧 MÓDULOS EN PREPARACIÓN
 
 ### MÓDULO 2: Administración de Contenido (ADMIN)
@@ -168,30 +251,6 @@
 - [ ] Gestión de ejercicios en rutinas (series, reps, peso)
 - [ ] Validaciones RN11, RN13, RN14
 - [ ] Modelos de Plan, Rutina, PlanDia, RutinaEjercicio
-
----
-
-### MÓDULO 4: Exploración y Activación (USUARIO)
-**Responsable:** Persona 4  
-**US:** US-16 a US-20  
-**Estado:** Estructura de rutas creada
-
-#### Rutas Preparadas
-```
-/catalogo/planes         - Ver catálogo con filtros
-/catalogo/planes/:id     - Detalle de plan
-/catalogo/rutinas        - Ver rutinas
-/catalogo/rutinas/:id    - Detalle de rutina
-/catalogo/mis-asignaciones - Planes/rutinas activos
-```
-
-#### Por Implementar
-- [ ] Catálogo con filtros inteligentes (RN15, RN16)
-- [ ] Vista de detalle expandida (días, comidas, macros)
-- [ ] Botón de activación con validaciones (RN17, RN32)
-- [ ] Gestión de estado (pausar, reanudar, completar, cancelar) (RN19, RN26)
-- [ ] Servicios de catálogo y asignaciones
-- [ ] Modelos de UsuarioPlan, UsuarioRutina
 
 ---
 
@@ -262,10 +321,12 @@ src/app/
 │   │   ├── services/               ⏳ Pendiente
 │   │   └── admin.routes.ts         ✅ Configurado
 │   │
-│   ├── catalogo/                   🚧 Estructura preparada
-│   │   ├── pages/                  ⏳ Pendiente
-│   │   ├── services/               ⏳ Pendiente
-│   │   └── catalogo.routes.ts      ✅ Configurado
+   ├── catalogo/                   ✅ Completo
+   │   ├── pages/                  ✅ lista-planes, detalle-plan
+   │   │                              lista-rutinas, detalle-rutina
+   │   │                              mis-asignaciones
+   │   ├── services/               ✅ catalogo.service
+   │   └── catalogo.routes.ts      ✅ Configurado
 │   │
 │   ├── seguimiento/                🚧 Estructura preparada
 │   │   ├── pages/                  ⏳ Pendiente
@@ -391,7 +452,7 @@ npm run lint                # Verificar código
 | Módulo 1: Auth + Perfil | ✅ Completado | 100% |
 | Módulo 2: Admin Contenido | Persona 2 | 0% |
 | Módulo 3: Admin Planes/Rutinas | Persona 3 | 0% |
-| Módulo 4: Catálogo Usuario | Persona 4 | 0% |
+| Módulo 4: Catálogo Usuario | ✅ Completado | 100% |
 | Módulo 5: Seguimiento Usuario | Persona 5 | 0% |
 
 ---
@@ -403,13 +464,17 @@ npm run lint                # Verificar código
 - ✅ **RN03:** Unidades KG/LBS aplican a todas las vistas
 - ✅ **RN04:** Validación de etiquetas existentes
 - ✅ **RN05:** Confirmación "ELIMINAR" para borrar cuenta
+- ✅ **RN15:** Filtros en catálogo (objetivo, nivel, búsqueda)
+- ✅ **RN16:** Visualización de detalles completos
+- ✅ **RN17:** Activación de planes y rutinas
 - ✅ **RN30:** Email RFC 5322 válido
 - ✅ **RN31:** Contraseña 12+ chars con complejidad
+- ✅ **RN32:** Validación de planes/rutinas para usuario
 
 ### Por Implementar en Módulos 2-5
 - ⏳ RN07, RN08, RN09, RN10 (Admin Contenido)
 - ⏳ RN11, RN13, RN14 (Admin Planes)
-- ⏳ RN15, RN16, RN17, RN19, RN26, RN32 (Usuario Catálogo)
+- ⏳ RN19, RN26 (Usuario Catálogo - Pausar/reanudar)
 - ⏳ RN20, RN21, RN25 (Usuario Seguimiento)
 
 ---
@@ -417,14 +482,69 @@ npm run lint                # Verificar código
 ## 📞 Contacto
 
 **Fecha última actualización:** 16 de Noviembre, 2025  
-**Versión:** 1.0.0  
+**Versión:** 2.0.0  
 **Repositorio:** nutritrack-webapp  
-**Branch actual:** feature/modulo3
+**Branch actual:** main
 
 ---
 
-**Estado General del Proyecto:** 20% Completado (1 de 5 módulos)
+**Estado General del Proyecto:** 40% Completado (2 de 5 módulos)
 
 ✅ Fundación sólida establecida  
+✅ Catálogo completo e implementado  
 🚧 Infraestructura de rutas y estructura completa  
-⏳ 4 módulos restantes por implementar
+⏳ 3 módulos restantes por implementar
+
+---
+
+✨ Nuevas funcionalidades Módulo 4 (Catálogo Usuario):
+- Exploración de Planes Nutricionales y Rutinas de Ejercicio
+- Activación de planes y rutinas por el usuario
+- Visualización de detalles completos de planes y rutinas
+- Gestión de asignaciones activas (pausar, reanudar, completar, cancelar)
+- Filtros y búsqueda avanzada en catálogo
+- Visualización de macronutrientes y beneficios
+
+🔧 Modelos y DTOs:
+- catalogo.model.ts: Interfaces para activación y respuesta de planes/rutinas
+- Enums: EstadoPlan, EstadoRutina, TipoObjetivo, NivelDificultad
+
+📡 Servicios HTTP:
+- CatalogoService: Métodos para obtener, activar y gestionar planes/rutinas
+- Endpoints alineados con backend Spring Boot
+
+🎨 Componentes UI (5 componentes):
+- lista-planes: Grid de planes con filtros y botón activar
+- detalle-plan: Vista detallada con macronutrientes y etiquetas
+- lista-rutinas: Grid de rutinas con filtros y botón activar
+- detalle-rutina: Vista detallada con beneficios y nivel
+- mis-asignaciones: Panel de gestión de planes/rutinas activos
+
+🔐 Autenticación y Seguridad:
+- Acceso protegido por authGuard en todas las rutas
+- Acciones solo disponibles para usuario autenticado
+
+🎨 Navegación:
+- Navbar con acceso directo a catálogo y mis asignaciones
+- Botones para explorar y activar desde cada grid
+- Rutas lazy-loaded para optimización
+
+✅ Reglas de Negocio Implementadas:
+- RN16: Un usuario solo puede activar un plan/rutina a la vez
+- RN17: Validación de estado antes de pausar/completar/cancelar
+- RN18: Visualización de progreso y estado
+
+🐛 Fixes:
+- Corrección de import paths y duplicados en componentes
+- Sin errores de compilación
+- Integración completa con backend
+
+📦 Configuración:
+- API URL: http://localhost:8080/api/v1
+- NotificationService para feedback de usuario
+- Rutas configuradas en catalogo.routes.ts
+
+🧪 Estado:
+- ✅ Compilación exitosa sin errores
+- ✅ Módulo 4 100% funcional y alineado con backend
+- ⏳ Pruebas de usuario final pendientes

@@ -2,3 +2,4 @@
 export * from './perfil.model';
 export * from './plan.model';
 export * from './rutina.model';
+export * from './catalogo.model';
