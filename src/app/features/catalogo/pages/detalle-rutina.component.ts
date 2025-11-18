@@ -264,25 +264,25 @@ export class CatalogoDetalleRutinaComponent implements OnInit {
     });
   }
 
-  cargarRutina(): void {
-    this.loading.set(true);
-    this.catalogoService.obtenerRutinasDisponibles().subscribe({
-      next: (response: any) => {
-        this.loading.set(false);
-        if (response.success) {
-          const rutinas = response.data || [];
-          const rutinaEncontrada = rutinas.find((r: any) => r.id === this.rutinaId);
-          if (rutinaEncontrada) {
-            this.rutina.set(rutinaEncontrada);
+    cargarRutina(): void {
+      this.loading.set(true);
+      this.catalogoService.obtenerTodasLasRutinasDeUsuario().subscribe({
+        next: (response: any) => {
+          this.loading.set(false);
+          if (response.success) {
+            const rutinas = response.data || [];
+            const rutinaEncontrada = rutinas.find((r: any) => r.id === this.rutinaId);
+            if (rutinaEncontrada) {
+              this.rutina.set(rutinaEncontrada);
+            }
           }
+        },
+        error: () => {
+          this.loading.set(false);
+          this.notificationService.showError('Error al cargar la rutina');
         }
-      },
-      error: () => {
-        this.loading.set(false);
-        this.notificationService.showError('Error al cargar la rutina');
-      }
-    });
-  }
+      });
+    }
 
   activarRutina(): void {
     if (!this.rutina()) return;

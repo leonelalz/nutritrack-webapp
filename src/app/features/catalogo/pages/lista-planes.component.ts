@@ -331,22 +331,22 @@ export class CatalogoListaPlanesComponent implements OnInit {
     this.cargarPlanes();
   }
 
-  cargarPlanes(): void {
-    this.loading.set(true);
-    this.catalogoService.obtenerPlanesDisponibles().subscribe({
-      next: (response: any) => {
-        this.loading.set(false);
-        if (response.success) {
-          this.planes.set(response.data || []);
-          this.planesFiltrados.set(response.data || []);
+    cargarPlanes(): void {
+      this.loading.set(true);
+      this.catalogoService.obtenerTodosLosPlanesDeUsuario().subscribe({
+        next: (response: any) => {
+          this.loading.set(false);
+          if (response.success) {
+            this.planes.set(response.data || []);
+            this.filtrarPlanes();
+          }
+        },
+        error: () => {
+          this.loading.set(false);
+          this.notificationService.showError('Error al cargar los planes');
         }
-      },
-      error: () => {
-        this.loading.set(false);
-        this.notificationService.showError('Error al cargar planes');
-      }
-    });
-  }
+      });
+    }
 
   filtrarPlanes(): void {
     let filtrados = this.planes();

@@ -339,13 +339,13 @@ export class CatalogoDetallePlanComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe((params) => {
       this.planId = +params['id'];
-      this.cargarPlan();
+        this.cargarPlan();
     });
   }
 
   cargarPlan(): void {
     this.loading.set(true);
-    this.catalogoService.obtenerPlanesDisponibles().subscribe({
+      this.catalogoService.obtenerTodosLosPlanesDeUsuario().subscribe({
       next: (response: any) => {
         this.loading.set(false);
         if (response.success) {

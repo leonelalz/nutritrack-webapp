@@ -342,7 +342,7 @@ export class CatalogoListaRutinasComponent implements OnInit {
 
   cargarRutinas(): void {
     this.loading.set(true);
-    this.catalogoService.obtenerRutinasDisponibles().subscribe({
+      this.catalogoService.obtenerTodasLasRutinasDeUsuario().subscribe({
       next: (response: any) => {
         this.loading.set(false);
         if (response.success) {

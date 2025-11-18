@@ -64,7 +64,7 @@ export const CATALOGO_ROUTES: Routes = [
   },
   {
     path: '',
-    redirectTo: 'planes',
+    redirectTo: 'mis-asignaciones',
     pathMatch: 'full',
   },
 ];
