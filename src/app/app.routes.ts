@@ -44,29 +44,49 @@ export const routes: Routes = [
       },
       
       //ETIQUETAS
-      {
+      /* {
       path: 'etiquetas',
-      loadChildren: () => import('./features/etiquetas/etiquetas.routes').then(m => m.ETIQUETAS_ROUTES),
+      loadChildren: () => import('./features/admin/etiquetas/etiquetas.routes').then(m => m.ETIQUETAS_ROUTES),
       canActivate: [adminGuard]
-      },
-      {
+      }, */
+      /* {
       path: 'ingredientes',
-      loadChildren: () => import('./features/ingredientes/ingredientes.routes').then(m => m.INGREDIENTES_ROUTES),
+      loadChildren: () => import('./features/admin/ingredientes/ingredientes.routes').then(m => m.INGREDIENTES_ROUTES),
       canActivate: [adminGuard]
-      },
-      {
+      }, */
+      /* {
       path: 'ejercicios',
-      loadChildren: () => import('./features/ejercicios/ejercicios.routes').then(m => m.EJERCICIOS_ROUTES),
+      loadChildren: () => import('./features/admin/ejercicios/ejercicios.routes').then(m => m.EJERCICIOS_ROUTES),
       canActivate: [adminGuard]
-      },
-      {
-      path: 'comidas',
-      loadChildren: () => import('./features/comidas/comidas.routes').then(m => m.COMIDAS_ROUTES),
-      canActivate: [adminGuard]
-      },
+      }, */
+      //{
+      //path: 'comidas',
+      //loadChildren: () => import('./features/admin/comidas/comidas.routes').then(m => m.COMIDAS_ROUTES),
+      //canActivate: [adminGuard]
+      //},
       {
         path: 'usuario',
         loadChildren: () => import('./features/usuario/usuarios.routes').then(m => m.USUARIO_ROUTES)
+      },
+      //{
+      //  path: 'perfil',
+      //  loadChildren: () => import('./features/perfil/perfil.routes').then(m => m.PERFIL_ROUTES)
+      //},
+      // Módulo Catálogo (US-16 a US-20)
+      {
+        path: 'catalogo',
+        loadChildren: () => import('./features/catalogo/catalogo.routes').then(m => m.CATALOGO_ROUTES)
+      },
+      // Módulo Seguimiento (US-21 a US-25)
+      {
+        path: 'seguimiento',
+        loadChildren: () => import('./features/seguimiento/seguimiento.routes').then(m => m.SEGUIMIENTO_ROUTES)
+      },
+      // Módulo Admin (US-06 a US-15) - Solo para administradores
+      {
+        path: 'admin',
+        canActivate: [adminGuard],
+        loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES)
       }
     ],
 

@@ -25,11 +25,25 @@ export class NotificationService {
     this.show('success', title, message, duration);
   }
 
+/**
+   * Alias simple para mostrar éxito con solo mensaje
+   */
+  showSuccess(message: string, duration = 5000) {
+    this.show('success', 'Éxito', message, duration);
+  }
+
   /**
    * Muestra una notificación de error
    */
   error(title: string, message: string, duration = 7000) {
     this.show('error', title, message, duration);
+  }
+
+  /**
+   * Alias simple para mostrar error con solo mensaje
+   */
+  showError(message: string, duration = 7000) {
+    this.show('error', 'Error', message, duration);
   }
 
   /**
@@ -113,6 +127,13 @@ export class NotificationService {
    */
   clear() {
     this.notifications.set([]);
+  }
+
+  /**
+   * Alias para mostrar mensaje de advertencia
+   */
+  showWarning(message: string, duration: number = 6000): void {
+    this.warning('Advertencia', message, duration);
   }
 
   /**

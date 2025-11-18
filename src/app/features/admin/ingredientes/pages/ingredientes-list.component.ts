@@ -1,47 +1,47 @@
-// src/app/features/etiquetas/pages/etiquetas-list.component.ts
+// src/app/features/ingredientes/pages/ingredientes-list.component.ts
 
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { EtiquetaService } from '../../../core/services/etiqueta.service';
+import { Observable } from 'rxjs';
+import { IngredienteService } from '../../../../core/services/ingrediente.service';
+import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import {
-  Etiqueta,
-  TipoEtiqueta,
-  TIPO_ETIQUETA_LABELS,
-  TIPO_ETIQUETA_COLORS,
-  TIPO_ETIQUETA_ICONS,
-  ApiResponse,
-  PageResponse
-} from '../../../core/models/etiqueta.model';
+  Ingrediente,
+  CategoriaAlimento,
+  CATEGORIA_ALIMENTO_LABELS,
+  CATEGORIA_ALIMENTO_ICONS
+} from '../../../../core/models/ingrediente.model';
+import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/etiqueta.model';
 
 @Component({
-  selector: 'app-etiquetas-list',
+  selector: 'app-ingredientes-list',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="etiquetas-container">
+    <div class="ingredientes-container">
 
       <!-- Stats Cards -->
       <div class="stats-grid">
         <div class="stat-card green-border">
           <div class="stat-header">
-            <span class="stat-title">Total Etiquetas</span>
-            <div class="stat-icon green">🏷️</div>
+            <span class="stat-title">Total Ingredientes</span>
+            <div class="stat-icon green">🥗</div>
           </div>
           <div class="stat-value">{{ totalElements }}</div>
           <div class="stat-footer">
-            <span class="stat-subtitle">registradas</span>
+            <span class="stat-subtitle">registrados</span>
           </div>
         </div>
 
         <div class="stat-card yellow-border">
           <div class="stat-header">
-            <span class="stat-title">Tipos</span>
+            <span class="stat-title">Categorías</span>
             <div class="stat-icon yellow">📊</div>
           </div>
-          <div class="stat-value">{{ tiposEtiqueta.length }}</div>
+          <div class="stat-value">{{ categorias.length }}</div>
           <div class="stat-footer">
-            <span class="stat-subtitle">categorías</span>
+            <span class="stat-subtitle">disponibles</span>
           </div>
         </div>
 
@@ -58,81 +58,132 @@ import {
 
         <div class="stat-card red-border">
           <div class="stat-header">
-            <span class="stat-title">Resultados</span>
-            <div class="stat-icon red">📚</div>
+            <span class="stat-title">Etiquetas</span>
+            <div class="stat-icon red">🏷️</div>
           </div>
-          <div class="stat-value">{{ etiquetas().length }}</div>
+          <div class="stat-value">{{ etiquetasDisponibles().length }}</div>
           <div class="stat-footer">
-            <span class="stat-subtitle">mostrando ahora</span>
+            <span class="stat-subtitle">disponibles</span>
           </div>
         </div>
       </div>
 
-      <!-- Search Bar -->
-      <div class="search-card">
-        <div class="search-input-wrapper">
-          <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <input
-            type="text"
-            [(ngModel)]="searchTerm"
-            (input)="onSearch()"
-            placeholder="Buscar etiquetas por nombre..."
-            class="search-input"
-          />
+      <!-- Search and Filters -->
+      <div class="filters-card">
+        <div class="search-section">
+          <div class="search-input-wrapper">
+            <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+              placeholder="Buscar ingredientes por nombre..."
+              class="search-input"
+            />
+            
+          </div>
+          <button (click)="abrirModalCrear()" class="btn-primary">
+            <span>+</span>
+            Nuevo Ingrediente
+          </button>
         </div>
-        
-        <button (click)="abrirModalCrear()" class="btn-primary">
-          <span>+</span>
-          Nueva Etiqueta
-        </button>
+
+        <div class="filter-section">
+          <label class="filter-label">Filtrar por categoría:</label>
+          <div class="filter-buttons">
+            <button
+              (click)="filtrarPorCategoria('')"
+              [class.active]="categoriaFiltro === ''"
+              class="filter-btn"
+            >
+              Todas
+            </button>
+            @for (categoria of categorias; track categoria) {
+              <button
+                (click)="filtrarPorCategoria(categoria)"
+                [class.active]="categoriaFiltro === categoria"
+                class="filter-btn"
+              >
+                {{ getCategoriaIcon(categoria) }} {{ getCategoriaLabel(categoria) }}
+              </button>
+            }
+          </div>
+        </div>
       </div>
 
       @if (loading()) {
         <div class="loading-card">
           <div class="spinner"></div>
-          <p>Cargando etiquetas...</p>
+          <p>Cargando ingredientes...</p>
         </div>
       }
 
       <!-- Desktop Table -->
-      @if (!loading() && etiquetas().length > 0) {
+      @if (!loading() && ingredientes().length > 0) {
         <div class="table-card desktop-only">
           <table class="data-table">
             <thead>
               <tr>
                 <th>ID</th>
                 <th>Nombre</th>
-                <th>Tipo</th>
-                <th>Descripción</th>
+                <th>Categoría</th>
+                <th>Energía</th>
+                <th>Proteínas</th>
+                <th>Carbohidratos</th>
+                <th>Grasas</th>
+                <th>Etiquetas</th>
                 <th class="text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              @for (etiqueta of etiquetas(); track etiqueta.id) {
+              @for (ingrediente of ingredientes(); track ingrediente.id) {
                 <tr>
                   <td>
-                    <span class="table-id">#{{ etiqueta.id }}</span>
+                    <span class="table-id">#{{ ingrediente.id }}</span>
                   </td>
                   <td>
                     <div class="table-name">
-                      <span class="name-icon">{{ getTipoIcon(etiqueta.tipoEtiqueta) }}</span>
-                      <span>{{ etiqueta.nombre }}</span>
+                      <span class="name-icon">{{ getCategoriaIcon(ingrediente.categoriaAlimento) }}</span>
+                      <span>{{ ingrediente.nombre }}</span>
                     </div>
                   </td>
                   <td>
-                    <span [class]="'badge ' + getTipoColor(etiqueta.tipoEtiqueta)">
-                      {{ getTipoLabel(etiqueta.tipoEtiqueta) }}
+                    <span class="badge badge-category">
+                      {{ getCategoriaLabel(ingrediente.categoriaAlimento) }}
                     </span>
                   </td>
                   <td>
-                    <span class="table-description">{{ etiqueta.descripcion || 'Sin descripción' }}</span>
+                    <span class="nutrition-value">{{ ingrediente.energia }}</span>
+                    <span class="nutrition-unit">kcal</span>
+                  </td>
+                  <td>
+                    <span class="nutrition-value">{{ ingrediente.proteinas }}</span>
+                    <span class="nutrition-unit">g</span>
+                  </td>
+                  <td>
+                    <span class="nutrition-value">{{ ingrediente.carbohidratos }}</span>
+                    <span class="nutrition-unit">g</span>
+                  </td>
+                  <td>
+                    <span class="nutrition-value">{{ ingrediente.grasas }}</span>
+                    <span class="nutrition-unit">g</span>
+                  </td>
+                  <td>
+                    <div class="tags-container">
+                      @for (etiqueta of ingrediente.etiquetas.slice(0, 2); track etiqueta.id) {
+                        <span class="tag">{{ etiqueta.nombre }}</span>
+                      }
+                      @if (ingrediente.etiquetas.length > 2) {
+                        <span class="tag-more">+{{ ingrediente.etiquetas.length - 2 }}</span>
+                      }
+                    </div>
                   </td>
                   <td class="text-right">
                     <div class="action-buttons">
                       <button
-                        (click)="abrirModalEditar(etiqueta)"
+                        (click)="abrirModalEditar(ingrediente)"
                         class="btn-action edit"
                         title="Editar"
                       >
@@ -141,7 +192,7 @@ import {
                         </svg>
                       </button>
                       <button
-                        (click)="confirmarEliminar(etiqueta)"
+                        (click)="confirmarEliminar(ingrediente)"
                         class="btn-action delete"
                         title="Eliminar"
                       >
@@ -160,7 +211,7 @@ import {
           @if (totalPages > 1) {
             <div class="pagination">
               <div class="pagination-info">
-                Mostrando <strong>{{ etiquetas().length }}</strong> de <strong>{{ totalElements }}</strong> resultados
+                Mostrando <strong>{{ ingredientes().length }}</strong> de <strong>{{ totalElements }}</strong> resultados
               </div>
               <div class="pagination-controls">
                 <button
@@ -187,36 +238,57 @@ import {
 
         <!-- Mobile Cards -->
         <div class="mobile-only">
-          @for (etiqueta of etiquetas(); track etiqueta.id) {
+          @for (ingrediente of ingredientes(); track ingrediente.id) {
             <div class="mobile-card">
               <div class="mobile-card-header">
                 <div class="mobile-card-title">
-                  <span class="mobile-icon">{{ getTipoIcon(etiqueta.tipoEtiqueta) }}</span>
+                  <span class="mobile-icon">{{ getCategoriaIcon(ingrediente.categoriaAlimento) }}</span>
                   <div>
-                    <div class="mobile-name">{{ etiqueta.nombre }}</div>
-                    <div class="mobile-id">#{{ etiqueta.id }}</div>
+                    <div class="mobile-name">{{ ingrediente.nombre }}</div>
+                    <div class="mobile-id">#{{ ingrediente.id }}</div>
                   </div>
                 </div>
-                <span [class]="'badge ' + getTipoColor(etiqueta.tipoEtiqueta)">
-                  {{ getTipoLabel(etiqueta.tipoEtiqueta) }}
+                <span class="badge badge-category">
+                  {{ getCategoriaLabel(ingrediente.categoriaAlimento) }}
                 </span>
               </div>
 
-              @if (etiqueta.descripcion) {
-                <div class="mobile-card-description">
-                  {{ etiqueta.descripcion }}
+              <div class="mobile-nutrition">
+                <div class="nutrition-item">
+                  <span class="nutrition-label">Energía</span>
+                  <span class="nutrition-data">{{ ingrediente.energia }} kcal</span>
+                </div>
+                <div class="nutrition-item">
+                  <span class="nutrition-label">Proteínas</span>
+                  <span class="nutrition-data">{{ ingrediente.proteinas }}g</span>
+                </div>
+                <div class="nutrition-item">
+                  <span class="nutrition-label">Carbohidratos</span>
+                  <span class="nutrition-data">{{ ingrediente.carbohidratos }}g</span>
+                </div>
+                <div class="nutrition-item">
+                  <span class="nutrition-label">Grasas</span>
+                  <span class="nutrition-data">{{ ingrediente.grasas }}g</span>
+                </div>
+              </div>
+
+              @if (ingrediente.etiquetas.length > 0) {
+                <div class="mobile-tags">
+                  @for (etiqueta of ingrediente.etiquetas; track etiqueta.id) {
+                    <span class="tag">{{ etiqueta.nombre }}</span>
+                  }
                 </div>
               }
 
               <div class="mobile-card-actions">
                 <button
-                  (click)="abrirModalEditar(etiqueta)"
+                  (click)="abrirModalEditar(ingrediente)"
                   class="btn-mobile edit"
                 >
                   ✏️ Editar
                 </button>
                 <button
-                  (click)="confirmarEliminar(etiqueta)"
+                  (click)="confirmarEliminar(ingrediente)"
                   class="btn-mobile delete"
                 >
                   🗑️ Eliminar
@@ -230,7 +302,7 @@ import {
             <div class="mobile-pagination">
               <div class="mobile-pagination-info">
                 Página {{ currentPage + 1 }} de {{ totalPages }}
-                <span>({{ etiquetas().length }} de {{ totalElements }} resultados)</span>
+                <span>({{ ingredientes().length }} de {{ totalElements }} resultados)</span>
               </div>
               <div class="mobile-pagination-controls">
                 <button
@@ -254,14 +326,14 @@ import {
       }
 
       <!-- Empty State -->
-      @if (!loading() && etiquetas().length === 0) {
+      @if (!loading() && ingredientes().length === 0) {
         <div class="empty-state">
-          <div class="empty-icon">🏷️</div>
-          <h3>No hay etiquetas registradas</h3>
-          <p>Comienza creando tu primera etiqueta para organizar tu sistema</p>
+          <div class="empty-icon">🥗</div>
+          <h3>No hay ingredientes registrados</h3>
+          <p>Comienza creando tu primer ingrediente con información nutricional</p>
           <button (click)="abrirModalCrear()" class="btn-primary">
             <span>+</span>
-            Nueva Etiqueta
+            Nuevo Ingrediente
           </button>
         </div>
       }
@@ -269,12 +341,13 @@ import {
       <!-- Modal Crear/Editar -->
       @if (mostrarModal) {
         <div class="modal-overlay" (click)="cerrarModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-content large" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h2>{{ etiquetaEditando ? 'Editar Etiqueta' : 'Nueva Etiqueta' }}</h2>
+              <h2>{{ ingredienteEditando ? 'Editar Ingrediente' : 'Nuevo Ingrediente' }}</h2>
             </div>
 
             <div class="modal-body">
+              <!-- Nombre -->
               <div class="form-group">
                 <label>
                   Nombre <span class="required">*</span>
@@ -283,33 +356,124 @@ import {
                   type="text"
                   [(ngModel)]="formulario.nombre"
                   class="form-input"
-                  placeholder="Ej: Sin Gluten"
+                  placeholder="Ej: Pechuga de pollo"
                 />
               </div>
 
+              <!-- Categoría -->
               <div class="form-group">
                 <label>
-                  Tipo de Etiqueta <span class="required">*</span>
+                  Categoría <span class="required">*</span>
                 </label>
                 <select
-                  [(ngModel)]="formulario.tipoEtiqueta"
+                  [(ngModel)]="formulario.categoriaAlimento"
                   class="form-input"
                 >
-                  <option value="">Selecciona un tipo</option>
-                  @for (tipo of tiposEtiqueta; track tipo) {
-                    <option [value]="tipo">{{ getTipoIcon(tipo) }} {{ getTipoLabel(tipo) }}</option>
+                  <option value="">Selecciona una categoría</option>
+                  @for (categoria of categorias; track categoria) {
+                    <option [value]="categoria">
+                      {{ getCategoriaIcon(categoria) }} {{ getCategoriaLabel(categoria) }}
+                    </option>
                   }
                 </select>
               </div>
 
+              <!-- Información Nutricional -->
+              <div class="form-section-title">Información Nutricional (por 100g)</div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Energía (kcal) <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    [(ngModel)]="formulario.energia"
+                    class="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Proteínas (g) <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    [(ngModel)]="formulario.proteinas"
+                    class="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Carbohidratos (g) <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    [(ngModel)]="formulario.carbohidratos"
+                    class="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Grasas (g) <span class="required">*</span></label>
+                  <input
+                    type="number"
+                    [(ngModel)]="formulario.grasas"
+                    class="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Fibra (g)</label>
+                <input
+                  type="number"
+                  [(ngModel)]="formulario.fibra"
+                  class="form-input"
+                  placeholder="0"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+
+              <!-- Descripción -->
               <div class="form-group">
                 <label>Descripción</label>
                 <textarea
                   [(ngModel)]="formulario.descripcion"
                   rows="3"
                   class="form-input"
-                  placeholder="Descripción opcional de la etiqueta..."
+                  placeholder="Descripción opcional del ingrediente..."
                 ></textarea>
+              </div>
+
+              <!-- Etiquetas -->
+              <div class="form-group">
+                <label>Etiquetas</label>
+                <div class="etiquetas-selector">
+                  @for (etiqueta of etiquetasDisponibles(); track etiqueta.id) {
+                    <button
+                      type="button"
+                      (click)="toggleEtiqueta(etiqueta.id)"
+                      [class.selected]="isEtiquetaSeleccionada(etiqueta.id)"
+                      class="etiqueta-chip"
+                    >
+                      {{ etiqueta.nombre }}
+                    </button>
+                  }
+                  @if (etiquetasDisponibles().length === 0) {
+                    <p class="no-etiquetas">No hay etiquetas disponibles</p>
+                  }
+                </div>
               </div>
             </div>
 
@@ -339,9 +503,9 @@ import {
           <div class="modal-content small" (click)="$event.stopPropagation()">
             <div class="modal-body centered">
               <div class="warning-icon">⚠️</div>
-              <h3>¿Eliminar Etiqueta?</h3>
+              <h3>¿Eliminar Ingrediente?</h3>
               <p>
-                ¿Estás seguro de eliminar la etiqueta <strong>"{{ etiquetaAEliminar?.nombre }}"</strong>?
+                ¿Estás seguro de eliminar el ingrediente <strong>"{{ ingredienteAEliminar?.nombre }}"</strong>?
                 Esta acción no se puede deshacer.
               </p>
             </div>
@@ -369,8 +533,10 @@ import {
     </div>
   `,
   styles: [`
-    .etiquetas-container {
+    /* Estilos base iguales a etiquetas */
+    .ingredientes-container {
       padding: 30px;
+      background: #F8F9FA;
       min-height: 100vh;
     }
 
@@ -443,6 +609,7 @@ import {
       margin-bottom: 30px;
     }
 
+    
     .stat-card {
       flex: 1 1 260px;       /* min = 260px, grow = 1 */
       max-width: 100%;       /* evita overflow */
@@ -527,15 +694,20 @@ import {
       font-size: 12px;
     }
 
-    /* Search Card */
-    .search-card {
-      display: flex;
-      justify-content: space-between;
+    /* Filters Card */
+    .filters-card {
       background: white;
       border-radius: 16px;
-      padding: 20px 25px;
+      padding: 25px 30px;
       box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.04);
       margin-bottom: 30px;
+      
+    }
+
+    .search-section {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
     }
 
     .search-input-wrapper {
@@ -567,6 +739,49 @@ import {
       outline: none;
       border-color: #28A745;
       box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+    }
+
+    .filter-section {
+      padding-top: 20px;
+      border-top: 1px solid #F1F3F4;
+    }
+
+    .filter-label {
+      display: block;
+      color: #333333;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .filter-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      padding: 8px 16px;
+      border: 1px solid #DEE2E6;
+      background: white;
+      border-radius: 20px;
+      color: #6C757D;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: #28A745;
+      color: #28A745;
+      background: #E8F5E8;
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(159deg, #28A745 0%, #20C997 100%);
+      color: white;
+      border-color: transparent;
     }
 
     /* Loading */
@@ -651,13 +866,15 @@ import {
       font-size: 24px;
     }
 
-    .table-description {
+    .nutrition-value {
+      color: #333333;
+      font-weight: 700;
+    }
+
+    .nutrition-unit {
       color: #6C757D;
-      max-width: 300px;
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-size: 12px;
+      margin-left: 2px;
     }
 
     .text-right {
@@ -675,29 +892,37 @@ import {
       letter-spacing: 0.3px;
     }
 
-    .badge.bg-green-100 {
-      background: #E8F5E8;
-      color: #28A745;
-    }
-
-    .badge.bg-blue-100 {
+    .badge-category {
       background: #D1ECF1;
       color: #007BFF;
     }
 
-    .badge.bg-yellow-100 {
-      background: #FFF3CD;
-      color: #FFC107;
+    /* Tags Container */
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-width: 200px;
     }
 
-    .badge.bg-red-100 {
-      background: #F8D7DA;
-      color: #DC3545;
+    .tag {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #E8F5E8;
+      color: #28A745;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
     }
 
-    .badge.bg-purple-100 {
-      background: #E2E3F1;
-      color: #6F42C1;
+    .tag-more {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #F8F9FA;
+      color: #6C757D;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
     }
 
     /* Action Buttons */
@@ -833,19 +1058,46 @@ import {
       margin-top: 2px;
     }
 
-    .mobile-card-description {
-      color: #6C757D;
-      font-size: 13px;
-      margin-bottom: 12px;
-      padding-top: 12px;
+    .mobile-nutrition {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 12px 0;
       border-top: 1px solid #F1F3F4;
+      border-bottom: 1px solid #F1F3F4;
+      margin-bottom: 12px;
+    }
+
+    .nutrition-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nutrition-label {
+      color: #6C757D;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .nutrition-data {
+      color: #333333;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .mobile-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
     }
 
     .mobile-card-actions {
       display: flex;
       gap: 8px;
-      padding-top: 12px;
-      border-top: 1px solid #F1F3F4;
     }
 
     .btn-mobile {
@@ -961,6 +1213,10 @@ import {
       overflow-y: auto;
     }
 
+    .modal-content.large {
+      max-width: 700px;
+    }
+
     .modal-content.small {
       max-width: 400px;
     }
@@ -1063,6 +1319,72 @@ import {
       min-height: 80px;
     }
 
+    input[type="number"].form-input {
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"].form-input::-webkit-outer-spin-button,
+    input[type="number"].form-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .form-section-title {
+      color: #333333;
+      font-size: 16px;
+      font-weight: 700;
+      margin: 25px 0 15px 0;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #28A745;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    /* Etiquetas Selector */
+    .etiquetas-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px;
+      background: #F8F9FA;
+      border-radius: 8px;
+      min-height: 60px;
+    }
+
+    .etiqueta-chip {
+      padding: 8px 16px;
+      border: 2px solid #DEE2E6;
+      background: white;
+      border-radius: 20px;
+      color: #6C757D;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .etiqueta-chip:hover {
+      border-color: #28A745;
+      color: #28A745;
+      background: #E8F5E8;
+    }
+
+    .etiqueta-chip.selected {
+      background: linear-gradient(159deg, #28A745 0%, #20C997 100%);
+      color: white;
+      border-color: transparent;
+    }
+
+    .no-etiquetas {
+      color: #6C757D;
+      font-size: 13px;
+      margin: 8px;
+    }
+
     /* Responsive */
     .desktop-only {
       display: block;
@@ -1079,7 +1401,7 @@ import {
     }
 
     @media (max-width: 768px) {
-      .etiquetas-container {
+      .ingredientes-container {
         padding: 16px;
       }
 
@@ -1117,13 +1439,22 @@ import {
         font-size: 28px;
       }
 
-      .search-card {
-        padding: 16px;
+      .filters-card {
+        padding: 20px;
         margin-bottom: 20px;
       }
 
       .search-input-wrapper {
         max-width: 100%;
+      }
+
+      .filter-buttons {
+        gap: 6px;
+      }
+
+      .filter-btn {
+        font-size: 12px;
+        padding: 6px 12px;
       }
 
       .desktop-only {
@@ -1138,6 +1469,10 @@ import {
         max-width: 100%;
         margin: 0;
         border-radius: 12px;
+      }
+
+      .modal-content.large {
+        max-width: 100%;
       }
 
       .modal-header,
@@ -1158,6 +1493,10 @@ import {
         width: 100%;
       }
 
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
       .empty-state {
         padding: 40px 20px;
       }
@@ -1175,15 +1514,21 @@ import {
       .stats-grid {
         grid-template-columns: 1fr;
       }
+
+      .mobile-nutrition {
+        grid-template-columns: 1fr;
+      }
     }
   `]
 })
-export class EtiquetasListComponent implements OnInit {
-  private etiquetaService: EtiquetaService = inject(EtiquetaService);
+export class IngredientesListComponent implements OnInit {
+  private ingredienteService = inject(IngredienteService);
+  private etiquetaService = inject(EtiquetaService);
 
-  // Signals para estado reactivo
+  // Signals
   loading = signal(false);
-  etiquetas = signal<Etiqueta[]>([]);
+  ingredientes = signal<Ingrediente[]>([]);
+  etiquetasDisponibles = signal<Etiqueta[]>([]);
   
   // Paginación
   currentPage = 0;
@@ -1191,57 +1536,85 @@ export class EtiquetasListComponent implements OnInit {
   totalPages = 0;
   totalElements = 0;
   
-  // Búsqueda
+  // Búsqueda y filtros
   searchTerm = '';
+  categoriaFiltro: CategoriaAlimento | '' = '';
   searchTimeout: any;
   
   // Modal
   mostrarModal = false;
-  etiquetaEditando: Etiqueta | null = null;
+  ingredienteEditando: Ingrediente | null = null;
   
   // Confirmación
   mostrarConfirmacion = false;
-  etiquetaAEliminar: Etiqueta | null = null;
+  ingredienteAEliminar: Ingrediente | null = null;
   
   // Formulario
   formulario = {
     nombre: '',
-    tipoEtiqueta: '' as TipoEtiqueta | '',
-    descripcion: ''
+    proteinas: 0,
+    carbohidratos: 0,
+    grasas: 0,
+    energia: 0,
+    fibra: 0,
+    categoriaAlimento: '' as CategoriaAlimento | '',
+    descripcion: '',
+    etiquetaIds: [] as number[]
   };
   
-  // Estados de guardado/eliminado
+  // Estados
   guardando = false;
   eliminando = false;
   
-  // Lista de tipos para el select
-  tiposEtiqueta = Object.values(TipoEtiqueta);
+  // Listas para selects
+  categorias = Object.values(CategoriaAlimento);
 
   ngOnInit(): void {
+    this.cargarIngredientes();
     this.cargarEtiquetas();
   }
 
   /**
-   * Carga la lista de etiquetas desde el backend
+   * Carga la lista de ingredientes
    */
-  cargarEtiquetas(): void {
+  cargarIngredientes(): void {
     this.loading.set(true);
     
-    const request = this.searchTerm 
-      ? this.etiquetaService.buscarPorNombre(this.searchTerm, this.currentPage, this.pageSize)
-      : this.etiquetaService.listar(this.currentPage, this.pageSize);
+    let request: Observable<ApiResponse<PageResponse<Ingrediente>>>;
+    
+    if (this.searchTerm) {
+      request = this.ingredienteService.buscarPorNombre(this.searchTerm, this.currentPage, this.pageSize);
+    } else if (this.categoriaFiltro) {
+      request = this.ingredienteService.filtrarPorCategoria(this.categoriaFiltro, this.currentPage, this.pageSize);
+    } else {
+      request = this.ingredienteService.listar(this.currentPage, this.pageSize);
+    }
     
     request.subscribe({
-      next: (response: ApiResponse<PageResponse<Etiqueta>>) => {
-        this.etiquetas.set(response.data.content);
+      next: (response) => {
+        this.ingredientes.set(response.data.content);
         this.totalPages = response.data.totalPages;
         this.totalElements = response.data.totalElements;
         this.loading.set(false);
       },
-      error: (error: any) => {
-        console.error('Error al cargar etiquetas:', error);
-        this.mostrarError('Error al cargar etiquetas');
+      error: (error) => {
+        console.error('Error al cargar ingredientes:', error);
+        this.mostrarError('Error al cargar ingredientes');
         this.loading.set(false);
+      }
+    });
+  }
+
+  /**
+   * Carga las etiquetas disponibles para asignar
+   */
+  cargarEtiquetas(): void {
+    this.etiquetaService.listar(0, 1000).subscribe({
+      next: (response) => {
+        this.etiquetasDisponibles.set(response.data.content);
+      },
+      error: (error) => {
+        console.error('Error al cargar etiquetas:', error);
       }
     });
   }
@@ -1253,8 +1626,17 @@ export class EtiquetasListComponent implements OnInit {
     clearTimeout(this.searchTimeout);
     this.searchTimeout = setTimeout(() => {
       this.currentPage = 0;
-      this.cargarEtiquetas();
+      this.cargarIngredientes();
     }, 500);
+  }
+
+  /**
+   * Filtrar por categoría
+   */
+  filtrarPorCategoria(categoria: CategoriaAlimento | ''): void {
+    this.categoriaFiltro = categoria;
+    this.currentPage = 0;
+    this.cargarIngredientes();
   }
 
   /**
@@ -1263,49 +1645,61 @@ export class EtiquetasListComponent implements OnInit {
   cambiarPagina(page: number): void {
     if (page >= 0 && page < this.totalPages) {
       this.currentPage = page;
-      this.cargarEtiquetas();
+      this.cargarIngredientes();
     }
   }
 
   /**
-   * Abre el modal para crear una nueva etiqueta
+   * Abre el modal para crear
    */
   abrirModalCrear(): void {
-    this.etiquetaEditando = null;
+    this.ingredienteEditando = null;
     this.formulario = {
       nombre: '',
-      tipoEtiqueta: '',
-      descripcion: ''
+      proteinas: 0,
+      carbohidratos: 0,
+      grasas: 0,
+      energia: 0,
+      fibra: 0,
+      categoriaAlimento: '',
+      descripcion: '',
+      etiquetaIds: []
     };
     this.mostrarModal = true;
   }
 
   /**
-   * Abre el modal para editar una etiqueta existente
+   * Abre el modal para editar
    */
-  abrirModalEditar(etiqueta: Etiqueta): void {
-    this.etiquetaEditando = etiqueta;
+  abrirModalEditar(ingrediente: Ingrediente): void {
+    this.ingredienteEditando = ingrediente;
     this.formulario = {
-      nombre: etiqueta.nombre,
-      tipoEtiqueta: etiqueta.tipoEtiqueta,
-      descripcion: etiqueta.descripcion || ''
+      nombre: ingrediente.nombre,
+      proteinas: ingrediente.proteinas,
+      carbohidratos: ingrediente.carbohidratos,
+      grasas: ingrediente.grasas,
+      energia: ingrediente.energia,
+      fibra: ingrediente.fibra || 0,
+      categoriaAlimento: ingrediente.categoriaAlimento,
+      descripcion: ingrediente.descripcion || '',
+      etiquetaIds: ingrediente.etiquetas.map((e: Etiqueta) => e.id)
     };
     this.mostrarModal = true;
   }
 
   /**
-   * Cierra el modal de formulario
+   * Cierra el modal
    */
   cerrarModal(): void {
     this.mostrarModal = false;
-    this.etiquetaEditando = null;
+    this.ingredienteEditando = null;
   }
 
   /**
-   * Guarda una etiqueta (crear o actualizar)
+   * Guarda un ingrediente
    */
   guardar(): void {
-    if (!this.formulario.nombre || !this.formulario.tipoEtiqueta) {
+    if (!this.formulario.nombre || !this.formulario.categoriaAlimento) {
       this.mostrarError('Por favor completa los campos obligatorios');
       return;
     }
@@ -1313,117 +1707,117 @@ export class EtiquetasListComponent implements OnInit {
     this.guardando = true;
     const request = {
       nombre: this.formulario.nombre.trim(),
-      tipoEtiqueta: this.formulario.tipoEtiqueta as TipoEtiqueta,
-      descripcion: this.formulario.descripcion?.trim() || undefined
+      proteinas: this.formulario.proteinas,
+      carbohidratos: this.formulario.carbohidratos,
+      grasas: this.formulario.grasas,
+      energia: this.formulario.energia,
+      fibra: this.formulario.fibra || undefined,
+      categoriaAlimento: this.formulario.categoriaAlimento as CategoriaAlimento,
+      descripcion: this.formulario.descripcion?.trim() || undefined,
+      etiquetaIds: this.formulario.etiquetaIds.length > 0 ? this.formulario.etiquetaIds : undefined
     };
 
-    const observable = this.etiquetaEditando
-      ? this.etiquetaService.actualizar(this.etiquetaEditando.id, request)
-      : this.etiquetaService.crear(request);
+    const observable = this.ingredienteEditando
+      ? this.ingredienteService.actualizar(this.ingredienteEditando.id, request)
+      : this.ingredienteService.crear(request);
 
     observable.subscribe({
-      next: (response: ApiResponse<Etiqueta>) => {
+      next: (response) => {
         this.mostrarExito(response.message);
         this.cerrarModal();
-        this.cargarEtiquetas();
+        this.cargarIngredientes();
         this.guardando = false;
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error('Error al guardar:', error);
-        this.mostrarError(error.error?.message || 'Error al guardar la etiqueta');
+        this.mostrarError(error.error?.message || 'Error al guardar el ingrediente');
         this.guardando = false;
       }
     });
   }
 
   /**
-   * Abre el modal de confirmación para eliminar
+   * Confirmar eliminación
    */
-  confirmarEliminar(etiqueta: Etiqueta): void {
-    this.etiquetaAEliminar = etiqueta;
+  confirmarEliminar(ingrediente: Ingrediente): void {
+    this.ingredienteAEliminar = ingrediente;
     this.mostrarConfirmacion = true;
   }
 
   /**
-   * Cierra el modal de confirmación
+   * Cerrar confirmación
    */
   cerrarConfirmacion(): void {
     this.mostrarConfirmacion = false;
-    this.etiquetaAEliminar = null;
+    this.ingredienteAEliminar = null;
   }
 
   /**
-   * Elimina una etiqueta
+   * Eliminar ingrediente
    */
   eliminar(): void {
-    if (!this.etiquetaAEliminar) return;
+    if (!this.ingredienteAEliminar) return;
 
     this.eliminando = true;
-    this.etiquetaService.eliminar(this.etiquetaAEliminar.id).subscribe({
-      next: (response: ApiResponse<void>) => {
+    this.ingredienteService.eliminar(this.ingredienteAEliminar.id).subscribe({
+      next: (response) => {
         this.mostrarExito(response.message);
         this.cerrarConfirmacion();
-        this.cargarEtiquetas();
+        this.cargarIngredientes();
         this.eliminando = false;
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error('Error al eliminar:', error);
-        this.mostrarError(error.error?.message || 'Error al eliminar la etiqueta');
+        this.mostrarError(error.error?.message || 'Error al eliminar el ingrediente');
         this.eliminando = false;
       }
     });
   }
 
   /**
-   * Obtiene la etiqueta en español del tipo
+   * Toggle etiqueta en el formulario
    */
-  getTipoLabel(tipo: TipoEtiqueta): string {
-    return TIPO_ETIQUETA_LABELS[tipo];
+  toggleEtiqueta(etiquetaId: number): void {
+    const index = this.formulario.etiquetaIds.indexOf(etiquetaId);
+    if (index > -1) {
+      this.formulario.etiquetaIds.splice(index, 1);
+    } else {
+      this.formulario.etiquetaIds.push(etiquetaId);
+    }
   }
 
   /**
-   * Obtiene el color del badge según el tipo
+   * Verifica si una etiqueta está seleccionada
    */
-  getTipoColor(tipo: TipoEtiqueta): string {
-    return TIPO_ETIQUETA_COLORS[tipo];
+  isEtiquetaSeleccionada(etiquetaId: number): boolean {
+    return this.formulario.etiquetaIds.includes(etiquetaId);
   }
 
   /**
-   * Obtiene el icono según el tipo
+   * Obtiene el label de la categoría
    */
-  getTipoIcon(tipo: TipoEtiqueta): string {
-    return TIPO_ETIQUETA_ICONS[tipo];
+  getCategoriaLabel(categoria: CategoriaAlimento): string {
+    return CATEGORIA_ALIMENTO_LABELS[categoria];
   }
 
   /**
-   * Agrupa las etiquetas por tipo (para CA 2 - Vista agrupada)
+   * Obtiene el icono de la categoría
    */
-  agruparPorTipo(): Map<TipoEtiqueta, Etiqueta[]> {
-    const grupos = new Map<TipoEtiqueta, Etiqueta[]>();
-    
-    this.etiquetas().forEach(etiqueta => {
-      if (!grupos.has(etiqueta.tipoEtiqueta)) {
-        grupos.set(etiqueta.tipoEtiqueta, []);
-      }
-      grupos.get(etiqueta.tipoEtiqueta)?.push(etiqueta);
-    });
-    
-    return grupos;
+  getCategoriaIcon(categoria: CategoriaAlimento): string {
+    return CATEGORIA_ALIMENTO_ICONS[categoria];
   }
 
   /**
-   * Muestra un mensaje de éxito
+   * Muestra mensaje de éxito
    */
   private mostrarExito(mensaje: string): void {
-    // TODO: Implementar con tu sistema de notificaciones (toast, snackbar, etc.)
     alert(mensaje);
   }
 
   /**
-   * Muestra un mensaje de error
+   * Muestra mensaje de error
    */
   private mostrarError(mensaje: string): void {
-    // TODO: Implementar con tu sistema de notificaciones (toast, snackbar, etc.)
     alert(mensaje);
   }
 }

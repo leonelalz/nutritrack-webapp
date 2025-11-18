@@ -4,18 +4,18 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { ComidaService } from '../../../core/services/comida.service';
-import { EtiquetaService } from '../../../core/services/etiqueta.service';
-import { IngredienteService } from '../../../core/services/ingrediente.service';
+import { ComidaService } from '../../../../core/services/comida.service';
+import { EtiquetaService } from '../../../../core/services/etiqueta.service';
+import { IngredienteService } from '../../../../core/services/ingrediente.service';
 import {
   Comida,
   TipoComida,
   TIPO_COMIDA_LABELS,
   TIPO_COMIDA_ICONS,
   RecetaIngrediente
-} from '../../../core/models/comida.model';
-import { Etiqueta, ApiResponse, PageResponse } from '../../../core/models/etiqueta.model';
-import { Ingrediente } from '../../../core/models/ingrediente.model';
+} from '../../../../core/models/comida.model';
+import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/etiqueta.model';
+import { Ingrediente } from '../../../../core/models/ingrediente.model';
 
 @Component({
   selector: 'app-comidas-list',

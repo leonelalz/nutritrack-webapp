@@ -1,26 +1,40 @@
 import { Component, inject, computed, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { NavbarComponent } from '../components/navbar.component';
 import { SidebarComponent } from '../components/sidebar.component';
 import { FooterComponent } from '../components/footer.component';
+import { AdminSidebarComponent } from "../components/admin-sidebar.component";
 
 @Component({
   selector: 'app-auth-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, NavbarComponent, SidebarComponent],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, SidebarComponent, AdminSidebarComponent],
   template: `
     <div class="auth-layout">
-      <div class="sidebar-wrapper" [class.sidebar-open]="!sidebarCollapsed()">
-        <app-sidebar (sidebarToggle)="onSidebarToggle($event)" />
-      </div>
-      <div class="content-wrapper" [class.sidebar-open]="!sidebarCollapsed()">
-        <app-navbar />
-        <main class="auth-main">
-          <router-outlet />     
-        </main>
-      </div>
+      @if (isAdminRoute()) {
+        <!-- Admin Layout: Solo sidebar, sin navbar superior -->
+        <div class="sidebar-wrapper" [class.sidebar-open]="!sidebarCollapsed()">
+          <app-admin-sidebar (sidebarToggle)="onSidebarToggle($event)"/>
+        </div>
+        <div class="content-wrapper" [class.sidebar-open]="!sidebarCollapsed()">
+          <app-navbar />
+          <main class="auth-main">
+            <router-outlet />
+          </main>
+        </div>
+      } @else {
+        <div class="sidebar-wrapper" [class.sidebar-open]="!sidebarCollapsed()">
+          <app-sidebar (sidebarToggle)="onSidebarToggle($event)" />
+        </div>
+        <div class="content-wrapper" [class.sidebar-open]="!sidebarCollapsed()">
+            <app-navbar />
+          <main class="auth-main">
+            <router-outlet />     
+          </main>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -52,7 +66,9 @@ import { FooterComponent } from '../components/footer.component';
       margin-left: var(--sidebar-width);
     }
 
+
     .auth-main {
+      margin-top: calc(20px + var(--navbar-height));
       flex: 1;
     }
 
@@ -74,12 +90,20 @@ import { FooterComponent } from '../components/footer.component';
 })
 export class AuthLayoutComponent {
   sidebarCollapsed = signal(false);
+  
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
+  // id_rol = 2 es Admin
+
+  isAdmin = computed(() => this.authService.currentUser()?.role === 'ROLE_ADMIN');
+  
+  // Detecta si estamos en rutas de administración
+  isAdminRoute(): boolean {
+    return this.router.url.startsWith('/admin');
+  }
 
   onSidebarToggle(collapsed: boolean) {
     this.sidebarCollapsed.set(collapsed);
   }
-
-  private authService = inject(AuthService);
-
-  isAdmin = computed(() => this.authService.currentUser()?.role === 'ROLE_ADMIN');
 }

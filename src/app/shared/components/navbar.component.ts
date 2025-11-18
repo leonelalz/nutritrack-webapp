@@ -46,13 +46,15 @@ import { filter } from 'rxjs/operators';
   `,
   styles: [`
     .navbar {
-      margin-top: 60px;
+      margin-top: 30px;
       right: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
       color: white;
       padding: 0px 30px;
+      position: fixed;
+      width: calc(100% - var(--sidebar-width));
     }
 
     .navbar-user {

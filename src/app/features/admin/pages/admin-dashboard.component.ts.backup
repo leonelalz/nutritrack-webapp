@@ -1,0 +1,1003 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import {
+  MatCardModule,
+  MatButtonModule,
+  MatIconModule,
+  MatChipsModule,
+  MatGridListModule,
+  MatDividerModule
+} from '../../../shared/material.modules';
+
+interface DashboardStat {
+  title: string;
+  value: number | string;
+  change: string;
+  icon: string;
+}
+
+interface QuickAccessItem {
+  title: string;
+  icon: string;
+  route: string;
+}
+
+interface ActivityItem {
+  type: string;
+  title: string;
+  description: string;
+  time: string;
+  icon: string;
+}
+
+/**
+ * Dashboard principal de administración
+ * Punto de entrada para módulos 2 y 3
+ */
+@Component({
+  selector: 'app-admin-dashboard',
+  standalone: true,
+  imports: [
+    CommonModule, 
+    RouterLink,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatGridListModule,
+    MatDividerModule
+  ],
+  template: `
+    <div class="admin-dashboard-container">
+      <!-- Header Section -->
+      <header class="dashboard-header">
+        <div class="header-content">
+          <div class="welcome-text">
+            <h1 class="page-title">¡Bienvenido, Admin!</h1>
+            <p class="page-subtitle">Aquí hay un resumen de tu biblioteca de contenido.</p>
+          </div>
+          
+          <!-- Time Filter Chips -->
+          <div class="time-filter">
+            <mat-chip-listbox [selected]="selectedTimeFilter">
+              <mat-chip-option 
+                *ngFor="let filter of timeFilters" 
+                [value]="filter.value"
+                (click)="selectedTimeFilter = filter.value"
+              >
+                {{ filter.label }}
+              </mat-chip-option>
+            </mat-chip-listbox>
+          </div>
+        </div>
+      </header>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <mat-card *ngFor="let stat of stats" class="stat-card">
+          <mat-card-content>
+            <p class="stat-label">{{ stat.title }}</p>
+            <h2 class="stat-value">{{ stat.value }}</h2>
+            <p class="stat-change">{{ stat.change }}</p>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Main Content Grid -->
+      <div class="content-grid">
+        <!-- Left Column: Chart & Quick Access -->
+        <div class="left-column">
+          <!-- Activity Chart Card -->
+          <mat-card class="chart-card">
+            <mat-card-header>
+              <mat-card-title>Resumen de Creación</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="chart-container">
+                <div class="chart-placeholder">
+                  <mat-icon class="chart-icon">analytics</mat-icon>
+                  <p class="chart-text">Gráfico de actividad</p>
+                  <p class="chart-subtext">Aquí se mostrará un gráfico de líneas con la creación de contenido</p>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Quick Access -->
+          <div class="quick-access-section">
+            <h2 class="section-title">Acceso Rápido</h2>
+            <div class="quick-access-grid">
+              <a 
+                *ngFor="let item of quickAccessItems" 
+                [routerLink]="item.route" 
+                class="quick-access-card"
+                mat-ripple
+              >
+                <div class="quick-access-icon">
+                  <mat-icon>{{ item.icon }}</mat-icon>
+                </div>
+                <p class="quick-access-title">{{ item.title }}</p>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Recent Activity -->
+        <mat-card class="activity-card">
+          <mat-card-header>
+            <mat-card-title>Actividad Reciente</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="activity-list">
+              <div *ngFor="let activity of recentActivities" class="activity-item">
+                <div class="activity-icon-wrapper">
+                  <mat-icon class="activity-icon">{{ activity.icon }}</mat-icon>
+                </div>
+                <div class="activity-details">
+                  <p class="activity-title">{{ activity.title }}</p>
+                  <p class="activity-description">"{{ activity.description }}"</p>
+                </div>
+                <span class="activity-time">{{ activity.time }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+      <div class="welcome-section">
+        <div class="welcome-content">
+          <div class="welcome-text">
+            <h1>🎯 Panel de Administración</h1>
+            <p class="subtitle">Gestiona todo el contenido de NutriTrack desde aquí</p>
+            <div class="stats-mini">
+              <div class="stat-item">
+                <span class="stat-icon">📊</span>
+                <span class="stat-label">Centro de Control</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-icon">⚡</span>
+                <span class="stat-label">Gestión Rápida</span>
+              </div>
+            </div>
+          </div>
+          <div class="welcome-illustration">
+            <div class="illustration-circle">
+              <span class="illustration-emoji">👨‍💼</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sections-grid">
+        <!-- Módulo 2: Gestión de Contenido Base -->
+        <div class="section-card content-card">
+          <div class="card-header">
+            <div class="card-icon">📋</div>
+            <div class="card-title-area">
+              <h2>Contenido Base</h2>
+              <span class="badge badge-info">Módulo 2 - En desarrollo</span>
+            </div>
+          </div>
+          <p class="card-description">Administra etiquetas, ingredientes, ejercicios y comidas</p>
+          <div class="card-stats">
+            <div class="stat">
+              <span class="stat-number">0</span>
+              <span class="stat-text">Etiquetas</span>
+            </div>
+            <div class="stat">
+              <span class="stat-number">0</span>
+              <span class="stat-text">Ingredientes</span>
+            </div>
+          </div>
+          <div class="card-links disabled-links">
+            <button class="link disabled" disabled>Etiquetas</button>
+            <button class="link disabled" disabled>Ingredientes</button>
+            <button class="link disabled" disabled>Ejercicios</button>
+            <button class="link disabled" disabled>Comidas</button>
+          </div>
+          <div class="coming-soon-badge">Próximamente</div>
+        </div>
+
+        <!-- Módulo 3: Planes y Rutinas -->
+        <div class="section-card highlight">
+          <div class="card-header">
+            <div class="card-icon-highlight">🎯</div>
+            <div class="card-title-area">
+              <h2>Planes y Rutinas</h2>
+              <span class="badge badge-success">✓ Módulo 3 Activo</span>
+            </div>
+          </div>
+          <p class="card-description">Crea y gestiona planes nutricionales y rutinas de ejercicio personalizadas</p>
+          <div class="card-stats highlight-stats">
+            <div class="stat">
+              <span class="stat-icon">🥗</span>
+              <span class="stat-text">Planes Disponibles</span>
+            </div>
+            <div class="stat">
+              <span class="stat-icon">💪</span>
+              <span class="stat-text">Rutinas de Ejercicio</span>
+            </div>
+          </div>
+          <div class="card-links">
+            <a routerLink="/admin/planes" class="link-primary">
+              <div class="link-icon">🥗</div>
+              <div class="link-content">
+                <strong>Planes Nutricionales</strong>
+                <small>Crear y configurar planes alimenticios</small>
+              </div>
+              <div class="link-arrow">→</div>
+            </a>
+            <a routerLink="/admin/rutinas" class="link-primary">
+              <div class="link-icon">💪</div>
+              <div class="link-content">
+                <strong>Rutinas de Ejercicio</strong>
+                <small>Diseñar rutinas de entrenamiento</small>
+              </div>
+              <div class="link-arrow">→</div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guía rápida -->
+      <div class="quick-guide">
+        <h3>🚀 Guía Rápida</h3>
+        <div class="steps">
+          <div class="step">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Configura el contenido base</strong>
+              <p>Crea etiquetas, ingredientes, ejercicios y comidas primero</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Diseña planes nutricionales</strong>
+              <p>Crea planes y asigna comidas para cada día</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Crea rutinas de ejercicio</strong>
+              <p>Diseña rutinas y agrega ejercicios por día</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reglas de negocio importantes -->
+      <div class="business-rules">
+        <h3>⚠️ Reglas de Negocio Importantes</h3>
+        <ul>
+          <li><strong>RN11:</strong> Los nombres de planes y rutinas deben ser únicos</li>
+          <li><strong>RN13:</strong> Series y repeticiones deben ser valores positivos</li>
+          <li><strong>RN14:</strong> No se pueden eliminar planes/rutinas con usuarios activos</li>
+          <li><strong>RN28:</strong> Las eliminaciones son soft delete (marca como inactivo)</li>
+        </ul>
+      </div>
+    </div>
+  `,
+  styles: [`
+    :host {
+      display: block;
+      height: 100%;
+      background-color: var(--color-background);
+    }
+
+    .admin-dashboard-container {
+      padding: 2rem;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    /* Header Section */
+    .dashboard-header {
+      margin-bottom: 2rem;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .page-title {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--color-text-primary);
+      margin: 0 0 0.5rem 0;
+      letter-spacing: -0.033em;
+    }
+
+    .page-subtitle {
+      font-size: 1rem;
+      color: var(--color-text-secondary);
+      margin: 0;
+    }
+
+    /* Time Filter Chips */
+    .time-filter mat-chip-listbox {
+      background: var(--color-background-dark);
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .time-filter mat-chip-option {
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card mat-card-content {
+      padding: 1.5rem;
+    }
+
+    .stat-label {
+      color: var(--color-text-secondary);
+      font-size: 1rem;
+      margin: 0 0 0.5rem 0;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin: 0 0 0.5rem 0;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-change {
+      color: var(--color-secondary);
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    /* Content Grid */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 1200px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Column */
+    .left-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Chart Card */
+    .chart-card {
+      min-height: 400px;
+    }
+
+    .chart-container {
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chart-placeholder {
+      text-align: center;
+      color: var(--color-text-muted);
+    }
+
+    .chart-icon {
+      font-size: 4rem;
+      width: 4rem;
+      height: 4rem;
+      color: var(--color-primary);
+      margin-bottom: 1rem;
+    }
+
+    .chart-text {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin: 0.5rem 0;
+      color: var(--color-text-primary);
+    }
+
+    .chart-subtext {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      margin: 0;
+    }
+
+    /* Quick Access */
+    .quick-access-section {
+      margin-top: 1rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin: 0 0 1.5rem 0;
+      letter-spacing: -0.015em;
+    }
+
+    .quick-access-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .quick-access-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem;
+      background: var(--color-background-light);
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius-lg);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .quick-access-card:hover {
+      background: var(--color-background-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .quick-access-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: rgba(0, 168, 89, 0.1);
+      border-radius: var(--border-radius-lg);
+    }
+
+    .quick-access-icon mat-icon {
+      color: var(--color-secondary);
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+
+    .quick-access-title {
+      flex: 1;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+
+    /* Activity Card */
+    .activity-card {
+      height: fit-content;
+    }
+
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: var(--border-radius-md);
+      transition: background 0.2s ease;
+    }
+
+    .activity-item:hover {
+      background: var(--color-background-dark);
+    }
+
+    .activity-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: rgba(0, 168, 89, 0.1);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .activity-icon {
+      color: var(--color-secondary);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .activity-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-title {
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin: 0 0 0.25rem 0;
+      font-size: 0.875rem;
+    }
+
+    .activity-description {
+      color: var(--color-text-secondary);
+      margin: 0;
+      font-size: 0.75rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .activity-time {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .admin-dashboard-container {
+        padding: 1rem;
+      }
+
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .page-title {
+        font-size: 2rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .quick-access-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Old styles to remove */
+    .welcome-section {
+      margin-bottom: 3rem;
+      background: white;
+      border-radius: 24px;
+      padding: 3rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    .welcome-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 3rem;
+    }
+
+    .welcome-text {
+      flex: 1;
+    }
+
+    .welcome-section h1 {
+      font-size: 2.5rem;
+      color: #2d3748;
+      margin-bottom: 0.75rem;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: #64748b;
+      margin-bottom: 1.5rem;
+    }
+
+    .stats-mini {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .stat-icon {
+      font-size: 1.5rem;
+    }
+
+    .welcome-illustration {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .illustration-circle {
+      width: 180px;
+      height: 180px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .illustration-emoji {
+      font-size: 5rem;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .sections-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 2.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .section-card {
+      background: white;
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+    }
+
+    .section-card.content-card::before {
+      background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+    }
+
+    .section-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+    }
+
+    .section-card.highlight {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .section-card.highlight::before {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-icon, .card-icon-highlight {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-icon-highlight {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .card-title-area {
+      flex: 1;
+    }
+
+    .card-title-area h2 {
+      font-size: 1.75rem;
+      margin: 0 0 0.5rem 0;
+      font-weight: 700;
+    }
+
+    .section-card.highlight h2,
+    .section-card.highlight .card-description {
+      color: white;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.375rem 1rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .badge-success {
+      background: rgba(255, 255, 255, 0.95);
+      color: #059669;
+    }
+
+    .coming-soon-badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 0.5rem 1rem;
+      background: #fbbf24;
+      color: #78350f;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .card-description {
+      color: #64748b;
+      margin-bottom: 2rem;
+      line-height: 1.7;
+      font-size: 1.05rem;
+    }
+
+    .section-card.highlight .card-description {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .card-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: #f8fafc;
+      border-radius: 16px;
+    }
+
+    .highlight-stats {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-number {
+      display: block;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #667eea;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-text {
+      display: block;
+      font-size: 0.875rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .highlight-stats .stat-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .highlight-stats .stat-text {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .card-links {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .disabled-links {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .link, .link-primary {
+      padding: 1rem 1.5rem;
+      background: #f8fafc;
+      color: #475569;
+      border: 2px solid transparent;
+      border-radius: 16px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .link:hover:not(.disabled) {
+      background: #e2e8f0;
+      transform: translateX(8px);
+      border-color: #cbd5e1;
+    }
+
+    .link.disabled {
+      cursor: not-allowed;
+      background: #f1f5f9;
+    }
+
+    .link-primary {
+      background: rgba(255, 255, 255, 0.95);
+      color: #667eea;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .link-primary:hover {
+      background: white;
+      transform: translateX(8px);
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+    }
+
+    .link-icon {
+      font-size: 1.75rem;
+      flex-shrink: 0;
+    }
+
+    .link-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .link-content strong {
+      font-size: 1.1rem;
+      color: #1e293b;
+    }
+
+    .link-content small {
+      font-weight: 400;
+      font-size: 0.875rem;
+      color: #64748b;
+    }
+
+    .link-arrow {
+      font-size: 1.5rem;
+      color: #667eea;
+      flex-shrink: 0;
+      transition: transform 0.3s;
+    }
+
+    .link-primary:hover .link-arrow {
+      transform: translateX(4px);
+    }
+
+    .quick-guide, .business-rules {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    .quick-guide h3, .business-rules h3 {
+      font-size: 1.25rem;
+      color: #2d3748;
+      margin-bottom: 1.5rem;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .step-number {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content strong {
+      display: block;
+      color: #2d3748;
+      margin-bottom: 0.25rem;
+    }
+
+    .step-content p {
+      color: #718096;
+      margin: 0;
+    }
+
+    .business-rules ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .business-rules li {
+      padding: 0.75rem;
+      background: #fff5f5;
+      border-left: 4px solid #fc8181;
+      margin-bottom: 0.75rem;
+      border-radius: 4px;
+      color: #2d3748;
+    }
+
+    .business-rules li strong {
+      color: #c53030;
+    }
+  `]
+})
+export class AdminDashboardComponent {}

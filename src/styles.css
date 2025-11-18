@@ -127,7 +127,7 @@
   --z-index-tooltip: 1070;
 
   /* Dimensiones */
-  --navbar-height: 64px;
+  --navbar-height: 124px;
   --sidebar-width: 260px;
   --footer-height: 60px;
 }
@@ -633,3 +633,5 @@ body {
   .d-lg-none { display: none !important; }
   .d-lg-block { display: block !important; }
 }
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

@@ -4,8 +4,8 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { EjercicioService } from '../../../core/services/ejercicio.service';
-import { EtiquetaService } from '../../../core/services/etiqueta.service';
+import { EjercicioService } from '../../../../core/services/ejercicio.service';
+import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import {
   Ejercicio,
   TipoEjercicio,
@@ -15,8 +15,8 @@ import {
   GRUPO_MUSCULAR_LABELS,
   NIVEL_DIFICULTAD_LABELS,
   TIPO_EJERCICIO_ICONS
-} from '../../../core/models/ejercicio.model';
-import { Etiqueta, ApiResponse, PageResponse } from '../../../core/models/etiqueta.model';
+} from '../../../../core/models/ejercicio.model';
+import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/etiqueta.model';
 
 @Component({
   selector: 'app-ejercicios-list',

@@ -39,6 +39,10 @@ export class EtiquetaService {
     
     return this.http.get<ApiResponse<PageResponse<Etiqueta>>>(`${this.API_URL}/buscar`, { params });
   }
+  //TODO: BORRAR
+  obtenerTodas(): Observable<ApiResponse<Etiqueta>> {
+    return this.http.get<ApiResponse<Etiqueta>>(`${this.API_URL}`)
+  }
 
   /**
    * Obtener una etiqueta por ID

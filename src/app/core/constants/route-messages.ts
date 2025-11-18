@@ -26,17 +26,17 @@ export const ROUTE_MESSAGES: Record<string, RouteMessage> = {
     subtitle: 'Visualiza estadísticas avanzadas'
   },
 
-  '/etiquetas': {
+  '/admin/etiquetas': {
     title: 'Gestión de etiquetas',
     subtitle: 'Administra las etiquetas para clasificar ingredientes, ejercicios y comidas'
   },
 
-  '/ingredientes': {
+  '/admin/ingredientes': {
     title: 'Gestión de Ingredientes',
     subtitle: 'Administración de ingredientes con información nutricional completa'
   },
 
-  '/comidas': {
+  '/admin/comidas': {
     title: 'Gestión de Comidas y Recetas',
     subtitle: 'Administración completa de comidas con ingredientes y recetas'
   },

@@ -555,7 +555,14 @@ export class LoginComponent {
 
       this.authService.login(credentials).subscribe({
         next: () => {
-          this.router.navigate(['/dashboard']);
+          const isAdmin = this.authService.isAdmin();
+          if (isAdmin) {
+            console.log('✅ Redirigiendo a /admin/dashboard');
+            this.router.navigate(['/admin/dashboard']);
+          } else {
+            console.log('✅ Redirigiendo a /dashboard');
+            this.router.navigate(['/dashboard']);
+          }
         },
         error: (error) => {
           this.errorMessage.set('Credenciales incorrectas. Por favor, verifica tus datos.');

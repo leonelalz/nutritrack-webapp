@@ -170,14 +170,13 @@ import { AuthService } from '../../core/services/auth.service';
 
     .toggle-btn {
       position: absolute;
-      right: -40px;
-      top: 10px;
-      width: 36px;
-      height: 36px;
+      right: -25px;
+      top: calc(100vh / 2 - 100px);
+      width: 25px;
+      height: 200px;
       background: var(--color-secondary);
       color: var(--color-text-light);
       border: none;
-      border-radius: var(--border-radius-round);
       box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
       cursor: pointer;
       display: flex;
