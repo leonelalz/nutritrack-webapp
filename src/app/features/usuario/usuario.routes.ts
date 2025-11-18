@@ -33,9 +33,19 @@ export const USUARIO_ROUTES: Routes = [
       //{ path: 'perfil', component: PerfilComponent, title: 'Mi Perfil' },
 
       // HISTORIAL MEDIDAS
-      { path: 'medidas', component: UsuarioHistorialMedidasListarComponent },
-      { path: 'medidas/nuevo', component: UsuarioHistorialMedidasInsertarComponent },
-      { path: 'medidas/editar/:id', component: UsuarioHistorialMedidasInsertarComponent },
+      { path: 'medidas', 
+        component: UsuarioHistorialMedidasListarComponent,
+      title: "Historial de Medidas" },
+
+      { path: 'medidas/nuevo', 
+        component: UsuarioHistorialMedidasInsertarComponent,
+        title: 'Registrar Medida'
+      },
+      
+      { path: 'medidas/editar/:id',
+        component: UsuarioHistorialMedidasInsertarComponent,
+        title: 'Editar Medida'
+      },
 
       // PERFIL SALUD (nuevo listar / insertar / editar)
       //{ path: 'perfil-salud', component: UsuarioPerfilSaludListarComponent },

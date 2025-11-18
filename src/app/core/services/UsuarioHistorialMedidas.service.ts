@@ -12,6 +12,7 @@ const base_url = environment.apiUrl;
 @Injectable({
   providedIn: 'root'
 })
+
 export class UsuarioHistorialMedidasService {
 
   private url = `${base_url}/perfil/mediciones`;
@@ -26,6 +27,11 @@ export class UsuarioHistorialMedidasService {
   // GET - listar historial
   obtenerHistorial(): Observable<HistorialMedidasResponse[]> {
     return this.http.get<HistorialMedidasResponse[]>(this.url);
+  }
+
+  // GET - obtener una medición por ID
+  obtenerMedicionPorId(id: number): Observable<HistorialMedidasResponse> {
+    return this.http.get<HistorialMedidasResponse>(`${this.url}/${id}`);
   }
 
   // PUT - actualizar medición
