@@ -152,7 +152,7 @@
 
 
 // src/app/features/usuario/pages/usuariocrud/usuario_historial_medidas/usuario_historial_medidas-listar.component.ts
-
+import { NgChartsModule } from 'ng2-charts';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
@@ -162,7 +162,7 @@ import { HistorialMedidasResponse } from '../../../../core/models/UsuarioHistori
 @Component({
   selector: 'app-historial-medidas-listar',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, NgChartsModule],
   template: `
     <div class="container">
       <h2>Historial de Medidas</h2>
