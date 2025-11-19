@@ -74,8 +74,8 @@ export const routes: Routes = [
       //},
       // Módulo Catálogo (US-16 a US-20)
       {
-        path: 'catalogo',
-        loadChildren: () => import('./features/catalogo/catalogo.routes').then(m => m.CATALOGO_ROUTES)
+        path: 'metas',
+        loadChildren: () => import('./features/metas/metas.routes').then(m => m.METAS_ROUTES)
       },
       // Módulo Seguimiento (US-21 a US-25)
       {

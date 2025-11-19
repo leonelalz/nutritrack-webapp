@@ -97,7 +97,7 @@ import { AuthService } from '../../core/services/auth.service';
               <span class="nav-text">Mis Ejercicios</span>
             </a>
 
-            <a routerLink="/transactions" routerLinkActive="active" class="nav-item">
+            <a routerLink="/metas" routerLinkActive="active" class="nav-item">
               <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 14 10" fill="none">
                 <path d="M12.5303 0.530334L4.28033 8.78033L0.530334 5.03033" stroke="#64748B" stroke-width="1.5"/>
               </svg>
