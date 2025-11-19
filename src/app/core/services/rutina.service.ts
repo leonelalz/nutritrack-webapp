@@ -131,12 +131,19 @@ export class RutinaService {
   }
 
   /**
-   * Eliminar rutina (US-14)
+   * Desactivar rutina (Soft delete)
    * RN14: No eliminar si usuarios activos
    * RN28: Soft delete
    */
-  eliminarRutina(id: number): Observable<ApiResponse<void>> {
+  desactivarRutina(id: number): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
+   * Activar rutina (Reactivar)
+   */
+  activarRutina(id: number): Observable<ApiResponse<RutinaResponse>> {
+    return this.http.patch<ApiResponse<RutinaResponse>>(`${this.baseUrl}/${id}/reactivar`, {});
   }
 
   /**

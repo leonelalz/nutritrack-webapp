@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { RutinaService } from '../../../../core/services/rutina.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 
@@ -11,11 +12,17 @@ import { NotificationService } from '../../../../core/services/notification.serv
 @Component({
   selector: 'app-editar-rutina',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, MatIconModule],
   template: `
     <div class="editar-rutina-container">
-      <div class="header">
-        <h1>Editar Rutina</h1>
+      <div class="page-header">
+        <div class="header-content">
+          <h1 class="page-title">
+            <mat-icon>edit</mat-icon>
+            Editar Rutina
+          </h1>
+          <p class="page-subtitle">Modifica los detalles de la rutina de ejercicio</p>
+        </div>
         <button class="btn-link" routerLink="/admin/rutinas">← Volver</button>
       </div>
 
@@ -37,12 +44,12 @@ import { NotificationService } from '../../../../core/services/notification.serv
 
           <div class="form-row">
             <div class="form-group">
-              <label>Duración (semanas)</label>
+              <label>Duración Total (semanas)</label>
               <input type="number" formControlName="duracionSemanas" min="1" />
             </div>
             <div class="form-group">
-              <label>Frecuencia Semanal</label>
-              <input type="number" formControlName="frecuenciaSemanal" min="1" max="7" />
+              <label>Patrón Base (semanas)</label>
+              <input type="number" formControlName="patronSemanas" min="1" [max]="formulario.get('duracionSemanas')?.value || 52" />
             </div>
           </div>
 
@@ -111,8 +118,8 @@ export class EditarRutinaComponent implements OnInit {
             nombre: [rutina.nombre, Validators.required],
             descripcion: [rutina.descripcion, Validators.required],
             duracionSemanas: [rutina.duracionSemanas, Validators.required],
-            nivelDificultad: [rutina.nivelDificultad, Validators.required],
-            objetivo: [rutina.objetivo]
+            patronSemanas: [rutina.patronSemanas, [Validators.required, Validators.min(1)]],
+            nivelDificultad: [rutina.nivelDificultad, Validators.required]
           });
           this.cargando.set(false);
         }

@@ -140,6 +140,23 @@ export class PlanService {
   }
 
   /**
+   * Reactivar plan (reactivar un plan inactivo)
+   * Solo funciona con planes inactivos (activo=false)
+   * Si el plan ya está activo → error 400
+   */
+  activarPlan(id: number): Observable<ApiResponse<PlanResponse>> {
+    return this.http.patch<ApiResponse<PlanResponse>>(`${this.baseUrl}/${id}/reactivar`, {});
+  }
+
+  /**
+   * Desactivar plan (soft delete)
+   * RN14: No se puede desactivar si tiene usuarios activos
+   */
+  desactivarPlan(id: number): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${this.baseUrl}/${id}`);
+  }
+
+  /**
    * Agregar comida a un día del plan (US-12)
    */
   agregarDiaAlPlan(planId: number, dia: DiaPlanRequest): Observable<ApiResponse<DiaPlanResponse>> {

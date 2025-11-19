@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -6,6 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatRippleModule } from '@angular/material/core';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { DashboardService } from '../services/dashboard.service';
 
 interface DashboardStat {
   title: string;
@@ -42,7 +44,8 @@ interface ActivityItem {
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatRippleModule
+    MatRippleModule,
+    MatProgressSpinnerModule
   ],
   template: `
     <div class="dashboard-container">
@@ -70,15 +73,22 @@ interface ActivityItem {
       </header>
 
       <!-- Stats Grid -->
-      <div class="stats-grid">
-        <mat-card *ngFor="let stat of stats" class="stat-card">
-          <mat-card-content>
-            <p class="stat-label">{{ stat.title }}</p>
-            <h2 class="stat-value">{{ stat.value }}</h2>
-            <p class="stat-change">{{ stat.change }}</p>
-          </mat-card-content>
-        </mat-card>
-      </div>
+      @if (cargando()) {
+        <div class="loading-container">
+          <mat-spinner></mat-spinner>
+          <p>Cargando estadísticas...</p>
+        </div>
+      } @else {
+        <div class="stats-grid">
+          <mat-card *ngFor="let stat of stats()" class="stat-card">
+            <mat-card-content>
+              <p class="stat-label">{{ stat.title }}</p>
+              <h2 class="stat-value">{{ stat.value }}</h2>
+              <p class="stat-change">{{ stat.change }}</p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      }
 
       <!-- Main Content Grid -->
       <div class="content-grid">
@@ -125,18 +135,30 @@ interface ActivityItem {
             <mat-card-title>Actividad Reciente</mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <div class="activity-list">
-              <div *ngFor="let activity of recentActivities" class="activity-item">
-                <div class="activity-icon-wrapper">
-                  <mat-icon class="activity-icon">{{ activity.icon }}</mat-icon>
-                </div>
-                <div class="activity-details">
-                  <p class="activity-title">{{ activity.title }}</p>
-                  <p class="activity-description">"{{ activity.description }}"</p>
-                </div>
-                <span class="activity-time">{{ activity.time }}</span>
+            @if (cargando()) {
+              <div class="loading-activities">
+                <mat-spinner diameter="40"></mat-spinner>
+                <p>Cargando actividad reciente...</p>
               </div>
-            </div>
+            } @else if (recentActivities().length === 0) {
+              <div class="no-activities">
+                <mat-icon>inbox</mat-icon>
+                <p>No hay actividad reciente</p>
+              </div>
+            } @else {
+              <div class="activity-list">
+                <div *ngFor="let activity of recentActivities()" class="activity-item">
+                  <div class="activity-icon-wrapper">
+                    <mat-icon class="activity-icon">{{ activity.icon }}</mat-icon>
+                  </div>
+                  <div class="activity-details">
+                    <p class="activity-title">{{ activity.title }}</p>
+                    <p class="activity-description">"{{ activity.description }}"</p>
+                  </div>
+                  <span class="activity-time">{{ activity.time }}</span>
+                </div>
+              </div>
+            }
           </mat-card-content>
         </mat-card>
       </div>
@@ -427,6 +449,58 @@ interface ActivityItem {
       white-space: nowrap;
     }
 
+    /* Loading States */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      gap: 1rem;
+    }
+
+    .loading-container p {
+      color: var(--color-text-secondary);
+      margin: 0;
+    }
+
+    .loading-activities {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      gap: 1rem;
+    }
+
+    .loading-activities p {
+      color: var(--color-text-secondary);
+      margin: 0;
+      font-size: 0.875rem;
+    }
+
+    .no-activities {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      gap: 1rem;
+      color: var(--color-text-muted);
+    }
+
+    .no-activities mat-icon {
+      font-size: 3rem;
+      width: 3rem;
+      height: 3rem;
+      opacity: 0.5;
+    }
+
+    .no-activities p {
+      margin: 0;
+      font-size: 0.875rem;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       .admin-dashboard-container {
@@ -453,6 +527,8 @@ interface ActivityItem {
   `]
 })
 export class AdminDashboardComponent implements OnInit {
+  private dashboardService = inject(DashboardService);
+
   selectedTimeFilter = '7days';
   
   timeFilters = [
@@ -461,42 +537,61 @@ export class AdminDashboardComponent implements OnInit {
     { label: 'Todo el tiempo', value: 'all' }
   ];
 
-  stats: DashboardStat[] = [
-    {
-      title: 'Planes Creados',
-      value: 128,
-      change: '+12%',
-      icon: 'menu_book'
-    },
-    {
-      title: 'Rutinas Creadas',
-      value: 97,
-      change: '+8%',
-      icon: 'event_repeat'
-    },
-    {
-      title: 'Comidas Registradas',
-      value: 452,
-      change: '+21%',
-      icon: 'restaurant'
-    },
-    {
-      title: 'Ingredientes Totales',
-      value: 540,
-      change: '+32 nuevos',
-      icon: 'inventory_2'
-    }
-  ];
+  // Señales reactivas del servicio
+  cargando = this.dashboardService.cargando;
+
+  // Stats computados desde el servicio
+  stats = computed(() => {
+    const data = this.dashboardService.stats();
+    return [
+      {
+        title: 'Planes Creados',
+        value: data.totalPlanes,
+        change: data.totalPlanes > 0 ? `${data.totalPlanes} total` : 'Sin datos',
+        icon: 'restaurant_menu'
+      },
+      {
+        title: 'Rutinas Creadas',
+        value: data.totalRutinas,
+        change: data.totalRutinas > 0 ? `${data.totalRutinas} total` : 'Sin datos',
+        icon: 'fitness_center'
+      },
+      {
+        title: 'Comidas Registradas',
+        value: data.totalComidas,
+        change: data.totalComidas > 0 ? `${data.totalComidas} total` : 'Sin datos',
+        icon: 'restaurant'
+      },
+      {
+        title: 'Ingredientes Totales',
+        value: data.totalIngredientes,
+        change: data.totalIngredientes > 0 ? `${data.totalIngredientes} total` : 'Sin datos',
+        icon: 'kitchen'
+      }
+    ];
+  });
+
+  // Actividades recientes computadas
+  recentActivities = computed(() => {
+    const actividades = this.dashboardService.actividadReciente();
+    return actividades.map(act => ({
+      type: act.tipo,
+      title: act.titulo,
+      description: act.descripcion,
+      time: this.dashboardService.calcularTiempoRelativo(act.fecha),
+      icon: act.icono
+    }));
+  });
 
   quickAccessItems: QuickAccessItem[] = [
     {
       title: 'Gestionar Planes',
-      icon: 'menu_book',
+      icon: 'restaurant_menu',
       route: '/admin/planes'
     },
     {
       title: 'Gestionar Rutinas',
-      icon: 'event_repeat',
+      icon: 'fitness_center',
       route: '/admin/rutinas'
     },
     {
@@ -511,39 +606,29 @@ export class AdminDashboardComponent implements OnInit {
     }
   ];
 
-  recentActivities: ActivityItem[] = [
-    {
-      type: 'plan',
-      title: 'Nuevo Plan Creado',
-      description: 'Plan Pérdida Peso - 7 días',
-      time: 'Ahora mismo',
-      icon: 'menu_book'
-    },
-    {
-      type: 'meal',
-      title: 'Nueva Comida Añadida',
-      description: 'Ensalada de pollo',
-      time: 'Hace 2h',
-      icon: 'restaurant'
-    },
-    {
-      type: 'ingredient',
-      title: 'Ingrediente Actualizado',
-      description: 'Pollo',
-      time: 'Hace 1d',
-      icon: 'inventory_2'
-    },
-    {
-      type: 'exercise',
-      title: 'Nuevo Ejercicio Añadido',
-      description: 'Sentadillas',
-      time: 'Hace 2d',
-      icon: 'fitness_center'
-    }
-  ];
-
   ngOnInit(): void {
-    // Aquí se puede agregar lógica para cargar datos desde servicios
-    console.log('Dashboard Admin inicializado');
+    this.cargarDatos();
+  }
+
+  private cargarDatos(): void {
+    // Cargar estadísticas
+    this.dashboardService.cargarEstadisticas().subscribe({
+      next: () => {
+        console.log('Estadísticas cargadas correctamente');
+      },
+      error: (error) => {
+        console.error('Error al cargar estadísticas:', error);
+      }
+    });
+
+    // Cargar actividad reciente
+    this.dashboardService.cargarActividadReciente().subscribe({
+      next: () => {
+        console.log('Actividad reciente cargada correctamente');
+      },
+      error: (error) => {
+        console.error('Error al cargar actividad reciente:', error);
+      }
+    });
   }
 }

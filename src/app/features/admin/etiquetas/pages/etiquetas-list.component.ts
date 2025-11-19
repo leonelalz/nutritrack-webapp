@@ -3,9 +3,11 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import {
   Etiqueta,
+  EtiquetaRequest,
   TipoEtiqueta,
   TIPO_ETIQUETA_LABELS,
   TIPO_ETIQUETA_COLORS,
@@ -17,9 +19,19 @@ import {
 @Component({
   selector: 'app-etiquetas-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   template: `
     <div class="etiquetas-container">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="header-content">
+          <h1 class="page-title">
+            <mat-icon>label</mat-icon>
+            Gestión de Etiquetas
+          </h1>
+          <p class="page-subtitle">Crea, edita y gestiona todas las etiquetas desde aquí.</p>
+        </div>
+      </div>
 
       <!-- Stats Cards -->
       <div class="stats-grid">
@@ -68,19 +80,47 @@ import {
         </div>
       </div>
 
-      <!-- Search Bar -->
+      <!-- Search and Filter Bar -->
       <div class="search-card">
-        <div class="search-input-wrapper">
-          <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <input
-            type="text"
-            [(ngModel)]="searchTerm"
-            (input)="onSearch()"
-            placeholder="Buscar etiquetas por nombre..."
-            class="search-input"
-          />
+        <div class="search-filters-wrapper">
+          <div class="search-input-wrapper">
+            <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+              placeholder="Buscar etiquetas por nombre..."
+              class="search-input"
+            />
+          </div>
+          
+          <div class="filter-wrapper">
+            <svg class="filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+            </svg>
+            <select
+              [(ngModel)]="tipoFiltro"
+              (change)="onFiltrar()"
+              class="filter-select"
+              [class.active-filter]="tipoFiltro"
+            >
+              <option value="">Todos los tipos</option>
+              @for (tipo of tiposEtiqueta; track tipo) {
+                <option [value]="tipo">{{ getTipoIcon(tipo) }} {{ getTipoLabel(tipo) }}</option>
+              }
+            </select>
+          </div>
+
+          @if (searchTerm || tipoFiltro) {
+            <button (click)="limpiarFiltros()" class="btn-clear-filters" title="Limpiar filtros">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              Limpiar
+            </button>
+          }
         </div>
         
         <button (click)="abrirModalCrear()" class="btn-primary">
@@ -293,14 +333,35 @@ import {
                 </label>
                 <select
                   [(ngModel)]="formulario.tipoEtiqueta"
+                  (change)="onTipoChange()"
                   class="form-input"
                 >
                   <option value="">Selecciona un tipo</option>
                   @for (tipo of tiposEtiqueta; track tipo) {
                     <option [value]="tipo">{{ getTipoIcon(tipo) }} {{ getTipoLabel(tipo) }}</option>
                   }
+                  <option value="__CUSTOM__">➕ Agregar nuevo tipo...</option>
                 </select>
               </div>
+
+              <!-- Campo para tipo personalizado -->
+              @if (mostrarCampoTipoPersonalizado) {
+                <div class="form-group custom-type-group">
+                  <label>
+                    Nombre del Nuevo Tipo <span class="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    [(ngModel)]="tipoPersonalizado"
+                    class="form-input"
+                    placeholder="Ej: CATEGORIA_ALIMENTO"
+                    (input)="onTipoPersonalizadoChange()"
+                  />
+                  <small class="help-text">
+                    💡 Usa MAYÚSCULAS y guiones bajos (Ej: MI_TIPO_PERSONALIZADO)
+                  </small>
+                </div>
+              }
 
               <div class="form-group">
                 <label>Descripción</label>
@@ -372,6 +433,37 @@ import {
     .etiquetas-container {
       padding: 30px;
       min-height: 100vh;
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .header-content {
+      flex: 1;
+    }
+
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      color: #333;
+    }
+
+    .page-title mat-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+      color: var(--primary-color, #00A859);
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: #666;
+      font-size: 1rem;
     }
 
     /* Buttons */
@@ -531,6 +623,8 @@ import {
     .search-card {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      gap: 20px;
       background: white;
       border-radius: 16px;
       padding: 20px 25px;
@@ -538,9 +632,17 @@ import {
       margin-bottom: 30px;
     }
 
+    .search-filters-wrapper {
+      display: flex;
+      gap: 12px;
+      flex: 1;
+      max-width: 800px;
+    }
+
     .search-input-wrapper {
       position: relative;
-      width: 500px;
+      flex: 1;
+      min-width: 250px;
     }
 
     .search-icon {
@@ -567,6 +669,80 @@ import {
       outline: none;
       border-color: #28A745;
       box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+    }
+
+    .filter-wrapper {
+      position: relative;
+      min-width: 250px;
+    }
+
+    .filter-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: #6C757D;
+      pointer-events: none;
+    }
+
+    .filter-select {
+      width: 100%;
+      padding: 12px 12px 12px 40px;
+      border: 1px solid #DEE2E6;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #333333;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236C757D' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: #28A745;
+      box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+    }
+
+    .filter-select:hover {
+      border-color: #ADB5BD;
+    }
+
+    .filter-select.active-filter {
+      border-color: #28A745;
+      background-color: #F0FFF4;
+    }
+
+    .btn-clear-filters {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border: 1px solid #DEE2E6;
+      background: white;
+      border-radius: 8px;
+      color: #6C757D;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .btn-clear-filters:hover {
+      background: #F8F9FA;
+      border-color: #DC3545;
+      color: #DC3545;
+    }
+
+    .btn-clear-filters svg {
+      flex-shrink: 0;
     }
 
     /* Loading */
@@ -1063,6 +1239,22 @@ import {
       min-height: 80px;
     }
 
+    /* Campo de tipo personalizado */
+    .custom-type-group {
+      background: #F8F9FA;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 3px solid #28A745;
+    }
+
+    .help-text {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #6C757D;
+      font-style: italic;
+    }
+
     /* Responsive */
     .desktop-only {
       display: block;
@@ -1118,12 +1310,26 @@ import {
       }
 
       .search-card {
+        flex-direction: column;
         padding: 16px;
         margin-bottom: 20px;
+        gap: 12px;
       }
 
-      .search-input-wrapper {
+      .search-filters-wrapper {
+        flex-direction: column;
+        width: 100%;
         max-width: 100%;
+      }
+
+      .search-input-wrapper,
+      .filter-wrapper {
+        width: 100%;
+        min-width: 100%;
+      }
+
+      .btn-primary {
+        width: 100%;
       }
 
       .desktop-only {
@@ -1191,8 +1397,9 @@ export class EtiquetasListComponent implements OnInit {
   totalPages = 0;
   totalElements = 0;
   
-  // Búsqueda
+  // Búsqueda y filtros
   searchTerm = '';
+  tipoFiltro = '';
   searchTimeout: any;
   
   // Modal
@@ -1206,7 +1413,7 @@ export class EtiquetasListComponent implements OnInit {
   // Formulario
   formulario = {
     nombre: '',
-    tipoEtiqueta: '' as TipoEtiqueta | '',
+    tipoEtiqueta: '',
     descripcion: ''
   };
   
@@ -1216,6 +1423,10 @@ export class EtiquetasListComponent implements OnInit {
   
   // Lista de tipos para el select
   tiposEtiqueta = Object.values(TipoEtiqueta);
+
+  // Tipo personalizado
+  mostrarCampoTipoPersonalizado = false;
+  tipoPersonalizado = '';
 
   ngOnInit(): void {
     this.cargarEtiquetas();
@@ -1233,9 +1444,18 @@ export class EtiquetasListComponent implements OnInit {
     
     request.subscribe({
       next: (response: ApiResponse<PageResponse<Etiqueta>>) => {
-        this.etiquetas.set(response.data.content);
+        let etiquetas = response.data.content;
+        
+        // Aplicar filtro por tipo si está seleccionado
+        if (this.tipoFiltro) {
+          etiquetas = etiquetas.filter(e => e.tipoEtiqueta === this.tipoFiltro);
+        }
+        
+        this.etiquetas.set(etiquetas);
         this.totalPages = response.data.totalPages;
-        this.totalElements = response.data.totalElements;
+        this.totalElements = this.tipoFiltro 
+          ? etiquetas.length // Cuando hay filtro, mostrar solo los filtrados
+          : response.data.totalElements;
         this.loading.set(false);
       },
       error: (error: any) => {
@@ -1255,6 +1475,24 @@ export class EtiquetasListComponent implements OnInit {
       this.currentPage = 0;
       this.cargarEtiquetas();
     }, 500);
+  }
+
+  /**
+   * Filtrar por tipo de etiqueta
+   */
+  onFiltrar(): void {
+    this.currentPage = 0;
+    this.cargarEtiquetas();
+  }
+
+  /**
+   * Limpiar filtros
+   */
+  limpiarFiltros(): void {
+    this.searchTerm = '';
+    this.tipoFiltro = '';
+    this.currentPage = 0;
+    this.cargarEtiquetas();
   }
 
   /**
@@ -1299,21 +1537,38 @@ export class EtiquetasListComponent implements OnInit {
   cerrarModal(): void {
     this.mostrarModal = false;
     this.etiquetaEditando = null;
+    this.mostrarCampoTipoPersonalizado = false;
+    this.tipoPersonalizado = '';
   }
 
   /**
    * Guarda una etiqueta (crear o actualizar)
    */
   guardar(): void {
-    if (!this.formulario.nombre || !this.formulario.tipoEtiqueta) {
-      this.mostrarError('Por favor completa los campos obligatorios');
+    // Validar campos obligatorios
+    if (!this.formulario.nombre) {
+      this.mostrarError('El nombre es obligatorio');
+      return;
+    }
+
+    // Determinar el tipo a usar
+    let tipoFinal = this.formulario.tipoEtiqueta;
+    
+    if (this.mostrarCampoTipoPersonalizado) {
+      if (!this.tipoPersonalizado || this.tipoPersonalizado.trim().length === 0) {
+        this.mostrarError('Por favor ingresa el nombre del nuevo tipo');
+        return;
+      }
+      tipoFinal = this.tipoPersonalizado.trim();
+    } else if (!tipoFinal) {
+      this.mostrarError('Por favor selecciona un tipo de etiqueta');
       return;
     }
 
     this.guardando = true;
-    const request = {
+    const request: EtiquetaRequest = {
       nombre: this.formulario.nombre.trim(),
-      tipoEtiqueta: this.formulario.tipoEtiqueta as TipoEtiqueta,
+      tipoEtiqueta: tipoFinal as any,
       descripcion: this.formulario.descripcion?.trim() || undefined
     };
 
@@ -1327,6 +1582,10 @@ export class EtiquetasListComponent implements OnInit {
         this.cerrarModal();
         this.cargarEtiquetas();
         this.guardando = false;
+        
+        // Resetear campos personalizados
+        this.mostrarCampoTipoPersonalizado = false;
+        this.tipoPersonalizado = '';
       },
       error: (error: any) => {
         console.error('Error al guardar:', error);
@@ -1375,31 +1634,63 @@ export class EtiquetasListComponent implements OnInit {
   }
 
   /**
+   * Maneja el cambio de tipo de etiqueta
+   */
+  onTipoChange(): void {
+    if (this.formulario.tipoEtiqueta === '__CUSTOM__') {
+      this.mostrarCampoTipoPersonalizado = true;
+      this.tipoPersonalizado = '';
+    } else {
+      this.mostrarCampoTipoPersonalizado = false;
+      this.tipoPersonalizado = '';
+    }
+  }
+
+  /**
+   * Maneja el cambio en el campo de tipo personalizado
+   */
+  onTipoPersonalizadoChange(): void {
+    // Convertir a mayúsculas y reemplazar espacios con guiones bajos
+    this.tipoPersonalizado = this.tipoPersonalizado
+      .toUpperCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Z0-9_]/g, '');
+  }
+
+  /**
    * Obtiene la etiqueta en español del tipo
    */
-  getTipoLabel(tipo: TipoEtiqueta): string {
-    return TIPO_ETIQUETA_LABELS[tipo];
+  getTipoLabel(tipo: string): string {
+    // Primero intenta obtener del enum predefinido
+    const label = TIPO_ETIQUETA_LABELS[tipo as TipoEtiqueta];
+    if (label) return label;
+    
+    // Si no existe, formatea el tipo personalizado a un formato legible
+    return tipo
+      .split('_')
+      .map(palabra => palabra.charAt(0) + palabra.slice(1).toLowerCase())
+      .join(' ');
   }
 
   /**
    * Obtiene el color del badge según el tipo
    */
-  getTipoColor(tipo: TipoEtiqueta): string {
-    return TIPO_ETIQUETA_COLORS[tipo];
+  getTipoColor(tipo: string): string {
+    return TIPO_ETIQUETA_COLORS[tipo as TipoEtiqueta] || 'bg-gray-100 text-gray-800';
   }
 
   /**
    * Obtiene el icono según el tipo
    */
-  getTipoIcon(tipo: TipoEtiqueta): string {
-    return TIPO_ETIQUETA_ICONS[tipo];
+  getTipoIcon(tipo: string): string {
+    return TIPO_ETIQUETA_ICONS[tipo as TipoEtiqueta] || '🏷️';
   }
 
   /**
    * Agrupa las etiquetas por tipo (para CA 2 - Vista agrupada)
    */
-  agruparPorTipo(): Map<TipoEtiqueta, Etiqueta[]> {
-    const grupos = new Map<TipoEtiqueta, Etiqueta[]>();
+  agruparPorTipo(): Map<string, Etiqueta[]> {
+    const grupos = new Map<string, Etiqueta[]>();
     
     this.etiquetas().forEach(etiqueta => {
       if (!grupos.has(etiqueta.tipoEtiqueta)) {

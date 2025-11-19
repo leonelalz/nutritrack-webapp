@@ -3,6 +3,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { IngredienteService } from '../../../../core/services/ingrediente.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
@@ -17,9 +18,19 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
 @Component({
   selector: 'app-ingredientes-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   template: `
     <div class="ingredientes-container">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="header-content">
+          <h1 class="page-title">
+            <mat-icon>kitchen</mat-icon>
+            Gestión de Ingredientes
+          </h1>
+          <p class="page-subtitle">Crea, edita y gestiona todos los ingredientes desde aquí.</p>
+        </div>
+      </div>
 
       <!-- Stats Cards -->
       <div class="stats-grid">
@@ -368,6 +379,7 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
                 <select
                   [(ngModel)]="formulario.categoriaAlimento"
                   class="form-input"
+                  (change)="onCategoriaChange()"
                 >
                   <option value="">Selecciona una categoría</option>
                   @for (categoria of categorias; track categoria) {
@@ -375,7 +387,29 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
                       {{ getCategoriaIcon(categoria) }} {{ getCategoriaLabel(categoria) }}
                     </option>
                   }
+                  <option value="__CUSTOM__">➕ Agregar nueva categoría...</option>
                 </select>
+              </div>
+
+              @if (mostrarCampoCategoriaPersonalizada) {
+                <div class="form-group custom-type-group">
+                  <label>
+                    Nueva Categoría de Alimento <span class="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    [(ngModel)]="categoriaPersonalizada"
+                    (input)="onCategoriaPersonalizadaChange()"
+                    class="form-input"
+                    placeholder="Ej: SUPERALIMENTOS"
+                  />
+                  <span class="help-text">
+                    Se formateará automáticamente a MAYÚSCULAS_CON_GUIONES_BAJOS
+                  </span>
+                </div>
+              }
+
+              <div class="form-group">
               </div>
 
               <!-- Información Nutricional -->
@@ -538,6 +572,37 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
       padding: 30px;
       background: #F8F9FA;
       min-height: 100vh;
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .header-content {
+      flex: 1;
+    }
+
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      color: #333;
+    }
+
+    .page-title mat-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+      color: var(--primary-color, #00A859);
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: #666;
+      font-size: 1rem;
     }
 
     /* Buttons */
@@ -1329,6 +1394,38 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
       margin: 0;
     }
 
+    /* Campos personalizados */
+    .custom-type-group {
+      border: 2px solid #28A745;
+      border-radius: 8px;
+      padding: 16px;
+      background: #E8F5E8;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .custom-type-group label {
+      color: #28A745;
+    }
+
+    .help-text {
+      display: block;
+      font-size: 12px;
+      color: #6C757D;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
     .form-section-title {
       color: #333333;
       font-size: 16px;
@@ -1557,7 +1654,7 @@ export class IngredientesListComponent implements OnInit {
     grasas: 0,
     energia: 0,
     fibra: 0,
-    categoriaAlimento: '' as CategoriaAlimento | '',
+    categoriaAlimento: '' as CategoriaAlimento | '' | '__CUSTOM__',
     descripcion: '',
     etiquetaIds: [] as number[]
   };
@@ -1568,6 +1665,10 @@ export class IngredientesListComponent implements OnInit {
   
   // Listas para selects
   categorias = Object.values(CategoriaAlimento);
+
+  // Categorías personalizadas
+  mostrarCampoCategoriaPersonalizada = false;
+  categoriaPersonalizada = '';
 
   ngOnInit(): void {
     this.cargarIngredientes();
@@ -1693,13 +1794,25 @@ export class IngredientesListComponent implements OnInit {
   cerrarModal(): void {
     this.mostrarModal = false;
     this.ingredienteEditando = null;
+    this.mostrarCampoCategoriaPersonalizada = false;
+    this.categoriaPersonalizada = '';
   }
 
   /**
    * Guarda un ingrediente
    */
   guardar(): void {
-    if (!this.formulario.nombre || !this.formulario.categoriaAlimento) {
+    // Validar categoría personalizada si está activa
+    if (this.mostrarCampoCategoriaPersonalizada && !this.categoriaPersonalizada.trim()) {
+      this.mostrarError('Por favor ingresa la nueva categoría de alimento');
+      return;
+    }
+
+    const categoriaFinal = this.mostrarCampoCategoriaPersonalizada 
+      ? this.categoriaPersonalizada 
+      : this.formulario.categoriaAlimento;
+
+    if (!this.formulario.nombre || !categoriaFinal) {
       this.mostrarError('Por favor completa los campos obligatorios');
       return;
     }
@@ -1712,7 +1825,7 @@ export class IngredientesListComponent implements OnInit {
       grasas: this.formulario.grasas,
       energia: this.formulario.energia,
       fibra: this.formulario.fibra || undefined,
-      categoriaAlimento: this.formulario.categoriaAlimento as CategoriaAlimento,
+      categoriaAlimento: categoriaFinal as CategoriaAlimento,
       descripcion: this.formulario.descripcion?.trim() || undefined,
       etiquetaIds: this.formulario.etiquetaIds.length > 0 ? this.formulario.etiquetaIds : undefined
     };
@@ -1797,14 +1910,44 @@ export class IngredientesListComponent implements OnInit {
    * Obtiene el label de la categoría
    */
   getCategoriaLabel(categoria: CategoriaAlimento): string {
-    return CATEGORIA_ALIMENTO_LABELS[categoria];
+    const label = CATEGORIA_ALIMENTO_LABELS[categoria];
+    if (label) return label;
+    
+    // Para categorías personalizadas, formatear de MAYUSCULAS_CON_GUIONES a "Mayúsculas Con Guiones"
+    return categoria.split('_').map(palabra => 
+      palabra.charAt(0) + palabra.slice(1).toLowerCase()
+    ).join(' ');
   }
 
   /**
    * Obtiene el icono de la categoría
    */
   getCategoriaIcon(categoria: CategoriaAlimento): string {
-    return CATEGORIA_ALIMENTO_ICONS[categoria];
+    return CATEGORIA_ALIMENTO_ICONS[categoria] || '📦';
+  }
+
+  /**
+   * Maneja el cambio en el select de categoría
+   */
+  onCategoriaChange(): void {
+    if (this.formulario.categoriaAlimento === '__CUSTOM__') {
+      this.mostrarCampoCategoriaPersonalizada = true;
+      this.categoriaPersonalizada = '';
+    } else {
+      this.mostrarCampoCategoriaPersonalizada = false;
+      this.categoriaPersonalizada = '';
+    }
+  }
+
+  /**
+   * Maneja cambios en el campo de categoría personalizada
+   */
+  onCategoriaPersonalizadaChange(): void {
+    // Convertir a mayúsculas y reemplazar espacios por guiones bajos
+    this.categoriaPersonalizada = this.categoriaPersonalizada
+      .toUpperCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Z0-9_]/g, '');
   }
 
   /**

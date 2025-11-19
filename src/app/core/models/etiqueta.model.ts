@@ -1,7 +1,9 @@
 // src/app/core/models/etiqueta.model.ts
 
 /**
- * Tipos de etiqueta disponibles en el sistema
+ * Tipos de etiqueta predefinidos en el sistema
+ * NOTA: El sistema ahora permite tipos personalizados además de estos predefinidos.
+ * Los administradores pueden crear nuevos tipos usando la opción "Agregar nuevo tipo..."
  */
 export enum TipoEtiqueta {
   ALERGIA = 'ALERGIA',
@@ -19,10 +21,10 @@ export enum TipoEtiqueta {
 export interface Etiqueta {
   id: number;
   nombre: string;
-  tipoEtiqueta: TipoEtiqueta;
+  tipoEtiqueta: string;  // El API envía string, no enum
   descripcion?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 /**

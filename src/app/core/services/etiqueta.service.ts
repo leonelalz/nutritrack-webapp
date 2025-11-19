@@ -39,9 +39,33 @@ export class EtiquetaService {
     
     return this.http.get<ApiResponse<PageResponse<Etiqueta>>>(`${this.API_URL}/buscar`, { params });
   }
-  //TODO: BORRAR
-  obtenerTodas(): Observable<ApiResponse<Etiqueta>> {
-    return this.http.get<ApiResponse<Etiqueta>>(`${this.API_URL}`)
+  /**
+   * Obtener todas las etiquetas sin paginación
+   * Usa el endpoint paginado con un tamaño grande para obtener todas las etiquetas
+   */
+  obtenerTodas(): Observable<ApiResponse<Etiqueta[]>> {
+    const params = new HttpParams()
+      .set('page', '0')
+      .set('size', '1000'); // Tamaño grande para obtener todas
+    
+    return new Observable(observer => {
+      this.http.get<ApiResponse<PageResponse<Etiqueta>>>(this.API_URL, { params }).subscribe({
+        next: (response) => {
+          // Transformar la respuesta paginada a un array simple
+          const transformedResponse: ApiResponse<Etiqueta[]> = {
+            success: response.success,
+            message: response.message,
+            data: response.data.content, // Extraer solo el contenido
+            timestamp: response.timestamp
+          };
+          observer.next(transformedResponse);
+          observer.complete();
+        },
+        error: (error) => {
+          observer.error(error);
+        }
+      });
+    });
   }
 
   /**

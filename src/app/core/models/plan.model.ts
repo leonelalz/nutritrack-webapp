@@ -3,7 +3,8 @@
  * Backend: /api/v1/admin/planes
  */
 
-import { Etiqueta, PagedResponse } from './common.model';
+import { PagedResponse } from './common.model';
+import { Etiqueta } from './etiqueta.model';
 
 // Re-exportar para compatibilidad
 export type { Etiqueta, PagedResponse };
@@ -28,26 +29,27 @@ export enum TipoComida {
 }
 
 export interface ObjetivoNutricional {
-  objetivo: TipoObjetivo;
-  proteinas: number;
-  carbohidratos: number;
-  grasas: number;
+  caloriasObjetivo: number;
+  proteinasObjetivo: number;
+  carbohidratosObjetivo: number;
+  grasasObjetivo: number;
+  descripcion?: string;
 }
 
 export interface CrearPlanRequest {
   nombre: string;
   descripcion: string;
   duracionDias: number;
-  caloriasTotales: number;
-  objetivos: ObjetivoNutricional[];
+  objetivo: ObjetivoNutricional;
+  etiquetaIds?: number[];
 }
 
 export interface ActualizarPlanRequest {
   nombre?: string;
   descripcion?: string;
   duracionDias?: number;
-  caloriasTotales?: number;
-  objetivos?: ObjetivoNutricional[];
+  objetivo?: ObjetivoNutricional;
+  etiquetaIds?: number[];
 }
 
 export interface PlanResponse {
@@ -56,7 +58,7 @@ export interface PlanResponse {
   descripcion: string;
   duracionDias: number;
   activo: boolean;
-  objetivo: TipoObjetivo | null;
+  objetivo: ObjetivoNutricional | null;
   etiquetas: Etiqueta[];
   createdAt: string | null;
   updatedAt: string | null;

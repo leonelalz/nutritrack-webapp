@@ -2,10 +2,11 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { RutinaService } from '../../../../core/services/rutina.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { NivelDificultad, EtiquetaResponse } from '../../../../core/models';
+import { NivelDificultad, Etiqueta } from '../../../../core/models';
 
 /**
  * Crear Rutina de Ejercicio (Admin)
@@ -15,11 +16,17 @@ import { NivelDificultad, EtiquetaResponse } from '../../../../core/models';
 @Component({
   selector: 'app-crear-rutina',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, MatIconModule],
   template: `
     <div class="crear-rutina-container">
-      <div class="header">
-        <h1>Crear Rutina de Ejercicio</h1>
+      <div class="page-header">
+        <div class="header-content">
+          <h1 class="page-title">
+            <mat-icon>fitness_center</mat-icon>
+            Crear Rutina de Ejercicio
+          </h1>
+          <p class="page-subtitle">Crea una nueva rutina de ejercicios personalizada</p>
+        </div>
         <button class="btn-link" routerLink="/admin/rutinas">← Volver a rutinas</button>
       </div>
 
@@ -56,7 +63,7 @@ import { NivelDificultad, EtiquetaResponse } from '../../../../core/models';
 
           <div class="form-row">
             <div class="form-group">
-              <label for="duracionSemanas">Duración (semanas) <span class="required">*</span></label>
+              <label for="duracionSemanas">Duración Total (semanas) <span class="required">*</span></label>
               <input
                 id="duracionSemanas"
                 type="number"
@@ -64,18 +71,19 @@ import { NivelDificultad, EtiquetaResponse } from '../../../../core/models';
                 min="1"
                 max="52"
               />
+              <small class="help-text">Duración total de la rutina</small>
             </div>
 
             <div class="form-group">
-              <label for="frecuenciaSemanal">Frecuencia Semanal <span class="required">*</span></label>
+              <label for="patronSemanas">Patrón Base (semanas) <span class="required">*</span></label>
               <input
-                id="frecuenciaSemanal"
+                id="patronSemanas"
                 type="number"
-                formControlName="frecuenciaSemanal"
+                formControlName="patronSemanas"
                 min="1"
-                max="7"
+                [max]="formulario.get('duracionSemanas')?.value || 52"
               />
-              <small class="help-text">Días de entrenamiento por semana</small>
+              <small class="help-text">Semanas del patrón que se repite</small>
             </div>
           </div>
 
@@ -138,26 +146,53 @@ import { NivelDificultad, EtiquetaResponse } from '../../../../core/models';
       margin: 0 auto;
     }
 
-    .header {
+    .page-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid #e2e8f0;
     }
 
-    h1 {
+    .header-content {
+      flex: 1;
+    }
+
+    .page-title {
       font-size: 2rem;
       color: #2d3748;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .page-title mat-icon {
+      color: #28a745;
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .page-subtitle {
+      color: #718096;
       margin: 0;
+      font-size: 1rem;
     }
 
     .btn-link {
       background: none;
       border: none;
-      color: #667eea;
+      color: #28a745;
       font-weight: 600;
       cursor: pointer;
       font-size: 1rem;
+      transition: color 0.2s;
+    }
+
+    .btn-link:hover {
+      color: #218838;
     }
 
     .rutina-form {
@@ -242,29 +277,47 @@ import { NivelDificultad, EtiquetaResponse } from '../../../../core/models';
     }
 
     .etiquetas-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      display: flex;
+      flex-wrap: wrap;
       gap: 0.75rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      min-height: 60px;
     }
 
     .checkbox-card {
       display: flex;
       align-items: center;
-      padding: 0.75rem;
-      border: 2px solid #e2e8f0;
-      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      border: 2px solid #dee2e6;
+      background: white;
+      border-radius: 20px;
       cursor: pointer;
       transition: all 0.2s;
+      user-select: none;
     }
 
     .checkbox-card:hover {
-      border-color: #667eea;
-      background: #f7fafc;
+      border-color: #28a745;
+      background: #e8f5e8;
+    }
+
+    .checkbox-card:has(input[type="checkbox"]:checked) {
+      background: linear-gradient(159deg, #28a745 0%, #20c997 100%);
+      border-color: transparent;
+      color: white;
     }
 
     .checkbox-card input[type="checkbox"] {
       width: auto;
       margin-right: 0.5rem;
+      cursor: pointer;
+    }
+
+    .checkbox-label {
+      font-size: 0.875rem;
+      font-weight: 600;
     }
 
     .form-actions {
@@ -319,7 +372,7 @@ export class CrearRutinaComponent implements OnInit {
   formulario!: FormGroup;
   guardando = signal(false);
   cargandoEtiquetas = signal(false);
-  etiquetas = signal<EtiquetaResponse[]>([]);
+  etiquetas = signal<Etiqueta[]>([]);
   etiquetasSeleccionadas = signal<number[]>([]);
 
   constructor(
@@ -333,7 +386,7 @@ export class CrearRutinaComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    //this.cargarEtiquetas();
+    this.cargarEtiquetas();
   }
 
   inicializarFormulario(): void {
@@ -341,26 +394,24 @@ export class CrearRutinaComponent implements OnInit {
       nombre: ['', [Validators.required, Validators.minLength(5)]],
       descripcion: ['', [Validators.required, Validators.minLength(10)]],
       duracionSemanas: [4, [Validators.required, Validators.min(1), Validators.max(52)]],
-      frecuenciaSemanal: [3, [Validators.required, Validators.min(1), Validators.max(7)]],
+      patronSemanas: [1, [Validators.required, Validators.min(1)]],
       nivelDificultad: ['', Validators.required]
     });
   }
 
-
-  
-  //cargarEtiquetas(): void {
-  //  this.cargandoEtiquetas.set(true);
-  //  this.etiquetaService.obtenerTodas().subscribe({
-  //    next: (etiquetas) => {
-  //      this.cargandoEtiquetas.set(false);
-  //      this.etiquetas.set(etiquetas);
-  //    },
-  //    error: () => {
-  //      this.cargandoEtiquetas.set(false);
-  //      this.notificationService.showError('Error al cargar etiquetas');
-  //    }
-  //  });
-  //}
+  cargarEtiquetas(): void {
+    this.cargandoEtiquetas.set(true);
+    this.etiquetaService.listar(0, 1000).subscribe({
+      next: (response) => {
+        this.cargandoEtiquetas.set(false);
+        this.etiquetas.set(response.data.content);
+      },
+      error: () => {
+        this.cargandoEtiquetas.set(false);
+        this.notificationService.showError('Error al cargar etiquetas');
+      }
+    });
+  }
 
   toggleEtiqueta(etiquetaId: number): void {
     const seleccionadas = this.etiquetasSeleccionadas();

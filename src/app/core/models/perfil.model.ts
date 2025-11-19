@@ -10,13 +10,6 @@ export enum Genero {
   OTRO = 'OTRO'
 }
 
-export enum TipoEtiqueta {
-  OBJETIVO = 'objetivo',
-  ALERGIA = 'alergia',
-  CONDICION = 'condicion',
-  CATEGORIA = 'categoria'
-}
-
 // ===== REQUEST DTOs =====
 export interface UpdateUnidadesMedidaRequest {
   unidadesMedida: UnidadesMedida;
@@ -37,12 +30,7 @@ export interface DeleteAccountRequest {
 }
 
 // ===== RESPONSE DTOs =====
-export interface EtiquetaResponse {
-  id: number;
-  nombre: string;
-  tipo: TipoEtiqueta;
-  descripcion?: string;
-}
+import { Etiqueta } from './etiqueta.model';
 
 export interface PerfilSaludResponse {
   id: number;
@@ -56,13 +44,6 @@ export interface PerfilSaludResponse {
   pesoActual?: number;    // Convertido según unidad
   pesoObjetivo?: number;  // Convertido según unidad
   objetivoActual?: string;
-  etiquetasSalud: EtiquetaResponse[];  // Alergias, condiciones, objetivos
+  etiquetasSalud: Etiqueta[];  // Alergias, condiciones, objetivos
 }
 
-// ===== API Response Wrapper =====
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T | null;
-  timestamp?: string;
-}

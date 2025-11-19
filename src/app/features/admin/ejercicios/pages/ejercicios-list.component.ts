@@ -3,6 +3,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { EjercicioService } from '../../../../core/services/ejercicio.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
@@ -21,9 +22,19 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
 @Component({
   selector: 'app-ejercicios-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   template: `
     <div class="ejercicios-container">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="header-content">
+          <h1 class="page-title">
+            <mat-icon>fitness_center</mat-icon>
+            Gestión de Ejercicios
+          </h1>
+          <p class="page-subtitle">Crea, edita y gestiona todos los ejercicios desde aquí.</p>
+        </div>
+      </div>
 
       <!-- Stats Cards -->
       <div class="stats-grid">
@@ -428,6 +439,7 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
                   <select
                     [(ngModel)]="formulario.tipoEjercicio"
                     class="form-input"
+                    (change)="onTipoEjercicioChange()"
                   >
                     <option value="">Selecciona un tipo</option>
                     @for (tipo of tiposEjercicio; track tipo) {
@@ -435,7 +447,29 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
                         {{ getTipoIcon(tipo) }} {{ getTipoLabel(tipo) }}
                       </option>
                     }
+                    <option value="__CUSTOM__">➕ Agregar nuevo tipo...</option>
                   </select>
+                </div>
+
+                @if (mostrarCampoTipoPersonalizado) {
+                  <div class="form-group custom-type-group">
+                    <label>
+                      Nuevo Tipo de Ejercicio <span class="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      [(ngModel)]="tipoPersonalizado"
+                      (input)="onTipoPersonalizadoChange()"
+                      class="form-input"
+                      placeholder="Ej: CROSSFIT"
+                    />
+                    <span class="help-text">
+                      Se formateará automáticamente a MAYÚSCULAS_CON_GUIONES_BAJOS
+                    </span>
+                  </div>
+                }
+
+                <div class="form-group">
                 </div>
 
                 <div class="form-group">
@@ -590,6 +624,37 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
       padding: 30px;
       background: #F8F9FA;
       min-height: 100vh;
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .header-content {
+      flex: 1;
+    }
+
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      color: #333;
+    }
+
+    .page-title mat-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+      color: var(--primary-color, #00A859);
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: #666;
+      font-size: 1rem;
     }
 
     /* Buttons */
@@ -1463,6 +1528,38 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
       margin: 0;
     }
 
+    /* Campos personalizados */
+    .custom-type-group {
+      border: 2px solid #28A745;
+      border-radius: 8px;
+      padding: 16px;
+      background: #E8F5E8;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .custom-type-group label {
+      color: #28A745;
+    }
+
+    .help-text {
+      display: block;
+      font-size: 12px;
+      color: #6C757D;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1686,7 +1783,7 @@ export class EjerciciosListComponent implements OnInit {
   formulario = {
     nombre: '',
     descripcion: '',
-    tipoEjercicio: '' as TipoEjercicio | '',
+    tipoEjercicio: '' as TipoEjercicio | '' | '__CUSTOM__',
     grupoMuscular: '' as GrupoMuscular | '',
     nivelDificultad: '' as NivelDificultad | '',
     caloriasQuemadasPorMinuto: 0,
@@ -1703,6 +1800,10 @@ export class EjerciciosListComponent implements OnInit {
   tiposEjercicio = Object.values(TipoEjercicio);
   gruposMusculares = Object.values(GrupoMuscular);
   nivelesDificultad = Object.values(NivelDificultad);
+
+  // Tipos personalizados
+  mostrarCampoTipoPersonalizado = false;
+  tipoPersonalizado = '';
 
   ngOnInit(): void {
     this.cargarEjercicios();
@@ -1845,13 +1946,25 @@ export class EjerciciosListComponent implements OnInit {
   cerrarModal(): void {
     this.mostrarModal = false;
     this.ejercicioEditando = null;
+    this.mostrarCampoTipoPersonalizado = false;
+    this.tipoPersonalizado = '';
   }
 
   /**
    * Guarda un ejercicio
    */
   guardar(): void {
-    if (!this.formulario.nombre || !this.formulario.tipoEjercicio || 
+    // Validar tipo personalizado si está activo
+    if (this.mostrarCampoTipoPersonalizado && !this.tipoPersonalizado.trim()) {
+      this.mostrarError('Por favor ingresa el nuevo tipo de ejercicio');
+      return;
+    }
+
+    const tipoFinal = this.mostrarCampoTipoPersonalizado 
+      ? this.tipoPersonalizado 
+      : this.formulario.tipoEjercicio;
+
+    if (!this.formulario.nombre || !tipoFinal || 
         !this.formulario.grupoMuscular || !this.formulario.nivelDificultad) {
       this.mostrarError('Por favor completa los campos obligatorios');
       return;
@@ -1861,7 +1974,7 @@ export class EjerciciosListComponent implements OnInit {
     const request = {
       nombre: this.formulario.nombre.trim(),
       descripcion: this.formulario.descripcion?.trim() || undefined,
-      tipoEjercicio: this.formulario.tipoEjercicio as TipoEjercicio,
+      tipoEjercicio: tipoFinal as TipoEjercicio,
       grupoMuscular: this.formulario.grupoMuscular as GrupoMuscular,
       nivelDificultad: this.formulario.nivelDificultad as NivelDificultad,
       caloriasQuemadasPorMinuto: this.formulario.caloriasQuemadasPorMinuto || undefined,
@@ -1950,7 +2063,13 @@ export class EjerciciosListComponent implements OnInit {
    * Obtiene el label del tipo
    */
   getTipoLabel(tipo: TipoEjercicio): string {
-    return TIPO_EJERCICIO_LABELS[tipo];
+    const label = TIPO_EJERCICIO_LABELS[tipo];
+    if (label) return label;
+    
+    // Para tipos personalizados, formatear de MAYUSCULAS_CON_GUIONES a "Mayúsculas Con Guiones"
+    return tipo.split('_').map(palabra => 
+      palabra.charAt(0) + palabra.slice(1).toLowerCase()
+    ).join(' ');
   }
 
   /**
@@ -1971,7 +2090,31 @@ export class EjerciciosListComponent implements OnInit {
    * Obtiene el icono del tipo
    */
   getTipoIcon(tipo: TipoEjercicio): string {
-    return TIPO_EJERCICIO_ICONS[tipo];
+    return TIPO_EJERCICIO_ICONS[tipo] || '🎯';
+  }
+
+  /**
+   * Maneja el cambio en el select de tipo de ejercicio
+   */
+  onTipoEjercicioChange(): void {
+    if (this.formulario.tipoEjercicio === '__CUSTOM__') {
+      this.mostrarCampoTipoPersonalizado = true;
+      this.tipoPersonalizado = '';
+    } else {
+      this.mostrarCampoTipoPersonalizado = false;
+      this.tipoPersonalizado = '';
+    }
+  }
+
+  /**
+   * Maneja cambios en el campo de tipo personalizado
+   */
+  onTipoPersonalizadoChange(): void {
+    // Convertir a mayúsculas y reemplazar espacios por guiones bajos
+    this.tipoPersonalizado = this.tipoPersonalizado
+      .toUpperCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Z0-9_]/g, '');
   }
 
   /**

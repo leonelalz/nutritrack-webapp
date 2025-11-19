@@ -1,5 +1,10 @@
 import { Etiqueta } from './etiqueta.model';
 
+/**
+ * Tipos de comida predefinidos en el sistema
+ * NOTA: El sistema ahora permite tipos personalizados además de estos predefinidos.
+ * Los administradores pueden crear nuevos tipos usando la opción "Agregar nuevo tipo..."
+ */
 export enum TipoComida {
   DESAYUNO = 'DESAYUNO',
   ALMUERZO = 'ALMUERZO',

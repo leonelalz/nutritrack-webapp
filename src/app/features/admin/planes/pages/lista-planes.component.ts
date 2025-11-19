@@ -123,8 +123,15 @@ import { PlanResponse } from '../../../../core/models';
                     <span class="duration-badge">{{ plan.duracionDias }} Semanas</span>
                   </td>
                   <td>
-                    @for (etiqueta of plan.etiquetas; track etiqueta.id) {
-                      <span class="objective-chip">{{ etiqueta.nombre }}</span>
+                    @if (plan.objetivo) {
+                      <div class="objetivo-info">
+                        <span class="objetivo-calorias">{{ plan.objetivo.caloriasObjetivo }} kcal</span>
+                        @if (plan.objetivo.descripcion) {
+                          <span class="objetivo-desc">{{ plan.objetivo.descripcion }}</span>
+                        }
+                      </div>
+                    } @else {
+                      <span class="text-muted">Sin objetivo</span>
                     }
                   </td>
                   <td>
@@ -139,17 +146,30 @@ import { PlanResponse } from '../../../../core/models';
                     <button class="btn-icon" [routerLink]="['/admin/planes', plan.id]" title="Ver detalles">
                       <mat-icon>visibility</mat-icon>
                     </button>
+                    <button class="btn-icon btn-comidas" [routerLink]="['/admin/planes', plan.id, 'comidas']" title="Gestionar comidas">
+                      <mat-icon>restaurant_menu</mat-icon>
+                    </button>
                     <button class="btn-icon" [routerLink]="['/admin/planes', plan.id, 'editar']" title="Editar">
                       <mat-icon>edit</mat-icon>
                     </button>
-                    <button
-                      class="btn-icon btn-delete"
-                      (click)="confirmarEliminar(plan)"
-                      [disabled]="plan.numeroUsuariosActivos && plan.numeroUsuariosActivos > 0"
-                      title="Eliminar"
-                    >
-                      <mat-icon>delete</mat-icon>
-                    </button>
+                    @if (plan.activo) {
+                      <button
+                        class="btn-icon btn-delete"
+                        (click)="confirmarDesactivar(plan)"
+                        [disabled]="plan.numeroUsuariosActivos && plan.numeroUsuariosActivos > 0"
+                        title="Desactivar plan"
+                      >
+                        <mat-icon>toggle_off</mat-icon>
+                      </button>
+                    } @else {
+                      <button
+                        class="btn-icon btn-success"
+                        (click)="activarPlan(plan)"
+                        title="Activar plan"
+                      >
+                        <mat-icon>toggle_on</mat-icon>
+                      </button>
+                    }
                   </td>
                 </tr>
               }
@@ -325,15 +345,27 @@ import { PlanResponse } from '../../../../core/models';
       white-space: nowrap;
     }
 
-    .objective-chip {
-      display: inline-block;
-      padding: 0.375rem 0.875rem;
-      background: #00A859;
-      color: #FFFFFF;
-      border-radius: 16px;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      margin-right: 0.5rem;
+    .objetivo-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .objetivo-calorias {
+      font-weight: 600;
+      color: #00A859;
+      font-size: 0.9rem;
+    }
+
+    .objetivo-desc {
+      font-size: 0.75rem;
+      color: #718096;
+      font-style: italic;
+    }
+
+    .text-muted {
+      color: #718096;
+      font-style: italic;
     }
 
     .status-badge {
@@ -386,6 +418,15 @@ import { PlanResponse } from '../../../../core/models';
     .btn-icon.btn-delete:hover {
       background: #fff5f5;
       color: #e53e3e;
+    }
+
+    .btn-icon.btn-success {
+      color: #38a169;
+    }
+
+    .btn-icon.btn-success:hover {
+      background: #f0fff4;
+      color: #38a169;
     }
 
     .btn-icon:disabled {
@@ -680,31 +721,66 @@ export class ListaPlanesComponent implements OnInit {
     });
   }
 
-  confirmarEliminar(plan: PlanResponse): void {
-    // Validar RN14: No eliminar si tiene usuarios activos
+  confirmarDesactivar(plan: PlanResponse): void {
+    // Validar RN14: No desactivar si tiene usuarios activos
     // Nota: El backend validará esto también
 
     const confirmado = confirm(
-      `¿Estás seguro de eliminar el plan "${plan.nombre}"?\n\nEsta acción no se puede deshacer.`
+      `¿Estás seguro de desactivar el plan "${plan.nombre}"?\n\nEl plan quedará inactivo pero podrás reactivarlo más tarde.`
     );
 
     if (confirmado) {
-      this.planService.eliminarPlan(plan.id).subscribe({
+      this.planService.desactivarPlan(plan.id).subscribe({
         next: (response) => {
           if (response.success) {
-            this.notificationService.showSuccess('Plan eliminado exitosamente');
+            this.notificationService.showSuccess('Plan desactivado exitosamente');
             this.cargarPlanes();
           }
         },
         error: (error) => {
-          if (error.status === 409) {
-            this.notificationService.showError(error.error.message || 'El plan tiene usuarios activos');
+          console.log('Error completo:', error);
+          console.log('Error.error:', error.error);
+          console.log('Mensaje:', error.error?.message);
+          
+          // Extraer el mensaje del backend (puede venir en diferentes formatos)
+          let mensaje = error.error?.message || error.error?.error || error.message || '';
+          
+          if (error.status === 409 || error.status === 400) {
+            // El backend retorna 400 o 409 cuando hay usuarios activos
+            if (!mensaje) {
+              mensaje = 'El plan tiene usuarios activos y no puede ser desactivado';
+            }
+          } else if (error.status === 404) {
+            if (!mensaje) {
+              mensaje = 'Plan no encontrado';
+            }
           } else {
-            this.notificationService.showError('Error al eliminar plan');
+            if (!mensaje) {
+              mensaje = 'Error al desactivar el plan';
+            }
           }
+          
+          this.notificationService.showError(mensaje);
         }
       });
     }
+  }
+
+  activarPlan(plan: PlanResponse): void {
+    if (!plan) return;
+
+    this.planService.activarPlan(plan.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.notificationService.showSuccess('Plan activado exitosamente');
+          this.cargarPlanes();
+        }
+      },
+      error: (error) => {
+        const mensaje = error.error?.message || error.error?.error || error.message || 'Error al activar el plan';
+        this.notificationService.showError(mensaje);
+      }
+    });
   }
 
   formatearObjetivo(tipo: string | null): string {

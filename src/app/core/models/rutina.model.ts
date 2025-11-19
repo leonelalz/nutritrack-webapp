@@ -3,17 +3,12 @@
  * Backend: /api/v1/admin/rutinas
  */
 
-import { Etiqueta, PagedResponse, DiaSemana } from './common.model';
+import { PagedResponse, DiaSemana } from './common.model';
+import { Etiqueta } from './etiqueta.model';
+import { NivelDificultad } from './ejercicio.model';
 
 // Re-exportar para compatibilidad
-export type { Etiqueta, PagedResponse, DiaSemana };
-
-export enum NivelDificultad {
-  PRINCIPIANTE = 'PRINCIPIANTE',
-  INTERMEDIO = 'INTERMEDIO',
-  AVANZADO = 'AVANZADO',
-  EXPERTO = 'EXPERTO'
-}
+export type { Etiqueta, PagedResponse, DiaSemana, NivelDificultad };
 
 export enum ObjetivoRutina {
   PERDER_PESO = 'PERDER_PESO',
@@ -27,16 +22,18 @@ export interface CrearRutinaRequest {
   nombre: string;
   descripcion: string;
   duracionSemanas: number;
+  patronSemanas?: number;
   nivelDificultad: NivelDificultad;
-  objetivo: ObjetivoRutina;
+  etiquetaIds?: number[];
 }
 
 export interface ActualizarRutinaRequest {
   nombre?: string;
   descripcion?: string;
   duracionSemanas?: number;
+  patronSemanas?: number;
   nivelDificultad?: NivelDificultad;
-  objetivo?: ObjetivoRutina;
+  etiquetaIds?: number[];
 }
 
 
@@ -45,8 +42,8 @@ export interface RutinaResponse {
   nombre: string;
   descripcion: string;
   duracionSemanas: number;
+  patronSemanas: number;
   nivelDificultad: NivelDificultad;
-  objetivo: ObjetivoRutina | null;
   etiquetas: Etiqueta[];
   activo: boolean;
   createdAt: string | null;
@@ -57,7 +54,9 @@ export interface RutinaResponse {
 }
 
 export interface EjercicioRutinaRequest {
-  idEjercicio: number;
+  ejercicioId: number;
+  semanaBase: number;
+  diaSemana: DiaSemana;
   orden: number;
   series: number;
   repeticiones: number;
@@ -68,7 +67,9 @@ export interface EjercicioRutinaRequest {
 }
 
 export interface ActualizarEjercicioRutinaRequest {
-  idEjercicio?: number;
+  ejercicioId?: number;
+  semanaBase?: number;
+  diaSemana?: DiaSemana;
   orden?: number;
   series?: number;
   repeticiones?: number;
@@ -90,6 +91,8 @@ export interface EjercicioInfo {
 export interface EjercicioRutinaResponse {
   id: number;
   ejercicio: EjercicioInfo;
+  semanaBase: number;
+  diaSemana: DiaSemana;
   orden: number;
   series: number;
   repeticiones: number;
@@ -97,10 +100,6 @@ export interface EjercicioRutinaResponse {
   duracionMinutos?: number;
   descansoSegundos?: number;
   notas?: string;
-  // Propiedades para compatibilidad con componentes
-  diaSemana?: DiaSemana;
-  nombreEjercicio?: string;
-  tiempoDescanso?: number;
 }
 
 export interface RutinaDetalleResponse extends RutinaResponse {

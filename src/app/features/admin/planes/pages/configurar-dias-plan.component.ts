@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { PlanService } from '../../../../core/services/plan.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { DiaPlanResponse, TipoComida } from '../../../../core/models';
@@ -13,11 +14,17 @@ import { DiaPlanResponse, TipoComida } from '../../../../core/models';
 @Component({
   selector: 'app-configurar-dias-plan',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, MatIconModule],
   template: `
     <div class="configurar-dias-container">
-      <div class="header">
-        <h1>Configurar Días - {{ nombrePlan() }}</h1>
+      <div class="page-header">
+        <div class="header-content">
+          <h1 class="page-title">
+            <mat-icon>calendar_today</mat-icon>
+            Configurar Días - {{ nombrePlan() }}
+          </h1>
+          <p class="page-subtitle">Asigna comidas a cada día del plan nutricional</p>
+        </div>
         <button class="btn-link" routerLink="/admin/planes">← Volver a planes</button>
       </div>
 

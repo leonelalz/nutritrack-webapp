@@ -3,7 +3,9 @@
 import { Etiqueta } from './etiqueta.model';
 
 /**
- * Tipos de ejercicio
+ * Tipos de ejercicio predefinidos en el sistema
+ * NOTA: El sistema ahora permite tipos personalizados además de estos predefinidos.
+ * Los administradores pueden crear nuevos tipos usando la opción "Agregar nuevo tipo..."
  */
 export enum TipoEjercicio {
   CARDIO = 'CARDIO',

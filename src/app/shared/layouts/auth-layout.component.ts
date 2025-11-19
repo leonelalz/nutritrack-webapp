@@ -19,7 +19,6 @@ import { AdminSidebarComponent } from "../components/admin-sidebar.component";
           <app-admin-sidebar (sidebarToggle)="onSidebarToggle($event)"/>
         </div>
         <div class="content-wrapper" [class.sidebar-open]="!sidebarCollapsed()">
-          <app-navbar />
           <main class="auth-main">
             <router-outlet />
           </main>
@@ -68,8 +67,12 @@ import { AdminSidebarComponent } from "../components/admin-sidebar.component";
 
 
     .auth-main {
-      margin-top: calc(20px + var(--navbar-height));
       flex: 1;
+    }
+
+    /* Solo agregar margen superior si NO es admin route */
+    .content-wrapper:has(app-navbar) .auth-main {
+      margin-top: calc(20px + var(--navbar-height));
     }
 
     @media (max-width: 768px) {

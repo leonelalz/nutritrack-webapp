@@ -34,20 +34,22 @@ import { RutinaResponse } from '../../../../core/models';
   ],
   template: `
     <div class="page-container">
+      <!-- Header -->
       <div class="page-header">
         <div class="header-content">
           <h1 class="page-title">
             <mat-icon>fitness_center</mat-icon>
             Gestión de Rutinas de Ejercicio
           </h1>
-          <p class="page-subtitle">Administra las rutinas de ejercicio del sistema</p>
+          <p class="page-subtitle">Crea, edita y gestiona todas las rutinas de ejercicio desde aquí.</p>
         </div>
         <button mat-raised-button color="primary" routerLink="/admin/rutinas/crear">
           <mat-icon>add</mat-icon>
-          Crear Rutina
+          Crear Nueva Rutina
         </button>
       </div>
 
+      <!-- Search & Filters -->
       <mat-card class="filters-card">
         <mat-card-content>
           <div class="filters">
@@ -71,17 +73,22 @@ import { RutinaResponse } from '../../../../core/models';
         </mat-card-content>
       </mat-card>
 
+      <!-- Loading State -->
       @if (loading()) {
-        <div class="loading">Cargando rutinas...</div>
+        <div class="loading-state">
+          <mat-icon>hourglass_empty</mat-icon>
+          <p>Cargando rutinas...</p>
+        </div>
       }
 
+      <!-- Empty State -->
       @if (!loading() && rutinasFiltradas().length === 0) {
         <mat-card>
           <mat-card-content>
             <div class="empty-state">
-              <mat-icon class="empty-icon">event_repeat</mat-icon>
+              <mat-icon class="empty-icon">fitness_center</mat-icon>
               <h3>No hay rutinas registradas</h3>
-              <p>Comienza creando tu primera rutina para el sistema</p>
+              <p>Comienza creando tu primera rutina de ejercicio para el sistema</p>
               <button mat-raised-button color="primary" routerLink="/admin/rutinas/crear">
                 <mat-icon>add</mat-icon>
                 Crear Primera Rutina
@@ -91,63 +98,94 @@ import { RutinaResponse } from '../../../../core/models';
         </mat-card>
       }
 
+      <!-- Table View -->
       @if (!loading() && rutinasFiltradas().length > 0) {
-        <div class="rutinas-grid">
-          @for (rutina of rutinasFiltradas(); track rutina.id) {
-            <mat-card class="rutina-card" [class.inactiva]="!rutina.activo">
-              <div class="rutina-header">
-                <h3>{{ rutina.nombre }}</h3>
-                <span class="estado-badge" [class.activo]="rutina.activo" [class.inactivo]="!rutina.activo">
-                  {{ rutina.activo ? 'Activa' : 'Inactiva' }}
-                </span>
-              </div>
-
-              <p class="rutina-descripcion">{{ rutina.descripcion }}</p>
-
-              <div class="rutina-stats">
-                <div class="stat">
-                  <span class="stat-label">Duración:</span>
-                  <span class="stat-value">{{ rutina.duracionSemanas }} semanas</span>
-                </div>
-                <div class="stat">
-                  <span class="stat-label">Nivel:</span>
-                  <span class="stat-value">{{ formatearNivel(rutina.nivelDificultad) }}</span>
-                </div>
-                @if (rutina.totalEjerciciosProgramados !== undefined) {
-                  <div class="stat">
-                    <span class="stat-label">Ejercicios:</span>
-                    <span class="stat-value">{{ rutina.totalEjerciciosProgramados }}</span>
-                  </div>
-                }
-              </div>
-
-              <mat-chip-set class="rutina-etiquetas">
-                @for (etiqueta of rutina.etiquetas; track etiqueta.id) {
-                  <mat-chip>{{ etiqueta.nombre }}</mat-chip>
-                }
-              </mat-chip-set>
-
-              <div class="rutina-actions">
-                <button mat-raised-button [routerLink]="['/admin/rutinas', rutina.id, 'editar']">
-                  <mat-icon>edit</mat-icon>
-                  Editar
-                </button>
-                <button mat-raised-button [routerLink]="['/admin/rutinas', rutina.id, 'ejercicios']">
-                  <mat-icon>list</mat-icon>
-                  Ejercicios
-                </button>
-                <button
-                  mat-raised-button
-                  color="warn"
-                  (click)="confirmarEliminar(rutina)"
-                  [disabled]="rutina.numeroUsuariosActivos && rutina.numeroUsuariosActivos > 0"
-                >
-                  <mat-icon>delete</mat-icon>
-                  Eliminar
-                </button>
-              </div>
-            </mat-card>
-          }
+        <div class="table-container">
+          <table class="rutinas-table">
+            <thead>
+              <tr>
+                <th>Nombre de la Rutina</th>
+                <th>Duración</th>
+                <th>Nivel</th>
+                <th>Etiquetas</th>
+                <th>Estado</th>
+                <th>Creación</th>
+                <th class="actions-column"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rutina of rutinasFiltradas(); track rutina.id) {
+                <tr class="rutina-row" [class.inactive]="!rutina.activo">
+                  <td class="rutina-name-cell">
+                    <div class="rutina-name">{{ rutina.nombre }}</div>
+                    @if (rutina.descripcion) {
+                      <div class="rutina-desc">{{ rutina.descripcion }}</div>
+                    }
+                  </td>
+                  <td>
+                    <span class="duration-badge">{{ rutina.duracionSemanas }} Semanas</span>
+                  </td>
+                  <td>
+                    <span class="nivel-badge" [attr.data-nivel]="rutina.nivelDificultad">
+                      {{ formatearNivel(rutina.nivelDificultad) }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (rutina.etiquetas && rutina.etiquetas.length > 0) {
+                      <div class="etiquetas-cell">
+                        @for (etiqueta of rutina.etiquetas.slice(0, 2); track etiqueta.id) {
+                          <span class="etiqueta-badge">{{ etiqueta.nombre }}</span>
+                        }
+                        @if (rutina.etiquetas.length > 2) {
+                          <span class="etiqueta-more">+{{ rutina.etiquetas.length - 2 }}</span>
+                        }
+                      </div>
+                    } @else {
+                      <span class="text-muted">Sin etiquetas</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="status-badge" [class.active]="rutina.activo" [class.inactive]="!rutina.activo">
+                      {{ rutina.activo ? 'Activa' : 'Inactiva' }}
+                    </span>
+                  </td>
+                  <td class="date-cell">
+                    {{ formatearFecha(rutina.createdAt) }}
+                  </td>
+                  <td class="actions-cell">
+                    <button class="btn-icon" [routerLink]="['/admin/rutinas', rutina.id, 'editar']" title="Editar rutina">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button 
+                      class="btn-icon btn-ejercicios" 
+                      [routerLink]="['/admin/rutinas', rutina.id, 'ejercicios']" 
+                      title="Agregar y organizar ejercicios (Drag & Drop)"
+                    >
+                      <mat-icon>fitness_center</mat-icon>
+                    </button>
+                    @if (rutina.activo) {
+                      <button
+                        class="btn-icon btn-delete"
+                        (click)="confirmarEliminar(rutina)"
+                        [disabled]="rutina.numeroUsuariosActivos && rutina.numeroUsuariosActivos > 0"
+                        title="Eliminar rutina"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    } @else {
+                      <button
+                        class="btn-icon btn-success"
+                        (click)="activarRutina(rutina)"
+                        title="Activar rutina"
+                      >
+                        <mat-icon>toggle_on</mat-icon>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
       }
     </div>
@@ -157,6 +195,8 @@ import { RutinaResponse } from '../../../../core/models';
       padding: 2rem;
       max-width: 1400px;
       margin: 0 auto;
+      min-height: 100vh;
+      background: #f8f9fa;
     }
 
     .page-header {
@@ -177,24 +217,27 @@ import { RutinaResponse } from '../../../../core/models';
       gap: 0.75rem;
       margin: 0 0 0.5rem 0;
       font-size: 2rem;
-      color: #333;
+      font-weight: 700;
+      color: #2d3748;
     }
 
     .page-title mat-icon {
       font-size: 2rem;
       width: 2rem;
       height: 2rem;
-      color: var(--primary-color, #00A859);
+      color: #667eea;
     }
 
     .page-subtitle {
       margin: 0;
-      color: #666;
+      color: #718096;
       font-size: 1rem;
     }
 
     .filters-card {
       margin-bottom: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .filters {
@@ -209,145 +252,335 @@ import { RutinaResponse } from '../../../../core/models';
       min-width: 300px;
     }
 
-    mat-checkbox {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
+    /* Table Styles */
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
     }
 
-    .rutinas-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-      gap: 1.5rem;
+    .rutinas-table {
+      width: 100%;
+      border-collapse: collapse;
     }
 
-    .rutina-card {
-      transition: transform 0.2s, box-shadow 0.2s;
+    .rutinas-table thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
     }
 
-    .rutina-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    .rutinas-table th {
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.875rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
-    .rutina-card.inactiva {
+    .rutinas-table tbody tr {
+      border-bottom: 1px solid #e2e8f0;
+      transition: background 0.2s;
+    }
+
+    .rutinas-table tbody tr:hover {
+      background: #f7fafc;
+    }
+
+    .rutinas-table tbody tr.inactive {
       opacity: 0.6;
     }
 
-    .rutina-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      margin-bottom: 1rem;
+    .rutinas-table td {
+      padding: 1rem;
+      color: #4a5568;
     }
 
-    .rutina-header h3 {
-      margin: 0;
-      font-size: 1.25rem;
-      color: #333;
-      flex: 1;
+    .rutina-name-cell {
+      font-weight: 600;
+      color: #2d3748;
+      max-width: 300px;
     }
 
-    .estado-badge {
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-
-    .estado-badge.activo {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .estado-badge.inactivo {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .rutina-descripcion {
-      color: #666;
-      margin-bottom: 1rem;
-      min-height: 3rem;
-    }
-
-    .rutina-stats {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      padding: 0.75rem;
-      background: #f8f9fa;
-      border-radius: 8px;
-    }
-
-    .stat {
-      flex: 1;
-      text-align: center;
-    }
-
-    .stat-label {
-      display: block;
-      font-size: 0.85rem;
-      color: #666;
+    .rutina-name {
+      font-size: 1rem;
       margin-bottom: 0.25rem;
     }
 
-    .stat-value {
-      display: block;
-      font-size: 1.25rem;
-      font-weight: bold;
-      color: #333;
+    .rutina-desc {
+      font-size: 0.875rem;
+      color: #718096;
+      font-weight: 400;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .rutina-etiquetas {
-      margin-bottom: 1rem;
+    .duration-badge {
+      display: inline-block;
+      padding: 0.375rem 0.75rem;
+      background: #ebf8ff;
+      color: #2c5282;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
     }
 
-    .rutina-actions {
+    .nivel-badge {
+      display: inline-block;
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .nivel-badge[data-nivel="PRINCIPIANTE"] {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .nivel-badge[data-nivel="INTERMEDIO"] {
+      background: #feebc8;
+      color: #7c2d12;
+    }
+
+    .nivel-badge[data-nivel="AVANZADO"] {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .nivel-badge[data-nivel="EXPERTO"] {
+      background: #e9d8fd;
+      color: #44337a;
+    }
+
+    .etiquetas-cell {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+    }
+
+    .etiqueta-badge {
+      display: inline-block;
+      padding: 0.25rem 0.625rem;
+      background: #faf5ff;
+      color: #6b46c1;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .etiqueta-more {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      background: #e2e8f0;
+      color: #4a5568;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .status-badge.active {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .status-badge.inactive {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .date-cell {
+      color: #718096;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+
+    .text-muted {
+      color: #a0aec0;
+      font-style: italic;
+    }
+
+    .actions-column {
+      width: 150px;
+      text-align: right;
+    }
+
+    .actions-cell {
       display: flex;
       gap: 0.5rem;
-      flex-wrap: wrap;
-      margin-top: 1rem;
+      justify-content: flex-end;
+      align-items: center;
     }
 
-    .rutina-actions button {
-      flex: 1;
-      min-width: 120px;
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #4a5568;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
     }
 
-    .loading {
+    .btn-icon:hover:not(:disabled) {
+      background: #edf2f7;
+      color: #2d3748;
+    }
+
+    .btn-icon:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .btn-icon mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .btn-icon.btn-delete {
+      color: #e53e3e;
+    }
+
+    .btn-icon.btn-delete:hover:not(:disabled) {
+      background: #fff5f5;
+    }
+
+    .btn-icon.btn-success {
+      color: #38a169;
+    }
+
+    .btn-icon.btn-success:hover:not(:disabled) {
+      background: #f0fff4;
+    }
+
+    .btn-icon.btn-ejercicios {
+      color: #667eea;
+      background: #f0f4ff;
+      font-weight: 600;
+    }
+
+    .btn-icon.btn-ejercicios:hover:not(:disabled) {
+      background: #667eea;
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .btn-icon.btn-ejercicios mat-icon {
+      font-weight: bold;
+    }
+
+    /* Loading & Empty States */
+    .loading-state {
       text-align: center;
-      padding: 3rem;
-      color: #666;
+      padding: 4rem 2rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .loading-state mat-icon {
+      font-size: 3rem;
+      width: 3rem;
+      height: 3rem;
+      color: #cbd5e0;
+      margin-bottom: 1rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .loading-state p {
+      color: #718096;
+      font-size: 1rem;
     }
 
     .empty-state {
       text-align: center;
-      padding: 3rem;
+      padding: 4rem 2rem;
     }
 
     .empty-icon {
       font-size: 4rem;
       width: 4rem;
       height: 4rem;
-      color: #ccc;
-      margin-bottom: 1rem;
+      color: #cbd5e0;
+      margin: 0 auto 1.5rem;
     }
 
     .empty-state h3 {
       margin: 0 0 0.5rem 0;
-      color: #333;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #2d3748;
     }
 
     .empty-state p {
-      color: #666;
-      margin-bottom: 1.5rem;
+      color: #718096;
+      margin-bottom: 2rem;
+      font-size: 1rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .table-container {
+        overflow-x: auto;
+      }
+
+      .rutinas-table {
+        min-width: 900px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .page-container {
+        padding: 1rem;
+      }
+
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .page-title {
+        font-size: 1.5rem;
+      }
+
+      .filters {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-field {
+        width: 100%;
+      }
     }
   `]
 })
 export class ListaRutinasComponent implements OnInit {
   loading = signal(false);
+  isDeleting = signal(false);
   mostrarInactivas = signal(false);
   filtroNombre = signal('');
   rutinasFiltradas = signal<RutinaResponse[]>([]);
@@ -410,30 +643,56 @@ export class ListaRutinasComponent implements OnInit {
   }
 
   confirmarEliminar(rutina: RutinaResponse): void {
-    // Validar RN14: No eliminar si tiene usuarios activos
-    // Nota: El backend validará esto también
-
-    const confirmado = confirm(
-      `¿Estás seguro de eliminar la rutina "${rutina.nombre}"?\n\nEsta acción no se puede deshacer.`
+    const confirmation = confirm(
+      `¿Estás seguro de que deseas desactivar la rutina "${rutina.nombre}"?\n\n` +
+      `La rutina quedará inactiva pero podrás reactivarla más tarde.`
     );
 
-    if (confirmado) {
-      this.rutinaService.eliminarRutina(rutina.id).subscribe({
+    if (confirmation) {
+      this.isDeleting.set(true);
+      this.rutinaService.desactivarRutina(rutina.id).subscribe({
         next: (response) => {
-          if (response.success) {
-            this.notificationService.showSuccess('Rutina eliminada exitosamente');
-            this.cargarRutinas();
-          }
+          console.log('Rutina desactivada - Response:', response);
+          this.notificationService.showSuccess('Rutina desactivada correctamente');
+          this.cargarRutinas();
         },
         error: (error) => {
-          if (error.status === 409) {
-            this.notificationService.showError(error.error.message || 'La rutina tiene usuarios activos');
-          } else {
-            this.notificationService.showError('Error al eliminar rutina');
-          }
-        }
+          console.error('Error al desactivar rutina:', error);
+          const errorMessage = error.error?.message || error.error?.error || error.message || 'Error al desactivar la rutina';
+          console.log('Error message extracted:', errorMessage);
+          this.notificationService.showError(errorMessage);
+        },
+        complete: () => this.isDeleting.set(false)
       });
     }
+  }
+
+  activarRutina(rutina: RutinaResponse): void {
+    this.isDeleting.set(true);
+    this.rutinaService.activarRutina(rutina.id).subscribe({
+      next: (response) => {
+        console.log('Rutina activada - Response:', response);
+        this.notificationService.showSuccess('Rutina activada correctamente');
+        this.cargarRutinas();
+      },
+      error: (error) => {
+        console.error('Error al activar rutina:', error);
+        const errorMessage = error.error?.message || error.error?.error || error.message || 'Error al activar la rutina';
+        console.log('Error message extracted:', errorMessage);
+        this.notificationService.showError(errorMessage);
+      },
+      complete: () => this.isDeleting.set(false)
+    });
+  }
+
+  formatearFecha(fecha: string | null): string {
+    if (!fecha) return '-';
+    const date = new Date(fecha);
+    return date.toLocaleDateString('es-ES', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   }
 
   formatearNivel(nivel: string): string {
@@ -446,16 +705,4 @@ export class ListaRutinasComponent implements OnInit {
     return niveles[nivel] || nivel;
   }
 
-  formatearObjetivo(tipo: string | null): string {
-    if (!tipo) return 'Sin objetivo';
-    
-    const objetivos: Record<string, string> = {
-      'PERDER_PESO': 'Pérdida de Peso',
-      'GANAR_MASA_MUSCULAR': 'Ganancia Muscular',
-      'MANTENER_FORMA': 'Mantenimiento',
-      'REHABILITACION': 'Rehabilitación',
-      'CONTROLAR_ESTRES': 'Control de Estrés'
-    };
-    return objetivos[tipo] || tipo;
-  }
 }

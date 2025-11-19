@@ -2,16 +2,6 @@
  * Modelos comunes compartidos entre diferentes módulos
  */
 
-// Etiqueta - usada por planes y rutinas
-export interface Etiqueta {
-  id: number;
-  nombre: string;
-  tipoEtiqueta: string;
-  descripcion: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
-
 // Respuesta paginada del API Spring Boot
 export interface PagedResponse<T> {
   content: T[];
@@ -33,12 +23,13 @@ export interface PagedResponse<T> {
 }
 
 // Días de la semana (usado en rutinas)
+// El backend espera valores numéricos: 1=Lunes, 2=Martes, etc.
 export enum DiaSemana {
-  LUNES = 'LUNES',
-  MARTES = 'MARTES',
-  MIERCOLES = 'MIERCOLES',
-  JUEVES = 'JUEVES',
-  VIERNES = 'VIERNES',
-  SABADO = 'SABADO',
-  DOMINGO = 'DOMINGO'
+  LUNES = 1,
+  MARTES = 2,
+  MIERCOLES = 3,
+  JUEVES = 4,
+  VIERNES = 5,
+  SABADO = 6,
+  DOMINGO = 7
 }

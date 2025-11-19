@@ -44,14 +44,24 @@ export const ADMIN_ROUTES: Routes = [
         title: 'Crear Plan - Admin'
       },
       {
+        path: ':id',
+        loadComponent: () => import('./planes/pages/detalle-plan.component').then(m => m.DetallePlanComponent),
+        title: 'Detalle Plan - Admin'
+      },
+      {
         path: ':id/editar',
         loadComponent: () => import('./planes/pages/editar-plan.component').then(m => m.EditarPlanComponent),
         title: 'Editar Plan - Admin'
       },
       {
-        path: ':id/dias',
+        path: ':id/configurar',
         loadComponent: () => import('./planes/pages/configurar-dias-plan.component').then(m => m.ConfigurarDiasPlanComponent),
         title: 'Configurar Días - Admin'
+      },
+      {
+        path: ':id/comidas',
+        loadComponent: () => import('./planes/pages/gestionar-comidas-plan.component').then(m => m.GestionarComidasPlanComponent),
+        title: 'Gestionar Comidas - Admin'
       }
     ]
   },

@@ -2,10 +2,11 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { PlanService } from '../../../../core/services/plan.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { TipoObjetivo, EtiquetaResponse } from '../../../../core/models';
+import { Etiqueta } from '../../../../core/models';
 
 /**
  * Crear Plan Nutricional (Admin)
@@ -16,11 +17,17 @@ import { TipoObjetivo, EtiquetaResponse } from '../../../../core/models';
 @Component({
   selector: 'app-crear-plan',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, MatIconModule],
   template: `
     <div class="crear-plan-container">
-      <div class="header">
-        <h1>Crear Plan Nutricional</h1>
+      <div class="page-header">
+        <div class="header-content">
+          <h1 class="page-title">
+            <mat-icon>restaurant_menu</mat-icon>
+            Crear Plan Nutricional
+          </h1>
+          <p class="page-subtitle">Crea un nuevo plan nutricional personalizado</p>
+        </div>
         <button class="btn-link" routerLink="/admin/planes">← Volver a planes</button>
       </div>
 
@@ -86,15 +93,13 @@ import { TipoObjetivo, EtiquetaResponse } from '../../../../core/models';
           
           <div formGroupName="objetivo">
             <div class="form-group">
-              <label for="tipoObjetivo">Tipo de Objetivo <span class="required">*</span></label>
-              <select id="tipoObjetivo" formControlName="tipoObjetivo">
-                <option value="">Selecciona un objetivo</option>
-                <option value="PERDIDA_PESO">Pérdida de Peso</option>
-                <option value="GANANCIA_MUSCULAR">Ganancia Muscular</option>
-                <option value="MANTENIMIENTO">Mantenimiento</option>
-                <option value="DEFINICION">Definición</option>
-                <option value="SALUD_GENERAL">Salud General</option>
-              </select>
+              <label for="descripcion">Descripción del Objetivo <span class="required">*</span></label>
+              <textarea
+                id="descripcion"
+                formControlName="descripcion"
+                rows="2"
+                placeholder="Ej: Déficit calórico moderado con alta proteína"
+              ></textarea>
             </div>
 
             <div class="form-row">
@@ -388,13 +393,13 @@ export class CrearPlanComponent implements OnInit {
   formulario!: FormGroup;
   guardando = signal(false);
   cargandoEtiquetas = signal(false);
-  etiquetas = signal<EtiquetaResponse[]>([]);
+  etiquetas = signal<Etiqueta[]>([]);
   etiquetasSeleccionadas = signal<number[]>([]);
 
   constructor(
     private fb: FormBuilder,
-    //private planService: PlanService,
-    //private etiquetaService: EtiquetaService,
+    private planService: PlanService,
+    private etiquetaService: EtiquetaService,
     private notificationService: NotificationService,
     private router: Router
   ) {
@@ -402,7 +407,7 @@ export class CrearPlanComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    //this.cargarEtiquetas();
+    this.cargarEtiquetas();
   }
 
   inicializarFormulario(): void {
@@ -411,28 +416,30 @@ export class CrearPlanComponent implements OnInit {
       descripcion: ['', [Validators.required, Validators.minLength(10)]],
       duracionDias: [7, [Validators.required, Validators.min(1), Validators.max(365)]],
       objetivo: this.fb.group({
-        tipoObjetivo: ['', Validators.required],
         caloriasObjetivo: [2000, [Validators.required, Validators.min(1000), Validators.max(5000)]],
         proteinasObjetivo: [150, [Validators.required, Validators.min(0)]],
         carbohidratosObjetivo: [200, [Validators.required, Validators.min(0)]],
-        grasasObjetivo: [70, [Validators.required, Validators.min(0)]]
+        grasasObjetivo: [70, [Validators.required, Validators.min(0)]],
+        descripcion: ['', Validators.required]
       })
     });
   }
 
-  /* cargarEtiquetas(): void {
+  cargarEtiquetas(): void {
     this.cargandoEtiquetas.set(true);
     this.etiquetaService.obtenerTodas().subscribe({
-      next: (etiquetas) => {
+      next: (response) => {
         this.cargandoEtiquetas.set(false);
-        this.etiquetas.set(etiquetas);
+        if (response.success && response.data) {
+          this.etiquetas.set(response.data);
+        }
       },
       error: () => {
         this.cargandoEtiquetas.set(false);
         this.notificationService.showError('Error al cargar etiquetas');
       }
     });
-  } */
+  }
 
   toggleEtiqueta(etiquetaId: number): void {
     const seleccionadas = this.etiquetasSeleccionadas();
@@ -457,7 +464,7 @@ export class CrearPlanComponent implements OnInit {
       etiquetaIds: this.etiquetasSeleccionadas()
     };
 
-    /* this.planService.crearPlan(planData).subscribe({
+    this.planService.crearPlan(planData).subscribe({
       next: (response) => {
         this.guardando.set(false);
         if (response.success) {
@@ -475,6 +482,6 @@ export class CrearPlanComponent implements OnInit {
           this.notificationService.showError('Error al crear plan');
         }
       }
-    }); */
+    });
   }
 }

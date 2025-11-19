@@ -2,6 +2,11 @@
 
 import { Etiqueta } from './etiqueta.model';
 
+/**
+ * Categorías de alimentos predefinidas en el sistema
+ * NOTA: El sistema ahora permite categorías personalizadas además de estas predefinidas.
+ * Los administradores pueden crear nuevas categorías usando la opción "Agregar nueva categoría..."
+ */
 export enum CategoriaAlimento {
   FRUTAS = 'FRUTAS',
   VERDURAS = 'VERDURAS',

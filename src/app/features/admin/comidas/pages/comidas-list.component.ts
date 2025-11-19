@@ -3,6 +3,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { ComidaService } from '../../../../core/services/comida.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
@@ -20,9 +21,19 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
 @Component({
   selector: 'app-comidas-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   template: `
     <div class="comidas-container">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="header-content">
+          <h1 class="page-title">
+            <mat-icon>restaurant</mat-icon>
+            Gestión de Comidas
+          </h1>
+          <p class="page-subtitle">Crea, edita y gestiona todas las comidas desde aquí.</p>
+        </div>
+      </div>
 
       <!-- Stats Cards -->
       <div class="stats-grid">
@@ -381,6 +392,7 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
                 <select
                   [(ngModel)]="formulario.tipoComida"
                   class="form-input"
+                  (change)="onTipoComidaChange()"
                 >
                   <option value="">Selecciona un tipo</option>
                   @for (tipo of tiposComida; track tipo) {
@@ -388,7 +400,29 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
                       {{ getTipoIcon(tipo) }} {{ getTipoLabel(tipo) }}
                     </option>
                   }
+                  <option value="__CUSTOM__">➕ Agregar nuevo tipo...</option>
                 </select>
+              </div>
+
+              @if (mostrarCampoTipoComidaPersonalizado) {
+                <div class="form-group custom-type-group">
+                  <label>
+                    Nuevo Tipo de Comida <span class="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    [(ngModel)]="tipoComidaPersonalizado"
+                    (input)="onTipoComidaPersonalizadoChange()"
+                    class="form-input"
+                    placeholder="Ej: BRUNCH"
+                  />
+                  <span class="help-text">
+                    Se formateará automáticamente a MAYÚSCULAS_CON_GUIONES_BAJOS
+                  </span>
+                </div>
+              }
+
+              <div class="form-group">
               </div>
 
               <div class="form-row">
@@ -455,11 +489,96 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
                 </div>
               </div>
 
-              @if (comidaEditando) {
-                <div class="info-note">
-                  💡 Los ingredientes se gestionan en la vista de receta después de crear/editar la comida
+              <!-- Ingredientes -->
+              <div class="form-section-title">Ingredientes de la Receta</div>
+              
+              <div class="ingredients-form-section">
+                <div class="ingredients-form-header">
+                  <span>Ingredientes agregados ({{ formulario.ingredientes.length }})</span>
+                  <button 
+                    type="button"
+                    (click)="mostrarFormIngrediente = !mostrarFormIngrediente" 
+                    class="btn-add-ingredient"
+                  >
+                    {{ mostrarFormIngrediente ? '✕ Cancelar' : '+ Agregar Ingrediente' }}
+                  </button>
                 </div>
-              }
+
+                @if (mostrarFormIngrediente) {
+                  <div class="ingredient-form">
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>Ingrediente <span class="required">*</span></label>
+                        <select
+                          [(ngModel)]="formularioIngrediente.ingredienteId"
+                          class="form-input"
+                        >
+                          <option value="0">Selecciona un ingrediente</option>
+                          @for (ingrediente of ingredientesDisponibles(); track ingrediente.id) {
+                            <option [value]="ingrediente.id">{{ ingrediente.nombre }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>Cantidad (gramos) <span class="required">*</span></label>
+                        <input
+                          type="number"
+                          [(ngModel)]="formularioIngrediente.cantidadGramos"
+                          class="form-input"
+                          placeholder="0"
+                          min="0"
+                          step="1"
+                        />
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label>Notas</label>
+                      <input
+                        type="text"
+                        [(ngModel)]="formularioIngrediente.notas"
+                        class="form-input"
+                        placeholder="Ej: En trozos pequeños"
+                      />
+                    </div>
+                    <button 
+                      type="button"
+                      (click)="agregarIngredienteALista()" 
+                      class="btn-primary"
+                      [disabled]="!formularioIngrediente.ingredienteId || !formularioIngrediente.cantidadGramos"
+                    >
+                      Agregar a la lista
+                    </button>
+                  </div>
+                }
+
+                @if (formulario.ingredientes.length > 0) {
+                  <div class="ingredients-preview-list">
+                    @for (ing of formulario.ingredientes; track ing.ingredienteId) {
+                      <div class="ingredient-preview-item">
+                        <div class="ingredient-preview-info">
+                          <span class="ingredient-preview-name">{{ getIngredienteNombre(ing.ingredienteId) }}</span>
+                          <span class="ingredient-preview-amount">{{ ing.cantidadGramos }}g</span>
+                          @if (ing.notas) {
+                            <span class="ingredient-preview-notes">{{ ing.notas }}</span>
+                          }
+                        </div>
+                        <button
+                          type="button"
+                          (click)="quitarIngredienteDeLista(ing.ingredienteId)"
+                          class="btn-remove-preview"
+                          title="Quitar"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="empty-ingredients-preview">
+                    <p>No hay ingredientes agregados. Usa el botón "+ Agregar Ingrediente" para comenzar.</p>
+                  </div>
+                }
+              </div>
             </div>
 
             <div class="modal-footer">
@@ -697,27 +816,33 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
 
     /* Header */
     .page-header {
-      background: white;
-      border-radius: 16px;
-      padding: 25px 30px;
-      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.04);
+      margin-bottom: 2rem;
+    }
+
+    .header-content {
+      flex: 1;
+    }
+
+    .page-title {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 30px;
+      gap: 0.75rem;
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      color: #333;
     }
 
-    .page-header h1 {
-      color: #333333;
-      font-size: 32px;
-      font-weight: 700;
-      margin: 0 0 5px 0;
+    .page-title mat-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+      color: var(--primary-color, #00A859);
     }
 
-    .page-header p {
-      color: #6C757D;
-      font-size: 14px;
+    .page-subtitle {
       margin: 0;
+      color: #666;
+      font-size: 1rem;
     }
 
     /* Buttons */
@@ -1567,6 +1692,38 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
       margin: 0;
     }
 
+    /* Campos personalizados */
+    .custom-type-group {
+      border: 2px solid #28A745;
+      border-radius: 8px;
+      padding: 16px;
+      background: #E8F5E8;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .custom-type-group label {
+      color: #28A745;
+    }
+
+    .help-text {
+      display: block;
+      font-size: 12px;
+      color: #6C757D;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1622,6 +1779,122 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
       color: #6C757D;
       font-size: 13px;
       margin: 8px;
+    }
+
+    /* Sección de Ingredientes en Formulario */
+    .ingredients-form-section {
+      background: #F8F9FA;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .ingredients-form-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .ingredients-form-header span {
+      font-weight: 600;
+      color: #333333;
+      font-size: 14px;
+    }
+
+    .btn-add-ingredient {
+      background: #28A745;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-add-ingredient:hover {
+      background: #218838;
+      transform: translateY(-2px);
+    }
+
+    .ingredient-form {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 15px;
+      border: 2px solid #28A745;
+      animation: slideDown 0.3s ease;
+    }
+
+    .ingredients-preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ingredient-preview-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid #DEE2E6;
+    }
+
+    .ingredient-preview-info {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex: 1;
+    }
+
+    .ingredient-preview-name {
+      font-weight: 600;
+      color: #333333;
+      font-size: 14px;
+    }
+
+    .ingredient-preview-amount {
+      color: #28A745;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .ingredient-preview-notes {
+      color: #6C757D;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .btn-remove-preview {
+      background: #DC3545;
+      color: white;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-remove-preview:hover {
+      background: #C82333;
+      transform: scale(1.1);
+    }
+
+    .empty-ingredients-preview {
+      text-align: center;
+      padding: 20px;
+      color: #6C757D;
+      font-size: 13px;
+      font-style: italic;
     }
 
     /* Nutrition Summary */
@@ -1980,12 +2253,13 @@ export class ComidasListComponent implements OnInit {
   // Formulario comida
   formulario = {
     nombre: '',
-    tipoComida: '' as TipoComida | '',
+    tipoComida: '' as TipoComida | '' | '__CUSTOM__',
     descripcion: '',
     tiempoPreparacionMinutos: 0,
     porciones: 0,
     instrucciones: '',
-    etiquetaIds: [] as number[]
+    etiquetaIds: [] as number[],
+    ingredientes: [] as { ingredienteId: number; cantidadGramos: number; notas?: string }[]
   };
   
   // Formulario ingrediente (US-10)
@@ -2002,6 +2276,13 @@ export class ComidasListComponent implements OnInit {
   
   // Listas para selects
   tiposComida = Object.values(TipoComida);
+
+  // Tipos personalizados
+  mostrarCampoTipoComidaPersonalizado = false;
+  tipoComidaPersonalizado = '';
+
+  // Control de formulario de ingrediente en modal principal
+  mostrarFormIngrediente = false;
 
   ngOnInit(): void {
     this.cargarComidas();
@@ -2112,8 +2393,10 @@ export class ComidasListComponent implements OnInit {
       tiempoPreparacionMinutos: 0,
       porciones: 0,
       instrucciones: '',
-      etiquetaIds: []
+      etiquetaIds: [],
+      ingredientes: []
     };
+    this.mostrarFormIngrediente = false;
     this.mostrarModal = true;
   }
 
@@ -2129,7 +2412,12 @@ export class ComidasListComponent implements OnInit {
       tiempoPreparacionMinutos: comida.tiempoPreparacionMinutos || 0,
       porciones: comida.porciones || 0,
       instrucciones: comida.instrucciones || '',
-      etiquetaIds: comida.etiquetas.map(e => e.id)
+      etiquetaIds: comida.etiquetas.map(e => e.id),
+      ingredientes: comida.ingredientes.map(ing => ({
+        ingredienteId: ing.ingredienteId,
+        cantidadGramos: ing.cantidadGramos,
+        notas: ing.notas
+      }))
     };
     this.mostrarModal = true;
   }
@@ -2140,13 +2428,31 @@ export class ComidasListComponent implements OnInit {
   cerrarModal(): void {
     this.mostrarModal = false;
     this.comidaEditando = null;
+    this.mostrarCampoTipoComidaPersonalizado = false;
+    this.tipoComidaPersonalizado = '';
+    this.mostrarFormIngrediente = false;
+    this.formularioIngrediente = {
+      ingredienteId: 0,
+      cantidadGramos: 0,
+      notas: ''
+    };
   }
 
   /**
    * Guarda una comida
    */
   guardar(): void {
-    if (!this.formulario.nombre || !this.formulario.tipoComida) {
+    // Validar tipo personalizado si está activo
+    if (this.mostrarCampoTipoComidaPersonalizado && !this.tipoComidaPersonalizado.trim()) {
+      this.mostrarError('Por favor ingresa el nuevo tipo de comida');
+      return;
+    }
+
+    const tipoFinal = this.mostrarCampoTipoComidaPersonalizado 
+      ? this.tipoComidaPersonalizado 
+      : this.formulario.tipoComida;
+
+    if (!this.formulario.nombre || !tipoFinal) {
       this.mostrarError('Por favor completa los campos obligatorios');
       return;
     }
@@ -2154,7 +2460,7 @@ export class ComidasListComponent implements OnInit {
     this.guardando = true;
     const request = {
       nombre: this.formulario.nombre.trim(),
-      tipoComida: this.formulario.tipoComida as TipoComida,
+      tipoComida: tipoFinal as TipoComida,
       descripcion: this.formulario.descripcion?.trim() || undefined,
       tiempoPreparacionMinutos: this.formulario.tiempoPreparacionMinutos || undefined,
       porciones: this.formulario.porciones || undefined,
@@ -2168,10 +2474,21 @@ export class ComidasListComponent implements OnInit {
 
     observable.subscribe({
       next: (response) => {
-        this.mostrarExito(response.message);
-        this.cerrarModal();
-        this.cargarComidas();
-        this.guardando = false;
+        const comidaCreada = response.data;
+        
+        // Si hay ingredientes para agregar y es una creación nueva
+        if (!this.comidaEditando && this.formulario.ingredientes.length > 0) {
+          // Enviar ingredientes uno por uno
+          this.enviarIngredientes(comidaCreada.id, this.formulario.ingredientes);
+        } else if (this.comidaEditando && this.formulario.ingredientes.length > 0) {
+          // Para edición, sincronizar ingredientes
+          this.sincronizarIngredientes(comidaCreada.id, this.formulario.ingredientes);
+        } else {
+          this.mostrarExito(response.message);
+          this.cerrarModal();
+          this.cargarComidas();
+          this.guardando = false;
+        }
       },
       error: (error) => {
         console.error('Error al guardar:', error);
@@ -2335,14 +2652,142 @@ export class ComidasListComponent implements OnInit {
    * Obtiene el label del tipo
    */
   getTipoLabel(tipo: TipoComida): string {
-    return TIPO_COMIDA_LABELS[tipo];
+    const label = TIPO_COMIDA_LABELS[tipo];
+    if (label) return label;
+    
+    // Para tipos personalizados, formatear de MAYUSCULAS_CON_GUIONES a "Mayúsculas Con Guiones"
+    return tipo.split('_').map(palabra => 
+      palabra.charAt(0) + palabra.slice(1).toLowerCase()
+    ).join(' ');
   }
 
   /**
    * Obtiene el icono del tipo
    */
   getTipoIcon(tipo: TipoComida): string {
-    return TIPO_COMIDA_ICONS[tipo];
+    return TIPO_COMIDA_ICONS[tipo] || '🍽️';
+  }
+
+  /**
+   * Maneja el cambio en el select de tipo de comida
+   */
+  onTipoComidaChange(): void {
+    if (this.formulario.tipoComida === '__CUSTOM__') {
+      this.mostrarCampoTipoComidaPersonalizado = true;
+      this.tipoComidaPersonalizado = '';
+    } else {
+      this.mostrarCampoTipoComidaPersonalizado = false;
+      this.tipoComidaPersonalizado = '';
+    }
+  }
+
+  /**
+   * Maneja cambios en el campo de tipo personalizado
+   */
+  onTipoComidaPersonalizadoChange(): void {
+    // Convertir a mayúsculas y reemplazar espacios por guiones bajos
+    this.tipoComidaPersonalizado = this.tipoComidaPersonalizado
+      .toUpperCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Z0-9_]/g, '');
+  }
+
+  /**
+   * Agrega un ingrediente a la lista temporal del formulario
+   */
+  agregarIngredienteALista(): void {
+    if (!this.formularioIngrediente.ingredienteId || !this.formularioIngrediente.cantidadGramos) {
+      this.mostrarError('Por favor selecciona un ingrediente y especifica la cantidad');
+      return;
+    }
+
+    // Verificar si el ingrediente ya está en la lista
+    const yaExiste = this.formulario.ingredientes.some(
+      ing => ing.ingredienteId === this.formularioIngrediente.ingredienteId
+    );
+
+    if (yaExiste) {
+      this.mostrarError('Este ingrediente ya fue agregado. Quítalo primero si deseas modificarlo.');
+      return;
+    }
+
+    // Agregar a la lista
+    this.formulario.ingredientes.push({
+      ingredienteId: this.formularioIngrediente.ingredienteId,
+      cantidadGramos: this.formularioIngrediente.cantidadGramos,
+      notas: this.formularioIngrediente.notas?.trim() || undefined
+    });
+
+    // Resetear formulario de ingrediente
+    this.formularioIngrediente = {
+      ingredienteId: 0,
+      cantidadGramos: 0,
+      notas: ''
+    };
+
+    // Ocultar formulario
+    this.mostrarFormIngrediente = false;
+  }
+
+  /**
+   * Quita un ingrediente de la lista temporal
+   */
+  quitarIngredienteDeLista(ingredienteId: number): void {
+    this.formulario.ingredientes = this.formulario.ingredientes.filter(
+      ing => ing.ingredienteId !== ingredienteId
+    );
+  }
+
+  /**
+   * Envía ingredientes a una comida recién creada
+   */
+  private enviarIngredientes(comidaId: number, ingredientes: any[]): void {
+    let ingredientesEnviados = 0;
+    let errores: string[] = [];
+
+    ingredientes.forEach((ing) => {
+      this.comidaService.agregarIngrediente(comidaId, {
+        ingredienteId: ing.ingredienteId,
+        cantidadGramos: ing.cantidadGramos,
+        notas: ing.notas
+      }).subscribe({
+        next: () => {
+          ingredientesEnviados++;
+          if (ingredientesEnviados + errores.length === ingredientes.length) {
+            this.finalizarGuardadoConIngredientes(errores);
+          }
+        },
+        error: (error) => {
+          errores.push(`Error al agregar ingrediente ${ing.ingredienteId}`);
+          if (ingredientesEnviados + errores.length === ingredientes.length) {
+            this.finalizarGuardadoConIngredientes(errores);
+          }
+        }
+      });
+    });
+  }
+
+  /**
+   * Sincroniza ingredientes de una comida editada
+   */
+  private sincronizarIngredientes(comidaId: number, ingredientes: any[]): void {
+    // Para simplificar, usar los ingredientes tal como están
+    // Una implementación más sofisticada haría diff de ingredientes
+    this.enviarIngredientes(comidaId, ingredientes);
+  }
+
+  /**
+   * Finaliza el guardado después de procesar ingredientes
+   */
+  private finalizarGuardadoConIngredientes(errores: string[]): void {
+    if (errores.length === 0) {
+      this.mostrarExito('Comida guardada exitosamente con todos sus ingredientes');
+    } else {
+      this.mostrarError(`Comida guardada pero con errores en ingredientes: ${errores.join(', ')}`);
+    }
+    this.cerrarModal();
+    this.cargarComidas();
+    this.guardando = false;
   }
 
   /**
