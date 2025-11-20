@@ -8,8 +8,6 @@ import { authGuard } from '../../core/guards/auth.guard';
  * TODO: Implementar componentes del Módulo 5
  */
 export const SEGUIMIENTO_ROUTES: Routes = [
-  // Temporalmente vacío hasta implementar componentes
-  /*
   {
     path: 'hoy',
     loadComponent: () => import('./pages/actividades-hoy.component').then(m => m.ActividadesHoyComponent),
@@ -28,7 +26,7 @@ export const SEGUIMIENTO_ROUTES: Routes = [
   {
     path: 'historial',
     loadComponent: () => import('./pages/historial-registros.component').then(m => m.HistorialRegistrosComponent),
-    title: 'Historial - NutriTrack'
+    title: 'Historial de registros - NutriTrack'
   },
   {
     path: 'mediciones',
@@ -45,5 +43,4 @@ export const SEGUIMIENTO_ROUTES: Routes = [
     redirectTo: 'hoy',
     pathMatch: 'full'
   }
-  */
 ];

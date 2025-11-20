@@ -43,27 +43,31 @@ export const routes: Routes = [
       
       },
       
-      //ETIQUETAS
-      /* {
-      path: 'etiquetas',
-      loadChildren: () => import('./features/admin/etiquetas/etiquetas.routes').then(m => m.ETIQUETAS_ROUTES),
-      canActivate: [adminGuard]
-      }, */
-      /* {
-      path: 'ingredientes',
-      loadChildren: () => import('./features/admin/ingredientes/ingredientes.routes').then(m => m.INGREDIENTES_ROUTES),
-      canActivate: [adminGuard]
-      }, */
-      /* {
-      path: 'ejercicios',
-      loadChildren: () => import('./features/admin/ejercicios/ejercicios.routes').then(m => m.EJERCICIOS_ROUTES),
-      canActivate: [adminGuard]
-      }, */
-      //{
-      //path: 'comidas',
-      //loadChildren: () => import('./features/admin/comidas/comidas.routes').then(m => m.COMIDAS_ROUTES),
-      //canActivate: [adminGuard]
-      //},
+      // //ETIQUETAS
+      // {
+      //  path: 'etiquetas',
+      //   loadChildren: () => import('./features/admin/etiquetas/etiquetas.routes').then(m => m.ETIQUETAS_ROUTES),
+      //   canActivate: [adminGuard]
+      // }, 
+      
+      // {
+      //   path: 'ingredientes',
+      //   loadChildren: () => import('./features/admin/ingredientes/ingredientes.routes').then(m => m.INGREDIENTES_ROUTES),
+      //   canActivate: [adminGuard]
+      // }, 
+      
+      // {
+      //   path: 'ejercicios',
+      //   loadChildren: () => import('./features/admin/ejercicios/ejercicios.routes').then(m => m.EJERCICIOS_ROUTES),
+      //   canActivate: [adminGuard]
+      // },
+
+      // {
+      //   path: 'comidas',
+      //   loadChildren: () => import('./features/admin/comidas/comidas.routes').then(m => m.COMIDAS_ROUTES),
+      //   canActivate: [adminGuard]
+      // },
+
       {
         path: 'usuario',
         loadChildren: () => import('./features/usuario/usuarios.routes').then(m => m.USUARIO_ROUTES)

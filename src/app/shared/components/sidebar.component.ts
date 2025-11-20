@@ -104,6 +104,22 @@ import { AuthService } from '../../core/services/auth.service';
               <span class="nav-text">Mis Metas</span>
             </a>
 
+            <!-- ETIQUETA SEGUIMIENTO -->
+            <a routerLink="/seguimiento/hoy" routerLinkActive="active" class="nav-item">
+              <!-- icono -->
+              <span class="nav-text">Actividades hoy</span>
+            </a>
+
+            <a routerLink="/seguimiento/historial" routerLinkActive="active" class="nav-item">
+              <!-- icono -->
+              <span class="nav-text">Mis Ejercicios</span>
+            </a>
+
+            <a routerLink="/seguimiento/progreso" routerLinkActive="active" class="nav-item">
+              <!-- icono -->
+              <span class="nav-text">Mi Progreso</span>
+            </a>
+
         }
 
         <div class="nav-section nav-section-bottom">
