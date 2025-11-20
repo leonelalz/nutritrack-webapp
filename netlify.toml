@@ -1,21 +1,9 @@
 [build]
-  command = "npm run build:prod"
+  command = "npm run build"
   publish = "dist/nutritrack-webapp/browser"
 
 [build.environment]
   NODE_VERSION = "20"
-  CI = "true"
-  NODE_ENV = "production"
-
-# Configuración para forzar producción
-[context.production]
-  command = "npm run build -- --configuration=production"
-
-[context.deploy-preview]
-  command = "npm run build -- --configuration=production"
-
-[context.branch-deploy]
-  command = "npm run build -- --configuration=production"
 
 [[redirects]]
   from = "/*"

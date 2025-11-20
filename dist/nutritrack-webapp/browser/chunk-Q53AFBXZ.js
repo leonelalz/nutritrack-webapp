@@ -1,0 +1,1 @@
+var o={production:!0,apiUrl:"https://nutritrack-api-wt8b.onrender.com/api/v1",apiKey:""};typeof console<"u"&&(console.log("\u{1F680} PRODUCTION Environment loaded!"),console.log("\u{1F4E1} API URL:",o.apiUrl));export{o as a};
