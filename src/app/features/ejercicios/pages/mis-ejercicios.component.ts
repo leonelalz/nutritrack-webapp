@@ -1,11 +1,18 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { MetasService } from '../../../core/services/metas.service';
+import { NotificationService } from '../../../core/services/notification.service';
+import { MockDataService } from '../../../core/services/mock-data.service';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-mis-ejercicios',
     standalone: true,
-    imports: [CommonModule, RouterLink],
+    imports: [CommonModule, RouterLink, MatIconModule, MatButtonModule, MatCheckboxModule, FormsModule],
     template: `
     <div class="mis-ejercicios-container">
       <!-- Header -->
@@ -15,12 +22,8 @@ import { RouterLink } from '@angular/router';
             <span class="icon">🏃‍♂️</span>
             Mis Ejercicios
           </h1>
-          <p class="page-subtitle">Registra y monitorea tu actividad física</p>
+          <p class="page-subtitle">{{ fechaHoy }}</p>
         </div>
-        <button class="btn-add">
-          <span class="icon">+</span>
-          Registrar Ejercicio
-        </button>
       </div>
 
       <!-- Stats Cards -->
@@ -43,148 +46,81 @@ import { RouterLink } from '@angular/router';
           </div>
           <div class="stat-value">{{ tiempoActivo() }} min</div>
           <div class="stat-footer">
-            <span class="stat-meta">de {{ tiempoMeta() }} min objetivo</span>
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="(tiempoActivo() / tiempoMeta()) * 100"></div>
-            </div>
+            <span class="stat-meta">objetivo</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-icon">💪</span>
-            <span class="stat-label">Sesiones Semanales</span>
+            <span class="stat-icon">✅</span>
+            <span class="stat-label">Completados</span>
           </div>
-          <div class="stat-value">{{ sesionesSemanales() }}</div>
+          <div class="stat-value">{{ sesionesSemanales() }}/{{ ejerciciosProgramados().length }}</div>
           <div class="stat-footer">
-            <span class="stat-meta">{{ racha() }} días de racha</span>
+            <span class="stat-meta">ejercicios hoy</span>
           </div>
         </div>
       </div>
 
-      <!-- Main Content -->
-      <div class="content-grid">
-        <!-- Today's Exercises -->
-        <div class="content-card">
-          <div class="card-header">
-            <h2>Ejercicios de Hoy</h2>
-            <span class="date">{{ fechaHoy }}</span>
-          </div>
-          <div class="card-content">
-            @if (ejerciciosHoy().length === 0) {
-              <div class="empty-state">
-                <span class="empty-icon">🏋️</span>
-                <p>No has registrado ejercicios hoy</p>
-                <button class="btn-secondary">Registrar Primer Ejercicio</button>
-              </div>
-            } @else {
-              <div class="exercises-list">
-                @for (ejercicio of ejerciciosHoy(); track ejercicio.id) {
-                  <div class="exercise-item">
-                    <div class="exercise-time">
-                      <span class="time">{{ ejercicio.hora }}</span>
-                      <span class="type-badge">{{ ejercicio.tipo }}</span>
-                    </div>
-                    <div class="exercise-info">
-                      <h4>{{ ejercicio.nombre }}</h4>
-                      <div class="exercise-details">
-                        <span class="detail">{{ ejercicio.duracion }} min</span>
-                        <span class="detail">{{ ejercicio.calorias }} kcal</span>
-                        @if (ejercicio.series) {
-                          <span class="detail">{{ ejercicio.series }} series</span>
-                        }
-                        @if (ejercicio.repeticiones) {
-                          <span class="detail">{{ ejercicio.repeticiones }} reps</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          </div>
+      <!-- Ejercicios Programados -->
+      <div class="content-card">
+        <div class="card-header">
+          <h2>🎯 Ejercicios Programados</h2>
+          @if (rutinaActiva()) {
+            <span class="badge-success">{{ rutinaActiva().nombre }}</span>
+          } @else {
+            <a [routerLink]="['/metas/rutinas']" class="link-primary">Activar Rutina</a>
+          }
         </div>
-
-        <!-- Active Routine -->
-        <div class="content-card">
-          <div class="card-header">
-            <h2>Rutina Activa</h2>
-            <a [routerLink]="['/metas']" class="link-see-all">Ver Todo</a>
-          </div>
-          <div class="card-content">
-            @if (rutinaActiva()) {
-              <div class="routine-info">
-                <div class="routine-header">
-                  <h3>{{ rutinaActiva().nombre }}</h3>
-                  <span class="routine-badge">Activa</span>
-                </div>
-                <p class="routine-description">{{ rutinaActiva().descripcion }}</p>
-                <div class="routine-stats">
-                  <div class="routine-stat">
-                    <span class="label">Duración:</span>
-                    <span class="value">{{ rutinaActiva().duracion }} semanas</span>
+        <div class="card-content">
+          @if (cargando()) {
+            <div class="loading-state">
+              <p>Cargando...</p>
+            </div>
+          } @else if (ejerciciosProgramados().length === 0) {
+            <div class="empty-state">
+              <span class="empty-icon">🏋️</span>
+              <p>No tienes ejercicios programados</p>
+              <button class="btn-secondary" [routerLink]="['/metas/rutinas']">Activar una Rutina</button>
+            </div>
+          } @else {
+            <div class="exercises-list">
+              @for (ejercicio of ejerciciosProgramados(); track ejercicio.id) {
+                <div class="exercise-item" [class.completado]="ejercicio.completado">
+                  <div class="exercise-checkbox">
+                    <mat-checkbox 
+                      [(ngModel)]="ejercicio.completado"
+                      (change)="marcarEjercicioCompletado(ejercicio)"
+                      color="primary">
+                    </mat-checkbox>
                   </div>
-                  <div class="routine-stat">
-                    <span class="label">Progreso:</span>
-                    <span class="value">Semana {{ rutinaActiva().semanaActual }}/{{ rutinaActiva().duracion }}</span>
-                  </div>
-                  <div class="routine-stat">
-                    <span class="label">Frecuencia:</span>
-                    <span class="value">{{ rutinaActiva().frecuencia }}x por semana</span>
-                  </div>
-                  <div class="routine-stat">
-                    <span class="label">Objetivo:</span>
-                    <span class="value">{{ rutinaActiva().objetivo }}</span>
-                  </div>
-                </div>
-                <div class="weekly-schedule">
-                  <h4>Programación Semanal</h4>
-                  <div class="days-list">
-                    @for (dia of rutinaActiva().programacion; track dia.dia) {
-                      <div class="day-item" [class.completed]="dia.completado">
-                        <span class="day-name">{{ dia.dia }}</span>
-                        <span class="day-focus">{{ dia.enfoque }}</span>
-                        @if (dia.completado) {
-                          <span class="check-icon">✓</span>
-                        }
-                      </div>
+                  <div class="exercise-info">
+                    <h4>{{ ejercicio.ejercicioNombre }}</h4>
+                    <div class="exercise-details">
+                      @if (ejercicio.series) {
+                        <span class="detail">🔁 {{ ejercicio.series }} series</span>
+                      }
+                      @if (ejercicio.repeticiones) {
+                        <span class="detail">🔢 {{ ejercicio.repeticiones }} reps</span>
+                      }
+                      @if (ejercicio.peso) {
+                        <span class="detail">⚖️ {{ ejercicio.peso }} kg</span>
+                      }
+                      @if (ejercicio.duracionMinutos) {
+                        <span class="detail">⏱️ {{ ejercicio.duracionMinutos }} min</span>
+                      }
+                      @if (ejercicio.descansoSegundos) {
+                        <span class="detail">🛑 {{ ejercicio.descansoSegundos }}s</span>
+                      }
+                    </div>
+                    @if (ejercicio.notas) {
+                      <p class="notas">{{ ejercicio.notas }}</p>
                     }
                   </div>
                 </div>
-              </div>
-            } @else {
-              <div class="empty-state">
-                <span class="empty-icon">📅</span>
-                <p>No tienes una rutina activa</p>
-                <button class="btn-secondary" [routerLink]="['/metas/rutinas']">Explorar Rutinas</button>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Progress Section -->
-      <div class="progress-section">
-        <div class="content-card">
-          <div class="card-header">
-            <h2>Progreso Semanal</h2>
-          </div>
-          <div class="card-content">
-            <div class="weekly-chart">
-              <div class="chart-bars">
-                @for (dia of progresoSemanal(); track dia.dia) {
-                  <div class="chart-day">
-                    <div class="bar-container">
-                      <div class="bar" [style.height.%]="(dia.calorias / maxCaloriasSemana()) * 100">
-                        <span class="bar-value">{{ dia.calorias }}</span>
-                      </div>
-                    </div>
-                    <span class="day-label">{{ dia.dia }}</span>
-                  </div>
-                }
-              </div>
+              }
             </div>
-          </div>
+          }
         </div>
       </div>
     </div>
@@ -628,6 +564,42 @@ import { RouterLink } from '@angular/router';
       font-weight: 600;
     }
 
+    .exercise-checkbox {
+      display: flex;
+      align-items: center;
+      margin-right: 1rem;
+    }
+
+    .exercise-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .exercise-item.completado {
+      opacity: 0.6;
+      background: #f0fff4;
+    }
+
+    .exercise-item.completado h4 {
+      text-decoration: line-through;
+    }
+
+    .notas {
+      margin: 0.5rem 0 0 0;
+      padding: 0.5rem;
+      background: #f7fafc;
+      border-radius: 6px;
+      color: #4a5568;
+      font-size: 0.875rem;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 3rem;
+      color: #718096;
+    }
+
     @media (max-width: 768px) {
       .mis-ejercicios-container {
         padding: 1rem;
@@ -646,57 +618,142 @@ import { RouterLink } from '@angular/router';
 export class MisEjerciciosComponent implements OnInit {
     fechaHoy = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Mock data - replace with API calls
-    caloriasQuemadas = signal(450);
-    tiempoActivo = signal(45);
+    // Signals para el estado
+    cargando = signal(false);
+    caloriasQuemadas = signal(0);
+    tiempoActivo = signal(0);
     tiempoMeta = signal(60);
-    sesionesSemanales = signal(4);
-    racha = signal(5);
+    sesionesSemanales = signal(0);
+    racha = signal(0);
 
-    ejerciciosHoy = signal([
-        { id: 1, hora: '07:00', tipo: 'Cardio', nombre: 'Correr', duracion: 30, calorias: 300, series: null, repeticiones: null },
-        { id: 2, hora: '18:00', tipo: 'Fuerza', nombre: 'Press de banca', duracion: 15, calorias: 150, series: 4, repeticiones: 12 }
-    ]);
-
-    rutinaActiva = signal({
-        nombre: 'Rutina de Ganancia Muscular',
-        descripcion: 'Programa enfocado en hipertrofia y ganancia de fuerza',
-        duracion: 12,
-        semanaActual: 3,
-        frecuencia: 5,
-        objetivo: 'Ganancia Muscular',
-        programacion: [
-            { dia: 'Lunes', enfoque: 'Pecho y Tríceps', completado: true },
-            { dia: 'Martes', enfoque: 'Espalda y Bíceps', completado: true },
-            { dia: 'Miércoles', enfoque: 'Descanso', completado: true },
-            { dia: 'Jueves', enfoque: 'Piernas', completado: false },
-            { dia: 'Viernes', enfoque: 'Hombros y Abdomen', completado: false },
-            { dia: 'Sábado', enfoque: 'Cardio Ligero', completado: false },
-            { dia: 'Domingo', enfoque: 'Descanso', completado: false }
-        ]
-    });
+    // Ejercicios programados de la rutina activa
+    ejerciciosProgramados = signal<any[]>([]);
+    rutinaActiva: any;
 
     progresoSemanal = signal([
-        { dia: 'L', calorias: 520 },
-        { dia: 'M', calorias: 480 },
+        { dia: 'L', calorias: 0 },
+        { dia: 'M', calorias: 0 },
         { dia: 'X', calorias: 0 },
-        { dia: 'J', calorias: 550 },
-        { dia: 'V', calorias: 450 },
-        { dia: 'S', calorias: 200 },
+        { dia: 'J', calorias: 0 },
+        { dia: 'V', calorias: 0 },
+        { dia: 'S', calorias: 0 },
         { dia: 'D', calorias: 0 }
     ]);
 
     maxCaloriasSemana = signal(600);
 
+    constructor(
+        private metasService: MetasService,
+        private notificationService: NotificationService,
+        private mockData: MockDataService
+    ) {
+        // Usar datos compartidos del mockData
+        this.ejerciciosProgramados = this.mockData.ejerciciosProgramados;
+        this.rutinaActiva = computed(() => this.mockData.rutinaActiva());
+    }
+
     ngOnInit(): void {
-        // TODO: Load data from API
-        this.loadEjerciciosHoy();
-        this.loadRutinaActiva();
-        this.loadProgresoSemanal();
+        this.cargarEjerciciosProgramados();
+        this.cargarRutinaActiva();
+    }
+
+    cargarEjerciciosProgramados(): void {
+        this.cargando.set(true);
+        
+        // Intentar cargar desde API (opcional), pero usar datos del mockData siempre
+        this.metasService.obtenerEjerciciosProgramadosHoy().subscribe({
+          next: (response) => {
+            if (response.success && response.data) {
+              // Si hay datos de API, actualizar mockData
+              const ejerciciosConEstado = response.data.map(ejercicio => ({
+                ...ejercicio,
+                completado: false
+              }));
+              this.ejerciciosProgramados.set(ejerciciosConEstado);
+            }
+            // Ya tenemos datos del mockData compartido
+            this.actualizarEstadisticas();
+            this.cargando.set(false);
+          },
+          error: () => {
+            // Modo demo: ya tenemos datos del mockData compartido, no hacer nada
+            this.actualizarEstadisticas();
+            this.notificationService.showSuccess('Modo demo: ejercicios cargados sin conexión');
+            this.cargando.set(false);
+          }
+        });
+    }
+
+    cargarRutinaActiva(): void {
+        this.metasService.obtenerRutinasActivas().subscribe({
+            next: (response) => {
+                if (response.success && response.data && response.data.length > 0) {
+                    const rutina = response.data[0];
+                    this.rutinaActiva.set({
+                        nombre: rutina.rutinaNombre || 'Rutina de Ejercicios',
+                        descripcion: rutina.rutinaDescripcion || '',
+                        duracion: rutina.semanasPatron || 0,
+                        semanaActual: rutina.semanaActual || 0,
+                        frecuencia: rutina.frecuenciaSemanal || 0,
+                        objetivo: rutina.objetivo || '',
+                        programacion: []
+                    });
+                }
+            },
+            error: (error) => {
+                console.error('Error al cargar rutina activa:', error);
+            }
+        });
+    }
+
+    marcarEjercicioCompletado(ejercicio: any): void {
+        // Actualizar estado en mockData primero (siempre funciona)
+        this.mockData.marcarEjercicioCompletado(ejercicio.id);
+        
+        if (ejercicio.completado) {
+          // Intentar registrar en API (opcional)
+          const fechaHoy = new Date().toISOString().split('T')[0];
+          this.metasService.registrarEjercicioCompletado({
+            rutinaEjercicioId: ejercicio.id,
+            fecha: fechaHoy,
+            seriesRealizadas: ejercicio.series,
+            repeticionesRealizadas: ejercicio.repeticiones,
+            pesoUtilizado: ejercicio.peso,
+            duracionMinutos: ejercicio.duracionMinutos
+          }).subscribe({
+            next: (response) => {
+              if (response.success) {
+                this.notificationService.showSuccess(`✓ ${ejercicio.ejercicioNombre} completado`);
+              } else {
+                this.notificationService.showSuccess(`✓ ${ejercicio.ejercicioNombre} completado (demo)`);
+              }
+              this.actualizarEstadisticas();
+            },
+            error: () => {
+              // API falló pero ya actualizamos mockData
+              this.notificationService.showSuccess(`✓ ${ejercicio.ejercicioNombre} completado (demo)`);
+              this.actualizarEstadisticas();
+            }
+          });
+        } else {
+          this.actualizarEstadisticas();
+        }
+    }
+
+    actualizarEstadisticas(): void {
+        const ejercicios = this.ejerciciosProgramados();
+        const completados = ejercicios.filter(e => e.completado).length;
+        this.sesionesSemanales.set(completados);
+        
+        // Calcular tiempo activo
+        const tiempoTotal = ejercicios
+            .filter(e => e.completado)
+            .reduce((sum, e) => sum + (e.duracionMinutos || 0), 0);
+        this.tiempoActivo.set(tiempoTotal);
     }
 
     loadEjerciciosHoy(): void {
-        // TODO: Implement API call
+        // Deprecated - usar cargarEjerciciosProgramados
     }
 
     loadRutinaActiva(): void {

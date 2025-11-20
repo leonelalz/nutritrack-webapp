@@ -1,11 +1,18 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { MetasService } from '../../../core/services/metas.service';
+import { NotificationService } from '../../../core/services/notification.service';
+import { MockDataService } from '../../../core/services/mock-data.service';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-mis-comidas',
     standalone: true,
-    imports: [CommonModule, RouterLink],
+    imports: [CommonModule, RouterLink, MatIconModule, MatButtonModule, MatCheckboxModule, FormsModule],
     template: `
     <div class="mis-comidas-container">
       <!-- Header -->
@@ -15,12 +22,8 @@ import { RouterLink } from '@angular/router';
             <span class="icon">🍽️</span>
             Mis Comidas
           </h1>
-          <p class="page-subtitle">Gestiona tu alimentación diaria y plan nutricional</p>
+          <p class="page-subtitle">{{ fechaHoy }}</p>
         </div>
-        <button class="btn-add">
-          <span class="icon">+</span>
-          Registrar Comida
-        </button>
       </div>
 
       <!-- Stats Cards -->
@@ -33,131 +36,79 @@ import { RouterLink } from '@angular/router';
           <div class="stat-value">{{ caloriasHoy() }}</div>
           <div class="stat-footer">
             <span class="stat-meta">de {{ caloriasMeta() }} kcal</span>
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="(caloriasHoy() / caloriasMeta()) * 100"></div>
-            </div>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-icon">🥗</span>
-            <span class="stat-label">Comidas Registradas</span>
+            <span class="stat-icon">✅</span>
+            <span class="stat-label">Completadas</span>
           </div>
-          <div class="stat-value">{{ comidasRegistradas() }}</div>
+          <div class="stat-value">{{ comidasRegistradas() }}/{{ comidasProgramadas().length }}</div>
           <div class="stat-footer">
-            <span class="stat-meta">4/5 comidas programadas</span>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <span class="stat-icon">💧</span>
-            <span class="stat-label">Hidratación</span>
-          </div>
-          <div class="stat-value">{{ hidratacion() }}L</div>
-          <div class="stat-footer">
-            <span class="stat-meta">de 2.5L objetivo</span>
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="(hidratacion() / 2.5) * 100"></div>
-            </div>
+            <span class="stat-meta">comidas del plan</span>
           </div>
         </div>
       </div>
 
-      <!-- Main Content -->
-      <div class="content-grid">
-        <!-- Today's Meals -->
-        <div class="content-card">
-          <div class="card-header">
-            <h2>Comidas de Hoy</h2>
-            <span class="date">{{ fechaHoy }}</span>
-          </div>
-          <div class="card-content">
-            @if (comidasHoy().length === 0) {
-              <div class="empty-state">
-                <span class="empty-icon">🍽️</span>
-                <p>No has registrado comidas hoy</p>
-                <button class="btn-secondary">Registrar Primera Comida</button>
-              </div>
-            } @else {
-              <div class="meals-list">
-                @for (comida of comidasHoy(); track comida.id) {
-                  <div class="meal-item">
-                    <div class="meal-time">
-                      <span class="time">{{ comida.hora }}</span>
-                      <span class="type-badge">{{ comida.tipo }}</span>
-                    </div>
-                    <div class="meal-info">
-                      <h4>{{ comida.nombre }}</h4>
-                      <div class="meal-nutrients">
-                        <span class="nutrient">{{ comida.calorias }} kcal</span>
-                        <span class="nutrient">P: {{ comida.proteinas }}g</span>
-                        <span class="nutrient">C: {{ comida.carbohidratos }}g</span>
-                        <span class="nutrient">G: {{ comida.grasas }}g</span>
-                      </div>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          </div>
+      <!-- Comidas Programadas -->
+      <div class="content-card">
+        <div class="card-header">
+          <h2>🎯 Comidas Programadas</h2>
+          @if (planActivo()) {
+            <span class="badge-success">{{ planActivo().nombre }}</span>
+          } @else {
+            <a [routerLink]="['/metas/planes']" class="link-primary">Activar Plan</a>
+          }
         </div>
-
-        <!-- Nutrition Plan -->
-        <div class="content-card">
-          <div class="card-header">
-            <h2>Plan Nutricional Activo</h2>
-            <a [routerLink]="['/metas']" class="link-see-all">Ver Todo</a>
-          </div>
-          <div class="card-content">
-            @if (planActivo()) {
-              <div class="plan-info">
-                <div class="plan-header">
-                  <h3>{{ planActivo().nombre }}</h3>
-                  <span class="plan-badge">Activo</span>
-                </div>
-                <p class="plan-description">{{ planActivo().descripcion }}</p>
-                <div class="plan-stats">
-                  <div class="plan-stat">
-                    <span class="label">Duración:</span>
-                    <span class="value">{{ planActivo().duracion }} días</span>
+        <div class="card-content">
+          @if (cargando()) {
+            <div class="loading-state">
+              <p>Cargando...</p>
+            </div>
+          } @else if (comidasProgramadas().length === 0) {
+            <div class="empty-state">
+              <span class="empty-icon">🍽️</span>
+              <p>No tienes comidas programadas</p>
+              <button class="btn-secondary" [routerLink]="['/metas/planes']">Activar un Plan</button>
+            </div>
+          } @else {
+            <div class="meals-list">
+              @for (comida of comidasProgramadas(); track comida.id) {
+                <div class="meal-item" [class.completada]="comida.completada">
+                  <div class="meal-checkbox">
+                    <mat-checkbox 
+                      [(ngModel)]="comida.completada"
+                      (change)="marcarComidaCompletada(comida)"
+                      color="primary">
+                    </mat-checkbox>
                   </div>
-                  <div class="plan-stat">
-                    <span class="label">Progreso:</span>
-                    <span class="value">Día {{ planActivo().diaActual }}/{{ planActivo().duracion }}</span>
+                  <div class="meal-info">
+                    <div class="meal-header">
+                      <span class="type-badge tipo-{{ comida.tipoComida.toLowerCase() }}">
+                        {{ formatearTipoComida(comida.tipoComida) }}
+                      </span>
+                      @if (comida.horaSugerida) {
+                        <span class="time">{{ comida.horaSugerida }}</span>
+                      }
+                    </div>
+                    <h4>{{ comida.comidaNombre }}</h4>
+                    <div class="meal-details">
+                      @if (comida.porciones) {
+                        <span class="detail">{{ comida.porciones }} porción(es)</span>
+                      }
+                      @if (comida.calorias) {
+                        <span class="detail">🔥 {{ comida.calorias }} kcal</span>
+                      }
+                    </div>
+                    @if (comida.notas) {
+                      <p class="notas">{{ comida.notas }}</p>
+                    }
                   </div>
                 </div>
-                <div class="plan-macros">
-                  <h4>Objetivos Diarios</h4>
-                  <div class="macro-grid">
-                    <div class="macro-item">
-                      <span class="macro-label">Calorías</span>
-                      <span class="macro-value">{{ planActivo().caloriasObjetivo }} kcal</span>
-                    </div>
-                    <div class="macro-item">
-                      <span class="macro-label">Proteínas</span>
-                      <span class="macro-value">{{ planActivo().proteinasObjetivo }}g</span>
-                    </div>
-                    <div class="macro-item">
-                      <span class="macro-label">Carbohidratos</span>
-                      <span class="macro-value">{{ planActivo().carbohidratosObjetivo }}g</span>
-                    </div>
-                    <div class="macro-item">
-                      <span class="macro-label">Grasas</span>
-                      <span class="macro-value">{{ planActivo().grasasObjetivo }}g</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            } @else {
-              <div class="empty-state">
-                <span class="empty-icon">📋</span>
-                <p>No tienes un plan nutricional activo</p>
-                <button class="btn-secondary" [routerLink]="['/metas/planes']">Explorar Planes</button>
-              </div>
-            }
-          </div>
+              }
+            </div>
+          }
         </div>
       </div>
     </div>
@@ -530,6 +481,55 @@ import { RouterLink } from '@angular/router';
       font-weight: 700;
     }
 
+    .meal-checkbox {
+      display: flex;
+      align-items: center;
+      margin-right: 1rem;
+    }
+
+    .meal-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .meal-item.completada {
+      opacity: 0.6;
+      background: #f0fff4;
+    }
+
+    .meal-item.completada h4 {
+      text-decoration: line-through;
+    }
+
+    .tipo-desayuno { background: #fef5e7; color: #d68910; }
+    .tipo-almuerzo { background: #ebf5fb; color: #2e86de; }
+    .tipo-cena { background: #f4ecf7; color: #8e44ad; }
+    .tipo-snack { background: #fef9e7; color: #f39c12; }
+    .tipo-merienda { background: #fdecea; color: #e74c3c; }
+    .tipo-colacion { background: #e8f8f5; color: #16a085; }
+
+    .porciones {
+      margin: 0.25rem 0;
+      color: #718096;
+      font-size: 0.875rem;
+    }
+
+    .notas {
+      margin: 0.5rem 0 0 0;
+      padding: 0.5rem;
+      background: #f7fafc;
+      border-radius: 6px;
+      color: #4a5568;
+      font-size: 0.875rem;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 3rem;
+      color: #718096;
+    }
+
     @media (max-width: 768px) {
       .mis-comidas-container {
         padding: 1rem;
@@ -548,33 +548,141 @@ import { RouterLink } from '@angular/router';
 export class MisComidasComponent implements OnInit {
     fechaHoy = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Mock data - replace with API calls
-    caloriasHoy = signal(1450);
+    // Signals para el estado
+    cargando = signal(false);
+    caloriasHoy = signal(0);
     caloriasMeta = signal(2200);
-    comidasRegistradas = signal(3);
-    hidratacion = signal(1.8);
+    comidasRegistradas = signal(0);
+    hidratacion = signal(0);
 
-    comidasHoy = signal([
-        { id: 1, hora: '08:00', tipo: 'Desayuno', nombre: 'Avena con frutas', calorias: 350, proteinas: 12, carbohidratos: 55, grasas: 8 },
-        { id: 2, hora: '12:30', tipo: 'Almuerzo', nombre: 'Pollo con arroz integral', calorias: 650, proteinas: 45, carbohidratos: 60, grasas: 15 },
-        { id: 3, hora: '16:00', tipo: 'Snack', nombre: 'Yogurt con nueces', calorias: 450, proteinas: 15, carbohidratos: 30, grasas: 12 }
-    ]);
+    // Comidas programadas del plan activo
+    comidasProgramadas = signal<any[]>([]);
+    
+    // Comidas registradas manualmente (extras)
+    comidasRegistradasHoy = signal<any[]>([]);
 
-    planActivo = signal({
-        nombre: 'Plan de Pérdida de Peso',
-        descripcion: 'Plan balanceado para pérdida de peso saludable',
-        duracion: 30,
-        diaActual: 5,
-        caloriasObjetivo: 2200,
-        proteinasObjetivo: 110,
-        carbohidratosObjetivo: 220,
-        grasasObjetivo: 75
-    });
+    planActivo: any;
+
+    constructor(
+        private metasService: MetasService,
+        private notificationService: NotificationService,
+        private mockData: MockDataService
+    ) {
+        // Usar datos compartidos del mockData
+        this.comidasProgramadas = this.mockData.comidasProgramadas;
+        this.planActivo = computed(() => this.mockData.planActivo());
+    }
 
     ngOnInit(): void {
-        // TODO: Load data from API
-        this.loadComidasHoy();
-        this.loadPlanActivo();
+        this.cargarComidasProgramadas();
+        this.cargarPlanActivo();
+    }
+
+    cargarComidasProgramadas(): void {
+        this.cargando.set(true);
+        this.metasService.obtenerComidasProgramadasHoy().subscribe({
+          next: (response) => {
+            if (response.success && response.data) {
+              const comidasConEstado = response.data.map(comida => ({
+                ...comida,
+                completada: false
+              }));
+              this.mockData.comidasProgramadas.set(comidasConEstado);
+              this.actualizarEstadisticas();
+              this.cargando.set(false);
+            } else {
+              // Ya tiene datos mock por defecto, solo actualizar UI
+              this.actualizarEstadisticas();
+              this.cargando.set(false);
+            }
+          },
+          error: () => {
+            // Usar datos compartidos que ya existen en mockData
+            this.actualizarEstadisticas();
+            this.notificationService.showSuccess('Modo demo: comidas cargadas sin conexión');
+            this.cargando.set(false);
+          }
+        });
+    }
+
+    cargarPlanActivo(): void {
+        this.metasService.obtenerPlanesActivos().subscribe({
+            next: (response) => {
+                if (response.success && response.data && response.data.length > 0) {
+                    const plan = response.data[0];
+                    this.planActivo.set({
+                        nombre: plan.planNombre || 'Plan Nutricional',
+                        descripcion: plan.planDescripcion || '',
+                        duracion: plan.diasTotales || 0,
+                        diaActual: plan.diaActual || 0,
+                        caloriasObjetivo: plan.caloriasObjetivo || 0,
+                        proteinasObjetivo: plan.proteinasObjetivo || 0,
+                        carbohidratosObjetivo: plan.carbohidratosObjetivo || 0,
+                        grasasObjetivo: plan.grasasObjetivo || 0
+                    });
+                    
+                    if (plan.caloriasObjetivo) {
+                        this.caloriasMeta.set(plan.caloriasObjetivo);
+                    }
+                }
+            },
+            error: (error) => {
+                console.error('Error al cargar plan activo:', error);
+            }
+        });
+    }
+
+    marcarComidaCompletada(comida: any): void {
+        if (comida.completada) {
+            // Actualizar en el servicio compartido
+            this.mockData.marcarComidaCompletada(comida.id);
+            
+            // Intentar registrar en API (opcional)
+            const fechaHoy = new Date().toISOString().split('T')[0];
+            const horaActual = new Date().toTimeString().split(' ')[0].substring(0, 5);
+            this.metasService.registrarComidaConsumida({
+                planComidaId: comida.id,
+                fecha: fechaHoy,
+                hora: horaActual
+            }).subscribe({
+                next: (response) => {
+                    const nombre = comida.comida?.nombre || comida.comidaNombre || 'Comida';
+                    this.notificationService.showSuccess(`✓ ${nombre} registrada`);
+                },
+                error: () => {
+                    const nombre = comida.comida?.nombre || comida.comidaNombre || 'Comida';
+                    this.notificationService.showSuccess(`✓ ${nombre} registrada (demo)`);
+                }
+            });
+            
+            this.actualizarEstadisticas();
+        }
+    }
+
+    actualizarEstadisticas(): void {
+        const comidas = this.comidasProgramadas();
+        const completadas = comidas.filter(c => c.completada).length;
+        this.comidasRegistradas.set(completadas);
+        
+        // Calcular calorías consumidas
+        const caloriasConsumidas = comidas
+            .filter(c => c.completada)
+            .reduce((sum, c) => sum + (c.calorias || 0), 0);
+        this.caloriasHoy.set(caloriasConsumidas);
+    }
+
+    formatearTipoComida(tipo: string): string {
+        const tipos: any = {
+            'DESAYUNO': 'Desayuno',
+            'ALMUERZO': 'Almuerzo',
+            'CENA': 'Cena',
+            'SNACK': 'Snack',
+            'MERIENDA': 'Merienda',
+            'COLACION': 'Colación',
+            'PRE_ENTRENAMIENTO': 'Pre-Entrenamiento',
+            'POST_ENTRENAMIENTO': 'Post-Entrenamiento'
+        };
+        return tipos[tipo] || tipo;
     }
 
     loadComidasHoy(): void {

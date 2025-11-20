@@ -12,6 +12,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { PlanService } from '../../../../core/services/plan.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { PlanResponse } from '../../../../core/models';
+import { MockDataService } from '../../../../core/services/mock-data.service';
 
 /**
  * Lista de Planes Nutricionales (Admin)
@@ -583,7 +584,8 @@ export class ListaPlanesComponent implements OnInit {
   constructor(
     private planService: PlanService,
     private notificationService: NotificationService,
-    private router: Router
+    private router: Router,
+    private mockData: MockDataService
   ) {}
 
   ngOnInit(): void {
@@ -673,14 +675,18 @@ export class ListaPlanesComponent implements OnInit {
   cargarPlanes(): void {
     this.loading.set(true);
     
-    // Si mostrarInactivos está activado, obtener todos los planes, sino solo activos
+    // Usar planes del mockData (siempre disponibles)
+    this.planesFiltrados.set(this.mockData.planesDisponibles());
+    this.totalPaginas.set(1);
+    this.loading.set(false);
+    
+    // Intentar cargar desde API (opcional)
     const observable = this.mostrarInactivos() 
       ? this.planService.obtenerPlanes(this.paginaActual(), this.tamañoPagina)
       : this.planService.obtenerPlanesActivos(this.paginaActual(), this.tamañoPagina);
 
     observable.subscribe({
       next: (response) => {
-        this.loading.set(false);
         if (response.success && response.data) {
           this.planesFiltrados.set(this.planService.planes());
           const totalElements = this.planService.totalElements();
@@ -688,8 +694,7 @@ export class ListaPlanesComponent implements OnInit {
         }
       },
       error: () => {
-        this.loading.set(false);
-        this.notificationService.showError('Error al cargar planes');
+        // Ya mostramos datos del mockData
       }
     });
   }

@@ -469,7 +469,7 @@ export class MisAsignacionesComponent implements OnInit {
   constructor(
     private readonly metasService: MetasService,
     private readonly notificationService: NotificationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.cargarAsignaciones();
@@ -485,16 +485,39 @@ export class MisAsignacionesComponent implements OnInit {
       .then(([respPlanes, respRutinas]: any) => {
         this.loading.set(false);
         if (respPlanes?.success) {
-          this.planesActivos.set(respPlanes.data || []);
+          // Mapear datos del API para incluir campos calculados
+          const planesProcessed = (respPlanes.data || []).map((plan: any) => ({
+            ...plan,
+            diasTotales: plan.planDuracionDias || plan.duracionDias || 0,
+            porcentajeCompletado: this.calcularPorcentaje(
+              plan.diaActual || 0,
+              plan.planDuracionDias || plan.duracionDias || 0
+            )
+          }));
+          this.planesActivos.set(planesProcessed);
         }
         if (respRutinas?.success) {
-          this.rutinasActivas.set(respRutinas.data || []);
+          // Mapear datos del API para incluir campos calculados
+          const rutinasProcessed = (respRutinas.data || []).map((rutina: any) => ({
+            ...rutina,
+            diasTotales: rutina.rutinaDuracionDias || rutina.duracionDias || 0,
+            porcentajeCompletado: this.calcularPorcentaje(
+              rutina.diaActual || 0,
+              rutina.rutinaDuracionDias || rutina.duracionDias || 0
+            )
+          }));
+          this.rutinasActivas.set(rutinasProcessed);
         }
       })
       .catch(() => {
         this.loading.set(false);
         this.notificationService.showError('Error al cargar asignaciones');
       });
+  }
+
+  private calcularPorcentaje(diaActual: number, diasTotales: number): number {
+    if (diasTotales === 0) return 0;
+    return Math.round((diaActual / diasTotales) * 100);
   }
 
   // Plan Actions
