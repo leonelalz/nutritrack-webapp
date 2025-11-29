@@ -15,8 +15,9 @@ import {
   TIPO_COMIDA_ICONS,
   RecetaIngrediente
 } from '../../../../core/models/comida.model';
-import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/etiqueta.model';
+import { Etiqueta, PageResponse } from '../../../../core/models/etiqueta.model';
 import { Ingrediente } from '../../../../core/models/ingrediente.model';
+import { ApiResponse } from '../../../../core/models/common.model';
 
 @Component({
   selector: 'app-comidas-list',

@@ -13,8 +13,8 @@ import {
   CATEGORIA_ALIMENTO_LABELS,
   CATEGORIA_ALIMENTO_ICONS
 } from '../../../../core/models/ingrediente.model';
-import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/etiqueta.model';
-
+import { Etiqueta, PageResponse } from '../../../../core/models/etiqueta.model';
+import { ApiResponse } from '../../../../core/models/common.model';
 @Component({
   selector: 'app-ingredientes-list',
   standalone: true,

@@ -12,6 +12,7 @@ export interface Notification {
   providedIn: 'root'
 })
 export class NotificationService {
+
   private notifications = signal<Notification[]>([]);
   private nextId = 0;
 

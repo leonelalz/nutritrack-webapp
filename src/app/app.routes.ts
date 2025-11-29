@@ -76,10 +76,10 @@ export const routes: Routes = [
                 loadChildren: () => import('./features/metas/metas.routes').then(m => m.METAS_ROUTES)
             },
             // Módulo Seguimiento (US-21 a US-25)
-            {
+/*             {
                 path: 'seguimiento',
                 loadChildren: () => import('./features/seguimiento/seguimiento.routes').then(m => m.SEGUIMIENTO_ROUTES)
-            },
+            }, */
             // Módulo Admin (US-06 a US-15) - Solo para administradores
             {
                 path: 'admin',

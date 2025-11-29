@@ -7,9 +7,9 @@ import { environment } from '../../../enviroments/enviroment';
 import {
   Etiqueta,
   EtiquetaRequest,
-  ApiResponse,
   PageResponse
 } from '../models/etiqueta.model';
+import { ApiResponse } from '../models/common.model';
 
 @Injectable({
   providedIn: 'root'

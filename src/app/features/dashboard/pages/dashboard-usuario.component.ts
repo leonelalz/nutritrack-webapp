@@ -13,11 +13,10 @@ import {
   Ejercicio,
 } from '../../../core/models/ejercicio.model';
 
-import {
-  HistorialMedidasResponse,
-} from '../../../core/models/UsuarioHistorialMedidas.model';
+
 
 import {
+  HistorialMedidasResponse,
   PerfilSaludResponse,
 } from '../../../core/models/perfil.model';
 

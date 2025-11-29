@@ -30,15 +30,17 @@ export class AuthValidators {
       const hasLowerCase = /[a-z]/.test(control.value);
       const hasNumeric = /[0-9]/.test(control.value);
       const hasMinLength = control.value.length >= 8;
+      const hasSymbol = /[@$!%*?&]/.test(control.value); // ← nuevo
 
-      const passwordValid = hasUpperCase && hasLowerCase && hasNumeric && hasMinLength;
+      const passwordValid = hasUpperCase && hasLowerCase && hasNumeric && hasMinLength && hasSymbol;
 
       return passwordValid ? null : {
         weakPassword: {
           hasUpperCase,
           hasLowerCase,
           hasNumeric,
-          hasMinLength
+          hasMinLength,
+          hasSymbol
         }
       };
     };
@@ -55,4 +57,30 @@ export class AuthValidators {
     };
   }
 
+  static passwordNotContainingEmail(emailControlName: string, passwordControlName: string): ValidatorFn {
+    return (formGroup: AbstractControl): ValidationErrors | null => {
+
+      const email = formGroup.get(emailControlName)?.value;
+      const password = formGroup.get(passwordControlName)?.value;
+
+      if (!email || !password) {
+        return null;
+      }
+
+      // Tomar parte antes del @
+      const userPart = email.split("@")[0].toLowerCase();
+      const passwordLower = password.toLowerCase();
+
+      if (passwordLower.includes(userPart)) {
+        return {
+          passwordContainsEmail: {
+            message: 'La contraseña no debe contener tu email',
+            userPart
+          }
+        };
+      }
+
+      return null;
+    };
+  }
 }

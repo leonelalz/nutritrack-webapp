@@ -10,11 +10,6 @@ import { NotificationService } from "../../../core/services/notification.service
   imports: [CommonModule, RouterLink],
   template: `
     <div class="mis-asignaciones-container">
-      <div class="header">
-        <h1>Mis Planes y Rutinas</h1>
-        <p class="subtitle">Gestiona tus asignaciones activas</p>
-      </div>
-
       @if (loading()) {
         <div class="loading">
           <p>Cargando tus asignaciones...</p>

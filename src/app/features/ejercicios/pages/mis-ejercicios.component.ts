@@ -15,17 +15,6 @@ import { FormsModule } from '@angular/forms';
     imports: [CommonModule, RouterLink, MatIconModule, MatButtonModule, MatCheckboxModule, FormsModule],
     template: `
     <div class="mis-ejercicios-container">
-      <!-- Header -->
-      <div class="page-header">
-        <div class="header-content">
-          <h1 class="page-title">
-            <span class="icon">🏃‍♂️</span>
-            Mis Ejercicios
-          </h1>
-          <p class="page-subtitle">{{ fechaHoy }}</p>
-        </div>
-      </div>
-
       <!-- Stats Cards -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -66,6 +55,7 @@ import { FormsModule } from '@angular/forms';
       <div class="content-card">
         <div class="card-header">
           <h2>🎯 Ejercicios Programados</h2>
+          <p class="page-subtitle">{{ fechaHoy }}</p>
           @if (rutinaActiva()) {
             <span class="badge-success">{{ rutinaActiva().nombre }}</span>
           } @else {

@@ -17,7 +17,8 @@ import {
   NIVEL_DIFICULTAD_LABELS,
   TIPO_EJERCICIO_ICONS
 } from '../../../../core/models/ejercicio.model';
-import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/etiqueta.model';
+import { Etiqueta, PageResponse } from '../../../../core/models/etiqueta.model';
+import { ApiResponse } from '../../../../core/models/common.model';
 
 @Component({
   selector: 'app-ejercicios-list',

@@ -5,7 +5,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../enviroments/enviroment';
 import { Comida, ComidaRequest, TipoComida, AgregarIngredienteRequest } from '../models/comida.model';
-import { ApiResponse, PageResponse } from '../models/etiqueta.model';
+import { PageResponse } from '../models/etiqueta.model';
+import { ApiResponse } from '../models/common.model';
 
 @Injectable({
   providedIn: 'root'

@@ -12,9 +12,9 @@ import {
   TIPO_ETIQUETA_LABELS,
   TIPO_ETIQUETA_COLORS,
   TIPO_ETIQUETA_ICONS,
-  ApiResponse,
   PageResponse
 } from '../../../../core/models/etiqueta.model';
+import { ApiResponse } from '../../../../core/models/common.model';
 
 @Component({
   selector: 'app-etiquetas-list',
