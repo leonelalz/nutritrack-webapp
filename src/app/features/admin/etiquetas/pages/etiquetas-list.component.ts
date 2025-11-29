@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 import {
   Etiqueta,
   EtiquetaRequest,
@@ -308,13 +309,21 @@ import {
 
       <!-- Modal Crear/Editar -->
       @if (mostrarModal) {
-        <div class="modal-overlay" (click)="cerrarModal()">
+        <div class="modal-overlay" (click)="intentarCerrarModal()">
           <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>{{ etiquetaEditando ? 'Editar Etiqueta' : 'Nueva Etiqueta' }}</h2>
+              <button 
+                (click)="intentarCerrarModal()" 
+                class="btn-close-modal"
+                title="Cerrar"
+              >
+                ✕
+              </button>
             </div>
 
             <div class="modal-body">
+              <!-- Formulario completo igual que antes -->
               <div class="form-group">
                 <label>
                   Nombre <span class="required">*</span>
@@ -344,7 +353,6 @@ import {
                 </select>
               </div>
 
-              <!-- Campo para tipo personalizado -->
               @if (mostrarCampoTipoPersonalizado) {
                 <div class="form-group custom-type-group">
                   <label>
@@ -376,7 +384,7 @@ import {
 
             <div class="modal-footer">
               <button
-                (click)="cerrarModal()"
+                (click)="intentarCerrarModal()"
                 [disabled]="guardando"
                 class="btn-secondary"
               >
@@ -421,6 +429,25 @@ import {
                 class="btn-danger"
               >
                 {{ eliminando ? 'Eliminando...' : 'Eliminar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+      @if (mostrarConfirmacionCerrar) {
+        <div class="modal-overlay confirmation-overlay" (click)="cancelarCierre()">
+          <div class="modal-content small" (click)="$event.stopPropagation()">
+            <div class="modal-body centered">
+              <div class="warning-icon">⚠️</div>
+              <h3>¿Descartar cambios?</h3>
+              <p>Tienes cambios sin guardar en el formulario. ¿Deseas descartarlos?</p>
+            </div>
+            <div class="modal-footer">
+              <button (click)="cancelarCierre()" class="btn-secondary">
+                Continuar editando
+              </button>
+              <button (click)="confirmarCerrarModal()" class="btn-danger">
+                Descartar cambios
               </button>
             </div>
           </div>
@@ -1382,11 +1409,126 @@ import {
         grid-template-columns: 1fr;
       }
     }
+    .modal-header {
+      padding: 25px 30px;
+      border-bottom: 1px solid #F1F3F4;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-close-modal {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      border-radius: 50%;
+      color: #6C757D;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-close-modal:hover {
+      background: #E9ECEF;
+      color: #DC3545;
+      transform: scale(1.1);
+    }
+
+    .modal-overlay {
+      z-index: 1000;
+    }
+
+    .modal-overlay + .modal-overlay {
+      z-index: 1001; 
+    }
+
+    .input-error {
+      border-color: #DC3545 !important;
+      background: #FFF5F5;
+    }
+
+    .input-error:focus {
+      border-color: #DC3545 !important;
+      box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+    }
+
+    .error-message {
+      display: block;
+      color: #DC3545;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .preview-text {
+      margin-top: 12px;
+      padding: 10px;
+      background: white;
+      border: 1px solid #28A745;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #6C757D;
+    }
+
+    .preview-text strong {
+      color: #28A745;
+    }
+
+    .btn-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .confirmation-overlay {
+      z-index: 1001 !important;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-close-modal {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      border-radius: 50%;
+      color: #6C757D;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-close-modal:hover {
+      background: #E9ECEF;
+      color: #DC3545;
+      transform: scale(1.1);
+    }
   `]
 })
 export class EtiquetasListComponent implements OnInit {
   private etiquetaService: EtiquetaService = inject(EtiquetaService);
-
+  private notificationService = inject(NotificationService); 
   // Signals para estado reactivo
   loading = signal(false);
   etiquetas = signal<Etiqueta[]>([]);
@@ -1428,6 +1570,9 @@ export class EtiquetasListComponent implements OnInit {
   mostrarCampoTipoPersonalizado = false;
   tipoPersonalizado = '';
 
+  mostrarConfirmacionCerrar = false;
+  formularioInicial: any = null; // Para comparar cambios
+
   ngOnInit(): void {
     this.cargarEtiquetas();
   }
@@ -1460,8 +1605,12 @@ export class EtiquetasListComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error al cargar etiquetas:', error);
-        this.mostrarError('Error al cargar etiquetas');
-        this.loading.set(false);
+        this.loading.set(false); 
+        if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message || 'Error al cargar las etiquetas');
+        } else {
+          this.notificationService.showError('No se pudieron cargar las etiquetas. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -1504,33 +1653,6 @@ export class EtiquetasListComponent implements OnInit {
       this.cargarEtiquetas();
     }
   }
-
-  /**
-   * Abre el modal para crear una nueva etiqueta
-   */
-  abrirModalCrear(): void {
-    this.etiquetaEditando = null;
-    this.formulario = {
-      nombre: '',
-      tipoEtiqueta: '',
-      descripcion: ''
-    };
-    this.mostrarModal = true;
-  }
-
-  /**
-   * Abre el modal para editar una etiqueta existente
-   */
-  abrirModalEditar(etiqueta: Etiqueta): void {
-    this.etiquetaEditando = etiqueta;
-    this.formulario = {
-      nombre: etiqueta.nombre,
-      tipoEtiqueta: etiqueta.tipoEtiqueta,
-      descripcion: etiqueta.descripcion || ''
-    };
-    this.mostrarModal = true;
-  }
-
   /**
    * Cierra el modal de formulario
    */
@@ -1546,8 +1668,8 @@ export class EtiquetasListComponent implements OnInit {
    */
   guardar(): void {
     // Validar campos obligatorios
-    if (!this.formulario.nombre) {
-      this.mostrarError('El nombre es obligatorio');
+    if (!this.formulario.nombre || this.formulario.nombre.trim().length === 0) {
+      this.notificationService.showWarning('El campo "Nombre" es obligatorio. Por favor, ingresa un nombre para la etiqueta.');
       return;
     }
 
@@ -1556,14 +1678,15 @@ export class EtiquetasListComponent implements OnInit {
     
     if (this.mostrarCampoTipoPersonalizado) {
       if (!this.tipoPersonalizado || this.tipoPersonalizado.trim().length === 0) {
-        this.mostrarError('Por favor ingresa el nombre del nuevo tipo');
+        this.notificationService.showWarning('Por favor, ingresa el nombre del nuevo tipo de etiqueta o selecciona uno existente.');
         return;
       }
       tipoFinal = this.tipoPersonalizado.trim();
     } else if (!tipoFinal) {
-      this.mostrarError('Por favor selecciona un tipo de etiqueta');
+      this.notificationService.showWarning('El campo "Tipo de Etiqueta" es obligatorio. Por favor, selecciona un tipo.');
       return;
     }
+
 
     this.guardando = true;
     const request: EtiquetaRequest = {
@@ -1578,19 +1701,46 @@ export class EtiquetasListComponent implements OnInit {
 
     observable.subscribe({
       next: (response: ApiResponse<Etiqueta>) => {
-        this.mostrarExito(response.message);
-        this.cerrarModal();
+        if (this.etiquetaEditando) {
+          this.notificationService.showSuccess(
+            `La etiqueta "${response.data.nombre}" se actualizó correctamente.`
+          );
+        } else {
+          this.notificationService.showSuccess(
+            `La etiqueta "${response.data.nombre}" se creó exitosamente.`
+          );
+        }
+        
+        this.cerrarModalDirecto();
         this.cargarEtiquetas();
         this.guardando = false;
         
-        // Resetear campos personalizados
         this.mostrarCampoTipoPersonalizado = false;
         this.tipoPersonalizado = '';
       },
       error: (error: any) => {
         console.error('Error al guardar:', error);
-        this.mostrarError(error.error?.message || 'Error al guardar la etiqueta');
         this.guardando = false;
+        
+        if (error.status === 409) {
+          // Conflicto - nombre duplicado
+          this.notificationService.error(
+            'No se puede guardar',
+            `Ya existe una etiqueta con el nombre "${this.formulario.nombre}". Por favor, usa un nombre diferente.`
+          );
+        } else if (error.status === 400) {
+          // Bad Request - validación del backend
+          this.notificationService.error(
+            'Datos inválidos',
+            error.error?.message || 'Los datos ingresados no son válidos. Verifica que todos los campos estén correctos.'
+          );
+        } else if (error.status) {
+          // Otros errores HTTP
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          // Error de red
+          this.notificationService.showError('No se pudo guardar la etiqueta. Verifica tu conexión a internet e intenta nuevamente.');
+        }
       }
     });
   }
@@ -1611,28 +1761,130 @@ export class EtiquetasListComponent implements OnInit {
     this.etiquetaAEliminar = null;
   }
 
+  abrirModalEditar(etiqueta: Etiqueta): void {
+    this.etiquetaEditando = etiqueta;
+    this.formulario = {
+      nombre: etiqueta.nombre,
+      tipoEtiqueta: etiqueta.tipoEtiqueta,
+      descripcion: etiqueta.descripcion || ''
+    };
+    
+    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
+    this.mostrarModal = true;
+  }
+
+  abrirModalCrear(): void {
+    this.etiquetaEditando = null;
+    this.formulario = {
+      nombre: '',
+      tipoEtiqueta: '',
+      descripcion: ''
+    };
+    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
+    this.mostrarModal = true;
+  }
+
+  private hayaCambios(): boolean {
+    if (!this.formularioInicial) return false;
+    
+    // Comparar formulario actual con inicial
+    const formularioActual = {
+      nombre: this.formulario.nombre?.trim() || '',
+      tipoEtiqueta: this.mostrarCampoTipoPersonalizado 
+        ? this.tipoPersonalizado?.trim() || ''
+        : this.formulario.tipoEtiqueta || '',
+      descripcion: this.formulario.descripcion?.trim() || ''
+    };
+
+    const formularioInicial = {
+      nombre: this.formularioInicial.nombre?.trim() || '',
+      tipoEtiqueta: this.formularioInicial.tipoEtiqueta || '',
+      descripcion: this.formularioInicial.descripcion?.trim() || ''
+    };
+
+    return JSON.stringify(formularioActual) !== JSON.stringify(formularioInicial);
+  }
+
+  intentarCerrarModal(): void {
+    // Si está guardando, no permitir cerrar
+    if (this.guardando) {
+      this.notificationService.showWarning('Espera a que se complete el guardado.');
+      return;
+    }
+
+    // Si hay cambios, pedir confirmación
+    if (this.hayaCambios()) {
+      this.mostrarConfirmacionCerrar = true;
+    } else {
+      // Si no hay cambios, cerrar directamente
+      this.cerrarModalDirecto();
+    }
+  }
+
+  cancelarCierre(): void {
+    this.mostrarConfirmacionCerrar = false;
+  }
+  confirmarCerrarModal(): void {
+    this.mostrarConfirmacionCerrar = false;
+    this.cerrarModalDirecto();
+    this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
+  }
+
+  private cerrarModalDirecto(): void {
+    this.mostrarModal = false;
+    this.etiquetaEditando = null;
+    this.mostrarCampoTipoPersonalizado = false;
+    this.tipoPersonalizado = '';
+    this.formularioInicial = null;
+  }
+
   /**
    * Elimina una etiqueta
    */
-  eliminar(): void {
+
+ eliminar(): void {
     if (!this.etiquetaAEliminar) return;
 
     this.eliminando = true;
+    const nombreEtiqueta = this.etiquetaAEliminar.nombre;
+    
     this.etiquetaService.eliminar(this.etiquetaAEliminar.id).subscribe({
       next: (response: ApiResponse<void>) => {
-        this.mostrarExito(response.message);
+        this.notificationService.showSuccess(
+          `La etiqueta "${nombreEtiqueta}" se eliminó correctamente.`
+        );
+        
         this.cerrarConfirmacion();
         this.cargarEtiquetas();
         this.eliminando = false;
       },
       error: (error: any) => {
         console.error('Error al eliminar:', error);
-        this.mostrarError(error.error?.message || 'Error al eliminar la etiqueta');
         this.eliminando = false;
+        
+        if (error.status === 409 || (error.error?.message && error.error.message.includes('en uso'))) {
+          // Dependencia - etiqueta en uso
+          this.notificationService.error(
+            'No se puede eliminar',
+            `La etiqueta "${nombreEtiqueta}" está siendo usada por ingredientes, comidas o ejercicios. Primero debes eliminar esas referencias.`,
+            10000 // Duración más larga para errores complejos
+          );
+        } else if (error.status === 404) {
+          // No encontrada
+          this.notificationService.error(
+            'Etiqueta no encontrada',
+            'La etiqueta que intentas eliminar ya no existe. La página se actualizará.'
+          );
+          this.cerrarConfirmacion();
+          this.cargarEtiquetas();
+        } else if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          this.notificationService.showError('No se pudo eliminar la etiqueta. Verifica tu conexión a internet.');
+        }
       }
     });
   }
-
   /**
    * Maneja el cambio de tipo de etiqueta
    */
@@ -1701,20 +1953,5 @@ export class EtiquetasListComponent implements OnInit {
     
     return grupos;
   }
-
-  /**
-   * Muestra un mensaje de éxito
-   */
-  private mostrarExito(mensaje: string): void {
-    // TODO: Implementar con tu sistema de notificaciones (toast, snackbar, etc.)
-    alert(mensaje);
-  }
-
-  /**
-   * Muestra un mensaje de error
-   */
-  private mostrarError(mensaje: string): void {
-    // TODO: Implementar con tu sistema de notificaciones (toast, snackbar, etc.)
-    alert(mensaje);
-  }
+  
 }

@@ -1,5 +1,3 @@
-// src/app/features/comidas/pages/comidas-list.component.ts
-
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,6 +6,7 @@ import { Observable } from 'rxjs';
 import { ComidaService } from '../../../../core/services/comida.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import { IngredienteService } from '../../../../core/services/ingrediente.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 import {
   Comida,
   TipoComida,
@@ -365,10 +364,17 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
 
       <!-- Modal Crear/Editar Comida -->
       @if (mostrarModal) {
-        <div class="modal-overlay" (click)="cerrarModal()">
+        <div class="modal-overlay" (click)="intentarCerrarModal()">
           <div class="modal-content large" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>{{ comidaEditando ? 'Editar Comida' : 'Nueva Comida' }}</h2>
+              <button 
+                (click)="intentarCerrarModal()" 
+                class="btn-close-modal"
+                title="Cerrar"
+              >
+                ✕
+              </button>
             </div>
 
             <div class="modal-body">
@@ -583,7 +589,7 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
 
             <div class="modal-footer">
               <button
-                (click)="cerrarModal()"
+                (click)="intentarCerrarModal()"
                 [disabled]="guardando"
                 class="btn-secondary"
               >
@@ -804,8 +810,32 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
           </div>
         </div>
       }
+     @if (mostrarConfirmacionCerrar) {
+       <div class="modal-overlay confirmation-overlay" (click)="cancelarCierre()">
+         <div class="modal-content small" (click)="$event.stopPropagation()">
+           <div class="modal-body centered">
+             <div class="warning-icon">⚠️</div>
+             <h3>¿Salir sin guardar?</h3>
+             <p>
+               Tienes cambios sin guardar en el formulario.
+               @if (formulario.ingredientes.length > 0) {
+                 <strong>Incluye {{ formulario.ingredientes.length }} ingrediente(s).</strong>
+               }
+               Si sales ahora, perderás toda la información.
+             </p>
+           </div>
+           <div class="modal-footer">
+             <button (click)="cancelarCierre()" class="btn-secondary">
+               Seguir Editando
+             </button>
+             <button (click)="confirmarCerrarModal()" class="btn-danger">
+               Descartar Cambios
+             </button>
+           </div>
+         </div>
+       </div>
+     }
 
-    </div>
   `,
   styles: [`
     /* Base styles (iguales a ingredientes) */
@@ -820,7 +850,7 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
     }
 
     .header-content {
-      flex: 1;
+      flex: 1;  
     }
 
     .page-title {
@@ -900,7 +930,7 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
       cursor: pointer;
       transition: all 0.3s ease;
     }
-
+    
     .btn-danger:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
@@ -2211,12 +2241,129 @@ import { Ingrediente } from '../../../../core/models/ingrediente.model';
         grid-template-columns: 1fr;
       }
     }
+
+    .modal-header {
+      padding: 25px 30px;
+      border-bottom: 1px solid #F1F3F4;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-close-modal {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      border-radius: 50%;
+      color: #6C757D;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-close-modal:hover {
+      background: #E9ECEF;
+      color: #DC3545;
+      transform: scale(1.1);
+    }
+
+    .modal-overlay {
+      z-index: 1000;
+    }
+
+    .modal-overlay + .modal-overlay {
+      z-index: 1001; 
+    }
+
+    .input-error {
+      border-color: #DC3545 !important;
+      background: #FFF5F5;
+    }
+
+    .input-error:focus {
+      border-color: #DC3545 !important;
+      box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+    }
+
+    .error-message {
+      display: block;
+      color: #DC3545;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .preview-text {
+      margin-top: 12px;
+      padding: 10px;
+      background: white;
+      border: 1px solid #28A745;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #6C757D;
+    }
+
+    .preview-text strong {
+      color: #28A745;
+    }
+
+    .btn-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .confirmation-overlay {
+      z-index: 1001 !important;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-close-modal {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      border-radius: 50%;
+      color: #6C757D;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-close-modal:hover {
+      background: #E9ECEF;
+      color: #DC3545;
+      transform: scale(1.1);
+    }
   `]
 })
 export class ComidasListComponent implements OnInit {
   private comidaService = inject(ComidaService);
   private etiquetaService = inject(EtiquetaService);
   private ingredienteService = inject(IngredienteService);
+  private notificationService = inject(NotificationService);
 
   // Signals
   loading = signal(false);
@@ -2280,9 +2427,12 @@ export class ComidasListComponent implements OnInit {
   // Tipos personalizados
   mostrarCampoTipoComidaPersonalizado = false;
   tipoComidaPersonalizado = '';
-
+ 
   // Control de formulario de ingrediente en modal principal
   mostrarFormIngrediente = false;
+ 
+  mostrarConfirmacionCerrar = false;
+  formularioInicial: any = null;
 
   ngOnInit(): void {
     this.cargarComidas();
@@ -2313,10 +2463,15 @@ export class ComidasListComponent implements OnInit {
         this.totalElements = response.data.totalElements;
         this.loading.set(false);
       },
-      error: (error) => {
+     error: (error) => {
         console.error('Error al cargar comidas:', error);
-        this.mostrarError('Error al cargar comidas');
         this.loading.set(false);
+        
+        if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message || 'Error al cargar las comidas');
+        } else {
+          this.notificationService.showError('No se pudieron cargar las comidas. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -2380,6 +2535,40 @@ export class ComidasListComponent implements OnInit {
   }
 
   // ========== CRUD COMIDA ==========
+  
+  private hayaCambios(): boolean {
+    if (!this.formularioInicial) return false;
+    
+    const formularioActual = {
+      nombre: this.formulario.nombre?.trim() || '',
+      tipoComida: this.mostrarCampoTipoComidaPersonalizado 
+        ? this.tipoComidaPersonalizado?.trim() || ''
+        : this.formulario.tipoComida || '',
+      descripcion: this.formulario.descripcion?.trim() || '',
+      tiempoPreparacionMinutos: this.formulario.tiempoPreparacionMinutos || 0,
+      porciones: this.formulario.porciones || 0,
+      instrucciones: this.formulario.instrucciones?.trim() || '',
+      etiquetaIds: JSON.stringify(this.formulario.etiquetaIds.sort()),
+      ingredientes: JSON.stringify(this.formulario.ingredientes.sort((a, b) => 
+        a.ingredienteId - b.ingredienteId
+      ))
+    };
+
+    const formularioInicial = {
+      nombre: this.formularioInicial.nombre?.trim() || '',
+      tipoComida: this.formularioInicial.tipoComida || '',
+      descripcion: this.formularioInicial.descripcion?.trim() || '',
+      tiempoPreparacionMinutos: this.formularioInicial.tiempoPreparacionMinutos || 0,
+      porciones: this.formularioInicial.porciones || 0,
+      instrucciones: this.formularioInicial.instrucciones?.trim() || '',
+      etiquetaIds: JSON.stringify(this.formularioInicial.etiquetaIds.sort()),
+      ingredientes: JSON.stringify(this.formularioInicial.ingredientes.sort((a: any, b: any) => 
+        a.ingredienteId - b.ingredienteId
+      ))
+    };
+
+    return JSON.stringify(formularioActual) !== JSON.stringify(formularioInicial);
+  }
 
   /**
    * Abre el modal para crear comida
@@ -2396,9 +2585,12 @@ export class ComidasListComponent implements OnInit {
       etiquetaIds: [],
       ingredientes: []
     };
+    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
     this.mostrarFormIngrediente = false;
     this.mostrarModal = true;
   }
+
+  
 
   /**
    * Abre el modal para editar comida
@@ -2419,18 +2611,49 @@ export class ComidasListComponent implements OnInit {
         notas: ing.notas
       }))
     };
+    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
     this.mostrarModal = true;
   }
 
-  /**
-   * Cierra el modal de comida
-   */
-  cerrarModal(): void {
+
+  intentarCerrarModal(): void {
+    if (this.guardando) {
+      this.notificationService.showWarning('Espera a que se complete el guardado.');
+      return;
+    }
+
+    if (this.hayaCambios()) {
+      this.mostrarConfirmacionCerrar = true;
+    } else {
+      this.cerrarModalDirecto();
+    }
+  }
+  cancelarCierre(): void {
+    this.mostrarConfirmacionCerrar = false;
+  }
+
+  confirmarCerrarModal(): void {
+    this.mostrarConfirmacionCerrar = false;
+    this.cerrarModalDirecto();
+    
+    // Mensaje especial si había ingredientes
+    if (this.formulario.ingredientes.length > 0) {
+      this.notificationService.info(
+        'Cambios descartados',
+        `Se descartaron los cambios incluyendo ${this.formulario.ingredientes.length} ingrediente(s).`
+      );
+    } else {
+      this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
+    }
+  }
+
+  private cerrarModalDirecto(): void {
     this.mostrarModal = false;
     this.comidaEditando = null;
     this.mostrarCampoTipoComidaPersonalizado = false;
     this.tipoComidaPersonalizado = '';
     this.mostrarFormIngrediente = false;
+    this.formularioInicial = null;
     this.formularioIngrediente = {
       ingredienteId: 0,
       cantidadGramos: 0,
@@ -2438,22 +2661,38 @@ export class ComidasListComponent implements OnInit {
     };
   }
 
+
   /**
    * Guarda una comida
    */
   guardar(): void {
     // Validar tipo personalizado si está activo
-    if (this.mostrarCampoTipoComidaPersonalizado && !this.tipoComidaPersonalizado.trim()) {
-      this.mostrarError('Por favor ingresa el nuevo tipo de comida');
+     if (!this.formulario.nombre || this.formulario.nombre.trim().length === 0) {
+      this.notificationService.showWarning('El campo "Nombre" es obligatorio.');
       return;
     }
 
+    if (this.mostrarCampoTipoComidaPersonalizado && !this.tipoComidaPersonalizado.trim()) {
+      this.notificationService.showWarning('Por favor, ingresa el nombre del nuevo tipo de comida.');
+      return;
+    }
     const tipoFinal = this.mostrarCampoTipoComidaPersonalizado 
       ? this.tipoComidaPersonalizado 
       : this.formulario.tipoComida;
 
-    if (!this.formulario.nombre || !tipoFinal) {
-      this.mostrarError('Por favor completa los campos obligatorios');
+    if (!tipoFinal) {
+      this.notificationService.showWarning('El campo "Tipo de Comida" es obligatorio. Por favor, selecciona un tipo.');
+      return;
+    }
+
+    // Validar valores numéricos
+    if (this.formulario.porciones && this.formulario.porciones < 0) {
+      this.notificationService.showWarning('Las porciones no pueden ser un valor negativo.');
+      return;
+    }
+
+    if (this.formulario.tiempoPreparacionMinutos && this.formulario.tiempoPreparacionMinutos < 0) {
+      this.notificationService.showWarning('El tiempo de preparación no puede ser un valor negativo.');
       return;
     }
 
@@ -2476,24 +2715,46 @@ export class ComidasListComponent implements OnInit {
       next: (response) => {
         const comidaCreada = response.data;
         
-        // Si hay ingredientes para agregar y es una creación nueva
+        // Si hay ingredientes para agregar
         if (!this.comidaEditando && this.formulario.ingredientes.length > 0) {
-          // Enviar ingredientes uno por uno
           this.enviarIngredientes(comidaCreada.id, this.formulario.ingredientes);
         } else if (this.comidaEditando && this.formulario.ingredientes.length > 0) {
-          // Para edición, sincronizar ingredientes
           this.sincronizarIngredientes(comidaCreada.id, this.formulario.ingredientes);
         } else {
-          this.mostrarExito(response.message);
-          this.cerrarModal();
+          if (this.comidaEditando) {
+            this.notificationService.showSuccess(
+              `La comida "${response.data.nombre}" se actualizó correctamente.`
+            );
+          } else {
+            this.notificationService.showSuccess(
+              `La comida "${response.data.nombre}" se creó exitosamente.`
+            );
+          }
+          
+          this.cerrarModalDirecto();
           this.cargarComidas();
           this.guardando = false;
         }
       },
       error: (error) => {
         console.error('Error al guardar:', error);
-        this.mostrarError(error.error?.message || 'Error al guardar la comida');
         this.guardando = false;
+        
+        if (error.status === 409) {
+          this.notificationService.error(
+            'No se puede guardar',
+            `Ya existe una comida con el nombre "${this.formulario.nombre}". Por favor, usa un nombre diferente.`
+          );
+        } else if (error.status === 400) {
+          this.notificationService.error(
+            'Datos inválidos',
+            error.error?.message || 'Los datos ingresados no son válidos. Verifica que todos los campos estén correctos.'
+          );
+        } else if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          this.notificationService.showError('No se pudo guardar la comida. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -2521,17 +2782,40 @@ export class ComidasListComponent implements OnInit {
     if (!this.comidaAEliminar) return;
 
     this.eliminando = true;
+    const nombreComida = this.comidaAEliminar.nombre;
+    
     this.comidaService.eliminar(this.comidaAEliminar.id).subscribe({
       next: (response) => {
-        this.mostrarExito(response.message);
+        this.notificationService.showSuccess(
+          `La comida "${nombreComida}" y su receta se eliminaron correctamente.`
+        );
+        
         this.cerrarConfirmacion();
         this.cargarComidas();
         this.eliminando = false;
       },
       error: (error) => {
         console.error('Error al eliminar:', error);
-        this.mostrarError(error.error?.message || 'Error al eliminar la comida');
         this.eliminando = false;
+        
+        if (error.status === 409 || (error.error?.message && error.error.message.includes('en uso'))) {
+          this.notificationService.error(
+            'No se puede eliminar',
+            `La comida "${nombreComida}" está siendo usada en planes alimenticios. Primero debes eliminar esas referencias.`,
+            10000
+          );
+        } else if (error.status === 404) {
+          this.notificationService.error(
+            'Comida no encontrada',
+            'La comida que intentas eliminar ya no existe. La página se actualizará.'
+          );
+          this.cerrarConfirmacion();
+          this.cargarComidas();
+        } else if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          this.notificationService.showError('No se pudo eliminar la comida. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -2579,7 +2863,7 @@ export class ComidasListComponent implements OnInit {
   agregarIngrediente(): void {
     if (!this.comidaReceta || !this.formularioIngrediente.ingredienteId || 
         this.formularioIngrediente.cantidadGramos <= 0) {
-      this.mostrarError('Por favor completa los campos obligatorios');
+      this.notificationService.showWarning('Por favor, selecciona un ingrediente y especifica una cantidad válida.');
       return;
     }
 
@@ -2592,7 +2876,11 @@ export class ComidasListComponent implements OnInit {
 
     this.comidaService.agregarIngrediente(this.comidaReceta.id, request).subscribe({
       next: (response) => {
-        this.mostrarExito(response.message);
+        const nombreIngrediente = this.getIngredienteNombre(this.formularioIngrediente.ingredienteId);
+        this.notificationService.showSuccess(
+          `El ingrediente "${nombreIngrediente}" se agregó correctamente a la receta.`
+        );
+        
         this.comidaReceta = response.data;
         this.cerrarModalIngrediente();
         this.cargarComidas();
@@ -2600,8 +2888,22 @@ export class ComidasListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al agregar ingrediente:', error);
-        this.mostrarError(error.error?.message || 'Error al agregar ingrediente');
         this.guardandoIngrediente = false;
+        if (error.status === 409) {
+          this.notificationService.error(
+            'Ingrediente duplicado',
+            'Este ingrediente ya está en la receta. Si quieres cambiar la cantidad, primero elimínalo y agrégalo nuevamente.'
+          );
+        } else if (error.status === 400) {
+          this.notificationService.error(
+            'Datos inválidos',
+            error.error?.message || 'La cantidad debe ser un valor numérico positivo.'
+          );
+        } else if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          this.notificationService.showError('No se pudo agregar el ingrediente. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -2612,17 +2914,27 @@ export class ComidasListComponent implements OnInit {
   eliminarIngrediente(ingredienteId: number): void {
     if (!this.comidaReceta) return;
 
-    if (!confirm('¿Eliminar este ingrediente de la receta?')) return;
+    const nombreIngrediente = this.getIngredienteNombre(ingredienteId);
+    
+    if (!confirm(`¿Eliminar "${nombreIngrediente}" de la receta?`)) return;
 
     this.comidaService.eliminarIngrediente(this.comidaReceta.id, ingredienteId).subscribe({
       next: (response) => {
-        this.mostrarExito(response.message);
+        this.notificationService.showSuccess(
+          `El ingrediente "${nombreIngrediente}" se eliminó de la receta.`
+        );
+        
         this.comidaReceta = response.data;
         this.cargarComidas();
       },
       error: (error) => {
         console.error('Error al eliminar ingrediente:', error);
-        this.mostrarError(error.error?.message || 'Error al eliminar ingrediente');
+        
+        if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          this.notificationService.showError('No se pudo eliminar el ingrediente de la receta.');
+        }
       }
     });
   }
@@ -2697,7 +3009,12 @@ export class ComidasListComponent implements OnInit {
    */
   agregarIngredienteALista(): void {
     if (!this.formularioIngrediente.ingredienteId || !this.formularioIngrediente.cantidadGramos) {
-      this.mostrarError('Por favor selecciona un ingrediente y especifica la cantidad');
+      this.notificationService.showWarning('Por favor, selecciona un ingrediente y especifica la cantidad.');
+      return;
+    }
+
+    if (this.formularioIngrediente.cantidadGramos <= 0) {
+      this.notificationService.showWarning('La cantidad debe ser mayor a 0.');
       return;
     }
 
@@ -2707,9 +3024,10 @@ export class ComidasListComponent implements OnInit {
     );
 
     if (yaExiste) {
-      this.mostrarError('Este ingrediente ya fue agregado. Quítalo primero si deseas modificarlo.');
+      this.notificationService.showWarning('Este ingrediente ya fue agregado. Quítalo primero si deseas modificarlo.');
       return;
     }
+
 
     // Agregar a la lista
     this.formulario.ingredientes.push({
@@ -2771,7 +3089,7 @@ export class ComidasListComponent implements OnInit {
    * Sincroniza ingredientes de una comida editada
    */
   private sincronizarIngredientes(comidaId: number, ingredientes: any[]): void {
-    // Para simplificar, usar los ingredientes tal como están
+      // Para simplificar, usar los ingredientes tal como están
     // Una implementación más sofisticada haría diff de ingredientes
     this.enviarIngredientes(comidaId, ingredientes);
   }
@@ -2779,13 +3097,17 @@ export class ComidasListComponent implements OnInit {
   /**
    * Finaliza el guardado después de procesar ingredientes
    */
-  private finalizarGuardadoConIngredientes(errores: string[]): void {
+   private finalizarGuardadoConIngredientes(errores: string[]): void {
     if (errores.length === 0) {
-      this.mostrarExito('Comida guardada exitosamente con todos sus ingredientes');
+      this.notificationService.showSuccess('La comida y su receta se guardaron exitosamente.');
     } else {
-      this.mostrarError(`Comida guardada pero con errores en ingredientes: ${errores.join(', ')}`);
+      this.notificationService.error(
+        'Guardado parcial',
+        `La comida se guardó pero algunos ingredientes no se pudieron agregar: ${errores.join(', ')}`,
+        10000
+      );
     }
-    this.cerrarModal();
+    this.cerrarModalDirecto();
     this.cargarComidas();
     this.guardando = false;
   }
@@ -2796,19 +3118,5 @@ export class ComidasListComponent implements OnInit {
   getIngredienteNombre(id: number): string {
     const ingrediente = this.ingredientesDisponibles().find(i => i.id === id);
     return ingrediente?.nombre || 'Desconocido';
-  }
-
-  /**
-   * Muestra mensaje de éxito
-   */
-  private mostrarExito(mensaje: string): void {
-    alert(mensaje);
-  }
-
-  /**
-   * Muestra mensaje de error
-   */
-  private mostrarError(mensaje: string): void {
-    alert(mensaje);
   }
 }

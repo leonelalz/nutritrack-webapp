@@ -1,5 +1,3 @@
-// src/app/features/ejercicios/pages/ejercicios-list.component.ts
-
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { EjercicioService } from '../../../../core/services/ejercicio.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 import {
   Ejercicio,
   TipoEjercicio,
@@ -582,7 +581,6 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
           </div>
         </div>
       }
-
       <!-- Modal Confirmación Eliminar -->
       @if (mostrarConfirmacion) {
         <div class="modal-overlay" (click)="cerrarConfirmacion()">
@@ -614,9 +612,35 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
             </div>
           </div>
         </div>
-      }
+      }  
 
+      @if (mostrarConfirmacionCerrar) {
+       <div class="modal-overlay confirmation-overlay" (click)="cancelarCerrarModal()">
+         <div class="modal-content small" (click)="$event.stopPropagation()">
+           <div class="modal-body centered">
+             <div class="warning-icon">⚠️</div>
+             <h3>¿Salir sin guardar?</h3>
+             <p>
+               Tienes cambios sin guardar en el formulario.
+               @if (formulario.etiquetaIds.length > 0) {
+                 <strong>Incluye {{ formulario.etiquetaIds.length }} etiqueta(s).</strong>
+               }
+               Si sales ahora, perderás toda la información.
+             </p>
+           </div>
+           <div class="modal-footer">
+             <button (click)="cancelarCerrarModal()" class="btn-secondary">
+               Seguir Editando
+             </button>
+             <button (click)="confirmarCerrarModal()" class="btn-danger">
+               Descartar Cambios
+             </button>
+           </div>
+         </div>
+       </div>
+     }
     </div>
+    
   `,
   styles: [`
     /* Base styles iguales a los anteriores */
@@ -1746,12 +1770,127 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
         grid-template-columns: 1fr;
       }
     }
+    .modal-header {
+      padding: 25px 30px;
+      border-bottom: 1px solid #F1F3F4;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
+    .btn-close-modal {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      border-radius: 50%;
+      color: #6C757D;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-close-modal:hover {
+      background: #E9ECEF;
+      color: #DC3545;
+      transform: scale(1.1);
+    }
+
+    .modal-overlay {
+      z-index: 1000;
+    }
+
+    .modal-overlay + .modal-overlay {
+      z-index: 1001; 
+    }
+
+    .input-error {
+      border-color: #DC3545 !important;
+      background: #FFF5F5;
+    }
+
+    .input-error:focus {
+      border-color: #DC3545 !important;
+      box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+    }
+
+    .error-message {
+      display: block;
+      color: #DC3545;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .preview-text {
+      margin-top: 12px;
+      padding: 10px;
+      background: white;
+      border: 1px solid #28A745;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #6C757D;
+    }
+
+    .preview-text strong {
+      color: #28A745;
+    }
+
+    .btn-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .confirmation-overlay {
+      z-index: 1001 !important;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-close-modal {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      border-radius: 50%;
+      color: #6C757D;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-close-modal:hover {
+      background: #E9ECEF;
+      color: #DC3545;
+      transform: scale(1.1);
+    }
   `]
 })
 export class EjerciciosListComponent implements OnInit {
   private ejercicioService = inject(EjercicioService);
   private etiquetaService = inject(EtiquetaService);
+  private notificationService = inject(NotificationService);
 
   // Signals
   loading = signal(false);
@@ -1804,15 +1943,15 @@ export class EjerciciosListComponent implements OnInit {
   // Tipos personalizados
   mostrarCampoTipoPersonalizado = false;
   tipoPersonalizado = '';
+  
+  mostrarConfirmacionCerrar = false;
+  formularioInicial: any = null;
 
   ngOnInit(): void {
     this.cargarEjercicios();
     this.cargarEtiquetas();
   }
 
-  /**
-   * Carga la lista de ejercicios
-   */
   cargarEjercicios(): void {
     this.loading.set(true);
     
@@ -1841,8 +1980,13 @@ export class EjerciciosListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar ejercicios:', error);
-        this.mostrarError('Error al cargar ejercicios');
         this.loading.set(false);
+        
+        if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message || 'Error al cargar los ejercicios');
+        } else {
+          this.notificationService.showError('No se pudieron cargar los ejercicios. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -1901,75 +2045,166 @@ export class EjerciciosListComponent implements OnInit {
       this.cargarEjercicios();
     }
   }
-
-  /**
-   * Abre el modal para crear
-   */
-  abrirModalCrear(): void {
-    this.ejercicioEditando = null;
-    this.formulario = {
-      nombre: '',
-      descripcion: '',
-      tipoEjercicio: '',
-      grupoMuscular: '',
-      nivelDificultad: '',
-      caloriasQuemadasPorMinuto: 0,
-      duracionEstimadaMinutos: 0,
-      equipoNecesario: '',
-      etiquetaIds: []
-    };
-    this.mostrarModal = true;
-  }
-
-  /**
-   * Abre el modal para editar
-   */
-  abrirModalEditar(ejercicio: Ejercicio): void {
-    this.ejercicioEditando = ejercicio;
-    this.formulario = {
-      nombre: ejercicio.nombre,
-      descripcion: ejercicio.descripcion || '',
-      tipoEjercicio: ejercicio.tipoEjercicio,
-      grupoMuscular: ejercicio.grupoMuscular,
-      nivelDificultad: ejercicio.nivelDificultad,
-      caloriasQuemadasPorMinuto: ejercicio.caloriasQuemadasPorMinuto || 0,
-      duracionEstimadaMinutos: ejercicio.duracionEstimadaMinutos || 0,
-      equipoNecesario: ejercicio.equipoNecesario || '',
-      etiquetaIds: ejercicio.etiquetas.map(e => e.id)
-    };
-    this.mostrarModal = true;
-  }
-
   /**
    * Cierra el modal
    */
   cerrarModal(): void {
+    if (this.hayaCambios()) {
+      this.mostrarConfirmacionCerrar = true;
+    } else {
+      this.mostrarModal = false;
+      this.ejercicioEditando = null;
+      this.mostrarCampoTipoPersonalizado = false;
+      this.tipoPersonalizado = '';
+      this.formularioInicial = null;
+    }
+  }
+  // 2. Agregar métodos para confirmar/cancelar cierre
+  confirmarCerrarModal(): void {
+    this.mostrarConfirmacionCerrar = false;
     this.mostrarModal = false;
     this.ejercicioEditando = null;
     this.mostrarCampoTipoPersonalizado = false;
     this.tipoPersonalizado = '';
+    this.formularioInicial = null;
+      if (this.formulario.etiquetaIds.length > 0) {
+        this.notificationService.info(
+          'Cambios descartados',
+          `Se descartaron los cambios incluyendo ${this.formulario.etiquetaIds.length} etiqueta(s).`
+        );
+      } else {
+        this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
+      }
   }
+
+  cancelarCerrarModal(): void {
+    this.mostrarConfirmacionCerrar = false;
+  }
+
+
+  private hayaCambios(): boolean {
+   if (!this.formularioInicial) return false;
+    
+   const formularioActual = {
+      nombre: this.formulario.nombre?.trim() || '',
+      descripcion: this.formulario.descripcion?.trim() || '',
+      tipoEjercicio: this.mostrarCampoTipoPersonalizado 
+        ? this.tipoPersonalizado?.trim() || ''
+        : this.formulario.tipoEjercicio || '',
+      grupoMuscular: this.formulario.grupoMuscular || '',
+      nivelDificultad: this.formulario.nivelDificultad || '',
+      caloriasQuemadasPorMinuto: this.formulario.caloriasQuemadasPorMinuto || 0,
+      duracionEstimadaMinutos: this.formulario.duracionEstimadaMinutos || 0,
+      equipoNecesario: this.formulario.equipoNecesario?.trim() || '',
+      etiquetaIds: JSON.stringify(this.formulario.etiquetaIds.sort())
+    };
+
+    const formularioInicial = {
+      nombre: this.formularioInicial.nombre?.trim() || '',
+      descripcion: this.formularioInicial.descripcion?.trim() || '',
+      tipoEjercicio: this.formularioInicial.tipoEjercicio || '',
+      grupoMuscular: this.formularioInicial.grupoMuscular || '',
+      nivelDificultad: this.formularioInicial.nivelDificultad || '',
+      caloriasQuemadasPorMinuto: this.formularioInicial.caloriasQuemadasPorMinuto || 0,
+      duracionEstimadaMinutos: this.formularioInicial.duracionEstimadaMinutos || 0,
+      equipoNecesario: this.formularioInicial.equipoNecesario?.trim() || '',
+      etiquetaIds: JSON.stringify(this.formularioInicial.etiquetaIds.sort())
+    };
+
+    return JSON.stringify(formularioActual) !== JSON.stringify(formularioInicial);
+  }
+  abrirModalCrear(): void {
+  this.ejercicioEditando = null; // era "this.editando"
+  this.formulario = {
+    nombre: '',
+    descripcion: '',
+    tipoEjercicio: '' as TipoEjercicio | '' | '__CUSTOM__',
+    grupoMuscular: '' as GrupoMuscular | '',
+    nivelDificultad: '' as NivelDificultad | '',
+    caloriasQuemadasPorMinuto: 0,
+    duracionEstimadaMinutos: 0,
+    equipoNecesario: '',
+    etiquetaIds: [] as number[]
+  };
+  
+  this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
+  this.mostrarModal = true;
+}
+
+
+abrirModalEditar(ejercicio: Ejercicio): void { // era "item: TuTipo"
+  this.ejercicioEditando = ejercicio; // era "this.editando"
+  
+  // Verificar si el tipo es personalizado
+  const esPersonalizado = !this.tiposEjercicio.includes(ejercicio.tipoEjercicio as TipoEjercicio);
+  
+  this.formulario = {
+    nombre: ejercicio.nombre,
+    descripcion: ejercicio.descripcion || '',
+    tipoEjercicio: esPersonalizado ? '__CUSTOM__' : ejercicio.tipoEjercicio,
+    grupoMuscular: ejercicio.grupoMuscular,
+    nivelDificultad: ejercicio.nivelDificultad,
+    caloriasQuemadasPorMinuto: ejercicio.caloriasQuemadasPorMinuto || 0,
+    duracionEstimadaMinutos: ejercicio.duracionEstimadaMinutos || 0,
+    equipoNecesario: ejercicio.equipoNecesario || '',
+    etiquetaIds: ejercicio.etiquetas?.map(e => e.id) || []
+  };
+  
+  if (esPersonalizado) {
+    this.mostrarCampoTipoPersonalizado = true;
+    this.tipoPersonalizado = ejercicio.tipoEjercicio;
+  }
+  this.formularioInicial = JSON.parse(JSON.stringify({
+    ...this.formulario,
+    tipoEjercicio: esPersonalizado ? this.tipoPersonalizado : this.formulario.tipoEjercicio
+  }));
+  
+  this.mostrarModal = true;
+}
 
   /**
    * Guarda un ejercicio
    */
   guardar(): void {
     // Validar tipo personalizado si está activo
-    if (this.mostrarCampoTipoPersonalizado && !this.tipoPersonalizado.trim()) {
-      this.mostrarError('Por favor ingresa el nuevo tipo de ejercicio');
+    if (!this.formulario.nombre || this.formulario.nombre.trim().length === 0) {
+      this.notificationService.showWarning('El campo "Nombre" es obligatorio.');
       return;
     }
+
+    if (this.mostrarCampoTipoPersonalizado && !this.tipoPersonalizado.trim()){
+      this.notificationService.showWarning('Por favor, ingresa el nombre del nuevo tipo de ejercicio.');
+      return;
+    }
+
 
     const tipoFinal = this.mostrarCampoTipoPersonalizado 
       ? this.tipoPersonalizado 
       : this.formulario.tipoEjercicio;
-
-    if (!this.formulario.nombre || !tipoFinal || 
-        !this.formulario.grupoMuscular || !this.formulario.nivelDificultad) {
-      this.mostrarError('Por favor completa los campos obligatorios');
+    if (!tipoFinal) {
+      this.notificationService.showWarning('El campo "Tipo de Ejercicio" es obligatorio.');
       return;
     }
 
+    if (!this.formulario.grupoMuscular) {
+      this.notificationService.showWarning('El campo "Grupo Muscular" es obligatorio.');
+      return;
+    }
+
+    if (!this.formulario.nivelDificultad) {
+      this.notificationService.showWarning('El campo "Nivel de Dificultad" es obligatorio.');
+      return;
+    }
+
+    if (this.formulario.caloriasQuemadasPorMinuto && this.formulario.caloriasQuemadasPorMinuto < 0) {
+      this.notificationService.showWarning('Las calorías quemadas no pueden ser un valor negativo.');
+      return;
+    }
+
+    if (this.formulario.duracionEstimadaMinutos && this.formulario.duracionEstimadaMinutos < 0) {
+      this.notificationService.showWarning('La duración estimada no puede ser un valor negativo.');
+      return;
+    }
     this.guardando = true;
     const request = {
       nombre: this.formulario.nombre.trim(),
@@ -1989,15 +2224,40 @@ export class EjerciciosListComponent implements OnInit {
 
     observable.subscribe({
       next: (response) => {
-        this.mostrarExito(response.message);
+        if (this.ejercicioEditando) {
+          this.notificationService.showSuccess(
+            `El ejercicio "${response.data.nombre}" se actualizó correctamente.`
+          );
+        } else {
+          this.notificationService.showSuccess(
+            `El ejercicio "${response.data.nombre}" se creó exitosamente.`
+          );
+        }
+        
+        this.formularioInicial = null;
         this.cerrarModal();
         this.cargarEjercicios();
         this.guardando = false;
       },
       error: (error) => {
         console.error('Error al guardar:', error);
-        this.mostrarError(error.error?.message || 'Error al guardar el ejercicio');
         this.guardando = false;
+        
+        if (error.status === 409) {
+          this.notificationService.error(
+            'No se puede guardar',
+            `Ya existe un ejercicio con el nombre "${this.formulario.nombre}". Por favor, usa un nombre diferente.`
+          );
+        } else if (error.status === 400) {
+          this.notificationService.error(
+            'Datos inválidos',
+            error.error?.message || 'Los datos ingresados no son válidos. Verifica que todos los campos estén correctos.'
+          );
+        } else if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          this.notificationService.showError('No se pudo guardar el ejercicio. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -2025,17 +2285,40 @@ export class EjerciciosListComponent implements OnInit {
     if (!this.ejercicioAEliminar) return;
 
     this.eliminando = true;
+    const nombreEjercicio = this.ejercicioAEliminar.nombre;
+    
     this.ejercicioService.eliminar(this.ejercicioAEliminar.id).subscribe({
       next: (response) => {
-        this.mostrarExito(response.message);
+        this.notificationService.showSuccess(
+          `El ejercicio "${nombreEjercicio}" se eliminó correctamente.`
+        );
+        
         this.cerrarConfirmacion();
         this.cargarEjercicios();
         this.eliminando = false;
       },
       error: (error) => {
         console.error('Error al eliminar:', error);
-        this.mostrarError(error.error?.message || 'Error al eliminar el ejercicio');
         this.eliminando = false;
+        
+        if (error.status === 409 || (error.error?.message && error.error.message.includes('en uso'))) {
+          this.notificationService.error(
+            'No se puede eliminar',
+            `El ejercicio "${nombreEjercicio}" está siendo usado en rutinas. Primero debes eliminar esas referencias.`,
+            10000
+          );
+        } else if (error.status === 404) {
+          this.notificationService.error(
+            'Ejercicio no encontrado',
+            'El ejercicio que intentas eliminar ya no existe. La página se actualizará.'
+          );
+          this.cerrarConfirmacion();
+          this.cargarEjercicios();
+        } else if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          this.notificationService.showError('No se pudo eliminar el ejercicio. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -2115,19 +2398,5 @@ export class EjerciciosListComponent implements OnInit {
       .toUpperCase()
       .replace(/\s+/g, '_')
       .replace(/[^A-Z0-9_]/g, '');
-  }
-
-  /**
-   * Muestra mensaje de éxito
-   */
-  private mostrarExito(mensaje: string): void {
-    alert(mensaje);
-  }
-
-  /**
-   * Muestra mensaje de error
-   */
-  private mostrarError(mensaje: string): void {
-    alert(mensaje);
   }
 }

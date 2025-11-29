@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
+import { NotificationService } from '../../../../core/services/notification.service';
 import { IngredienteService } from '../../../../core/services/ingrediente.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import {
@@ -558,6 +559,25 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
                 class="btn-danger"
               >
                 {{ eliminando ? 'Eliminando...' : 'Eliminar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+      @if (mostrarConfirmacionCerrar) {
+        <div class="modal-overlay confirmation-overlay" (click)="cancelarCierre()">
+          <div class="modal-content small" (click)="$event.stopPropagation()">
+            <div class="modal-body centered">
+              <div class="warning-icon">⚠️</div>
+              <h3>¿Descartar cambios?</h3>
+              <p>Tienes cambios sin guardar en el formulario. ¿Deseas descartarlos?</p>
+            </div>
+            <div class="modal-footer">
+              <button (click)="cancelarCierre()" class="btn-secondary">
+                Continuar editando
+              </button>
+              <button (click)="confirmarCerrarModal()" class="btn-danger">
+                Descartar cambios
               </button>
             </div>
           </div>
@@ -1616,11 +1636,127 @@ import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models/eti
         grid-template-columns: 1fr;
       }
     }
+    .modal-header {
+      padding: 25px 30px;
+      border-bottom: 1px solid #F1F3F4;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-close-modal {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      border-radius: 50%;
+      color: #6C757D;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-close-modal:hover {
+      background: #E9ECEF;
+      color: #DC3545;
+      transform: scale(1.1);
+    }
+
+    .modal-overlay {
+      z-index: 1000;
+    }
+
+    .modal-overlay + .modal-overlay {
+      z-index: 1001; 
+    }
+
+    .input-error {
+      border-color: #DC3545 !important;
+      background: #FFF5F5;
+    }
+
+    .input-error:focus {
+      border-color: #DC3545 !important;
+      box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+    }
+
+    .error-message {
+      display: block;
+      color: #DC3545;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .preview-text {
+      margin-top: 12px;
+      padding: 10px;
+      background: white;
+      border: 1px solid #28A745;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #6C757D;
+    }
+
+    .preview-text strong {
+      color: #28A745;
+    }
+
+    .btn-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 6px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .confirmation-overlay {
+      z-index: 1001 !important;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-close-modal {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #F8F9FA;
+      border-radius: 50%;
+      color: #6C757D;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-close-modal:hover {
+      background: #E9ECEF;
+      color: #DC3545;
+      transform: scale(1.1);
+    }
   `]
 })
 export class IngredientesListComponent implements OnInit {
   private ingredienteService = inject(IngredienteService);
   private etiquetaService = inject(EtiquetaService);
+  private notificationService = inject(NotificationService);
 
   // Signals
   loading = signal(false);
@@ -1670,6 +1806,9 @@ export class IngredientesListComponent implements OnInit {
   mostrarCampoCategoriaPersonalizada = false;
   categoriaPersonalizada = '';
 
+  mostrarConfirmacionCerrar = false;
+  formularioInicial: any = null;
+
   ngOnInit(): void {
     this.cargarIngredientes();
     this.cargarEtiquetas();
@@ -1700,8 +1839,12 @@ export class IngredientesListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar ingredientes:', error);
-        this.mostrarError('Error al cargar ingredientes');
         this.loading.set(false);
+        if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message || 'Error al cargar los ingredientes');
+        } else {
+          this.notificationService.showError('No se pudieron cargar los ingredientes. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -1750,9 +1893,6 @@ export class IngredientesListComponent implements OnInit {
     }
   }
 
-  /**
-   * Abre el modal para crear
-   */
   abrirModalCrear(): void {
     this.ingredienteEditando = null;
     this.formulario = {
@@ -1766,14 +1906,16 @@ export class IngredientesListComponent implements OnInit {
       descripcion: '',
       etiquetaIds: []
     };
+    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
     this.mostrarModal = true;
   }
 
-  /**
-   * Abre el modal para editar
-   */
   abrirModalEditar(ingrediente: Ingrediente): void {
     this.ingredienteEditando = ingrediente;
+    
+    // Verificar si la categoría es personalizada
+    const esPersonalizada = !this.categorias.includes(ingrediente.categoriaAlimento as CategoriaAlimento);
+    
     this.formulario = {
       nombre: ingrediente.nombre,
       proteinas: ingrediente.proteinas,
@@ -1781,30 +1923,104 @@ export class IngredientesListComponent implements OnInit {
       grasas: ingrediente.grasas,
       energia: ingrediente.energia,
       fibra: ingrediente.fibra || 0,
-      categoriaAlimento: ingrediente.categoriaAlimento,
+      categoriaAlimento: esPersonalizada ? '__CUSTOM__' : ingrediente.categoriaAlimento,
       descripcion: ingrediente.descripcion || '',
       etiquetaIds: ingrediente.etiquetas.map((e: Etiqueta) => e.id)
     };
+    
+    if (esPersonalizada) {
+      this.mostrarCampoCategoriaPersonalizada = true;
+      this.categoriaPersonalizada = ingrediente.categoriaAlimento;
+    }
+    
+    this.formularioInicial = JSON.parse(JSON.stringify({
+      ...this.formulario,
+      categoriaAlimento: esPersonalizada ? this.categoriaPersonalizada : this.formulario.categoriaAlimento
+    }));
+    
     this.mostrarModal = true;
   }
 
-  /**
-   * Cierra el modal
-   */
   cerrarModal(): void {
+    if (this.hayaCambios()) {
+      this.mostrarConfirmacionCerrar = true;
+    } else {
+      this.mostrarModal = false;
+      this.ingredienteEditando = null;
+      this.mostrarCampoCategoriaPersonalizada = false;
+      this.categoriaPersonalizada = '';
+      this.formularioInicial = null;
+    }
+  }
+
+   private hayaCambios(): boolean {
+    if (!this.formularioInicial) return false;
+    
+    const formularioActual = {
+      nombre: this.formulario.nombre?.trim() || '',
+      categoriaAlimento: this.mostrarCampoCategoriaPersonalizada 
+        ? this.categoriaPersonalizada?.trim() || ''
+        : this.formulario.categoriaAlimento || '',
+      descripcion: this.formulario.descripcion?.trim() || '',
+      proteinas: this.formulario.proteinas || 0,
+      carbohidratos: this.formulario.carbohidratos || 0,
+      grasas: this.formulario.grasas || 0,
+      energia: this.formulario.energia || 0,
+      fibra: this.formulario.fibra || 0,
+      etiquetaIds: JSON.stringify(this.formulario.etiquetaIds.sort())
+    };
+
+    const formularioInicial = {
+      nombre: this.formularioInicial.nombre?.trim() || '',
+      categoriaAlimento: this.formularioInicial.categoriaAlimento || '',
+      descripcion: this.formularioInicial.descripcion?.trim() || '',
+      proteinas: this.formularioInicial.proteinas || 0,
+      carbohidratos: this.formularioInicial.carbohidratos || 0,
+      grasas: this.formularioInicial.grasas || 0,
+      energia: this.formularioInicial.energia || 0,
+      fibra: this.formularioInicial.fibra || 0,
+      etiquetaIds: JSON.stringify(this.formularioInicial.etiquetaIds.sort())
+    };
+
+    return JSON.stringify(formularioActual) !== JSON.stringify(formularioInicial);
+  }
+
+  confirmarCerrarModal(): void {
+    this.mostrarConfirmacionCerrar = false;
     this.mostrarModal = false;
     this.ingredienteEditando = null;
     this.mostrarCampoCategoriaPersonalizada = false;
     this.categoriaPersonalizada = '';
+    this.formularioInicial = null;
+    
+    // Notificación al descartar (opcional, puedes quitarla si no la quieres)
+    if (this.formulario.etiquetaIds.length > 0) {
+      this.notificationService.info(
+        'Cambios descartados',
+        `Se descartaron los cambios incluyendo ${this.formulario.etiquetaIds.length} etiqueta(s).`
+      );
+    } else {
+      this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
+    }
   }
+
+  cancelarCierre(): void {
+    this.mostrarConfirmacionCerrar = false;
+  }
+
 
   /**
    * Guarda un ingrediente
    */
   guardar(): void {
-    // Validar categoría personalizada si está activa
+    
+    if (!this.formulario.nombre || this.formulario.nombre.trim().length === 0) {
+      this.notificationService.showWarning('El campo "Nombre" es obligatorio.');
+      return;
+    }
+
     if (this.mostrarCampoCategoriaPersonalizada && !this.categoriaPersonalizada.trim()) {
-      this.mostrarError('Por favor ingresa la nueva categoría de alimento');
+      this.notificationService.showWarning('Por favor, ingresa el nombre de la nueva categoría de alimento.');
       return;
     }
 
@@ -1812,8 +2028,21 @@ export class IngredientesListComponent implements OnInit {
       ? this.categoriaPersonalizada 
       : this.formulario.categoriaAlimento;
 
-    if (!this.formulario.nombre || !categoriaFinal) {
-      this.mostrarError('Por favor completa los campos obligatorios');
+    if (!categoriaFinal) {
+      this.notificationService.showWarning('El campo "Categoría" es obligatorio. Por favor, selecciona una categoría.');
+      return;
+    }
+
+    // Validar valores nutricionales
+    if (this.formulario.energia < 0 || this.formulario.proteinas < 0 || 
+        this.formulario.carbohidratos < 0 || this.formulario.grasas < 0) {
+      this.notificationService.showWarning('Los valores nutricionales no pueden ser negativos.');
+      return;
+    }
+
+    if (!this.formulario.energia || !this.formulario.proteinas || 
+        !this.formulario.carbohidratos || !this.formulario.grasas) {
+      this.notificationService.showWarning('Los campos de información nutricional (Energía, Proteínas, Carbohidratos y Grasas) son obligatorios.');
       return;
     }
 
@@ -1836,15 +2065,40 @@ export class IngredientesListComponent implements OnInit {
 
     observable.subscribe({
       next: (response) => {
-        this.mostrarExito(response.message);
+        if (this.ingredienteEditando) {
+          this.notificationService.showSuccess(
+            `El ingrediente "${response.data.nombre}" se actualizó correctamente.`
+          );
+        } else {
+          this.notificationService.showSuccess(
+            `El ingrediente "${response.data.nombre}" se creó exitosamente.`
+          );
+        }
+
+        this.formularioInicial = null;
         this.cerrarModal();
         this.cargarIngredientes();
         this.guardando = false;
       },
       error: (error) => {
         console.error('Error al guardar:', error);
-        this.mostrarError(error.error?.message || 'Error al guardar el ingrediente');
         this.guardando = false;
+        
+        if (error.status === 409) {
+          this.notificationService.error(
+            'No se puede guardar',
+            `Ya existe un ingrediente con el nombre "${this.formulario.nombre}". Por favor, usa un nombre diferente.`
+          );
+        } else if (error.status === 400) {
+          this.notificationService.error(
+            'Datos inválidos',
+            error.error?.message || 'Los datos ingresados no son válidos. Verifica que todos los campos estén correctos.'
+          );
+        } else if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          this.notificationService.showError('No se pudo guardar el ingrediente. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -1872,17 +2126,40 @@ export class IngredientesListComponent implements OnInit {
     if (!this.ingredienteAEliminar) return;
 
     this.eliminando = true;
+    const nombreIngrediente = this.ingredienteAEliminar.nombre;
+    
     this.ingredienteService.eliminar(this.ingredienteAEliminar.id).subscribe({
       next: (response) => {
-        this.mostrarExito(response.message);
+        this.notificationService.showSuccess(
+          `El ingrediente "${nombreIngrediente}" se eliminó correctamente.`
+        );
+        
         this.cerrarConfirmacion();
         this.cargarIngredientes();
         this.eliminando = false;
       },
       error: (error) => {
         console.error('Error al eliminar:', error);
-        this.mostrarError(error.error?.message || 'Error al eliminar el ingrediente');
         this.eliminando = false;
+        
+        if (error.status === 409 || (error.error?.message && error.error.message.includes('en uso'))) {
+          this.notificationService.error(
+            'No se puede eliminar',
+            `El ingrediente "${nombreIngrediente}" está siendo usado en recetas. Primero debes eliminar esas referencias.`,
+            10000
+          );
+        } else if (error.status === 404) {
+          this.notificationService.error(
+            'Ingrediente no encontrado',
+            'El ingrediente que intentas eliminar ya no existe. La página se actualizará.'
+          );
+          this.cerrarConfirmacion();
+          this.cargarIngredientes();
+        } else if (error.status) {
+          this.notificationService.showHttpError(error.status, error.error?.message);
+        } else {
+          this.notificationService.showError('No se pudo eliminar el ingrediente. Verifica tu conexión a internet.');
+        }
       }
     });
   }
@@ -1948,19 +2225,5 @@ export class IngredientesListComponent implements OnInit {
       .toUpperCase()
       .replace(/\s+/g, '_')
       .replace(/[^A-Z0-9_]/g, '');
-  }
-
-  /**
-   * Muestra mensaje de éxito
-   */
-  private mostrarExito(mensaje: string): void {
-    alert(mensaje);
-  }
-
-  /**
-   * Muestra mensaje de error
-   */
-  private mostrarError(mensaje: string): void {
-    alert(mensaje);
   }
 }
