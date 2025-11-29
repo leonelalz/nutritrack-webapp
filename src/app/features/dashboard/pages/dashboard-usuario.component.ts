@@ -1,307 +1,318 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration } from 'chart.js';
+import 'chart.js/auto';
+
+import { DashboardService } from '../../../core/services/dashboard.service';
+import { DashboardData, WeeklyTab } from '../../../core/models/dashboard.model';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, BaseChartDirective],
   template: `
     <div class="dashboard-container">
-      <!-- Stats Cards -->
-      <div class="stats-grid">
-        <div class="stat-card green-border">
-          <div class="stat-header">
-            <span class="stat-title">Calorías Hoy</span>
-            <div class="stat-icon green">🔥</div>
-          </div>
-          <div class="stat-value">1,847</div>
-          <div class="stat-footer">
-            <span class="stat-change positive">↗ 5.2%</span>
-            <span class="stat-subtitle">353 cal restantes</span>
-          </div>
-        </div>
+      <!-- Loading -->
+      <ng-container *ngIf="loading(); else loaded">
+        <p class="loading-text">Cargando tu resumen...</p>
+      </ng-container>
 
-        <div class="stat-card yellow-border">
-          <div class="stat-header">
-            <span class="stat-title">Metas Completadas</span>
-            <div class="stat-icon yellow">🎯</div>
-          </div>
-          <div class="stat-value">4/6</div>
-          <div class="stat-footer">
-            <span class="stat-change positive">↗ 67%</span>
-            <span class="stat-subtitle">progreso hoy</span>
-          </div>
-        </div>
+      <ng-template #loaded>
+        <!-- Error -->
+        <ng-container *ngIf="error() as err">
+          <div class="error-message">{{ err }}</div>
+        </ng-container>
 
-        <div class="stat-card red-border">
-          <div class="stat-header">
-            <span class="stat-title">Entrenamientos</span>
-            <div class="stat-icon red">🏃‍♂️</div>
-          </div>
-          <div class="stat-value">2</div>
-          <div class="stat-footer">
-            <span class="stat-change positive">↗ 605</span>
-            <span class="stat-subtitle">calorías quemadas</span>
-          </div>
-        </div>
-
-        <div class="stat-card purple-border">
-          <div class="stat-header">
-            <span class="stat-title">Racha Activa</span>
-            <div class="stat-icon purple">🔥</div>
-          </div>
-          <div class="stat-value">15</div>
-          <div class="stat-footer">
-            <span class="stat-change positive">↗ +1</span>
-            <span class="stat-subtitle">días consecutivos</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Main Content Grid -->
-      <div class="content-section">
-        <!-- Weekly Analysis Chart -->
-        <div class="chart-card">
-          <div class="chart-header">
-            <h2>Análisis Semanal</h2>
-            <div class="chart-tabs">
-              <button class="tab-btn active">Nutrición</button>
-              <button class="tab-btn">Ejercicio</button>
-              <button class="tab-btn">Metas</button>
-            </div>
-          </div>
-          <div class="chart-placeholder">
-            <span class="chart-icon">📊</span>
-            <h3>Análisis Nutricional Semanal</h3>
-            <p>Promedio diario: 2,100 cal | Proteínas: 95g | Carbohidratos: 245g | Grasas: 78g</p>
-          </div>
-        </div>
-
-        <!-- Two Column Layout -->
-        <div class="two-column-section">
-          <!-- Daily Goals -->
-          <div class="goals-card">
-            <h2>Metas de Hoy</h2>
-            
-            <div class="progress-circle">
-              <div class="circle-container">
-                <svg viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" class="circle-bg"/>
-                  <circle cx="50" cy="50" r="40" class="circle-progress" 
-                          [style.strokeDashoffset]="100 - 67"/>
-                </svg>
-                <div class="circle-text">
-                  <div class="circle-percent">67%</div>
-                  <div class="circle-label">completado</div>
-                </div>
+        <!-- Contenido principal (solo si hay datos y no hay error) -->
+        <ng-container *ngIf="!error() && data() as d">
+          <!-- Stats Cards -->
+          <div class="stats-grid">
+            <!-- Calorías hoy -->
+            <div class="stat-card green-border">
+              <div class="stat-header">
+                <span class="stat-title">Calorías Hoy</span>
+                <div class="stat-icon green">🔥</div>
+              </div>
+              <div class="stat-value">
+                {{ d.summary.caloriesToday | number:'1.0-0' }}
+              </div>
+              <div class="stat-footer">
+                <span
+                  class="stat-change"
+                  [ngClass]="d.summary.caloriesToday <= d.summary.caloriesTarget ? 'positive' : 'negative'"
+                >
+                  {{ d.summary.caloriesProgressPercent | number:'1.0-1' }}%
+                </span>
+                <span class="stat-subtitle">
+                  {{ d.summary.caloriesRemaining | number:'1.0-0' }} cal restantes
+                </span>
               </div>
             </div>
 
-            <div class="goals-list">
-              <div class="goal-item">
-                <div class="goal-info">
-                  <div class="goal-name">5 porciones vegetales</div>
-                  <div class="goal-progress">5/5 completado</div>
-                </div>
-                <div class="goal-badge completed">✓</div>
+            <!-- Metas completadas -->
+            <div class="stat-card yellow-border">
+              <div class="stat-header">
+                <span class="stat-title">Metas Completadas</span>
+                <div class="stat-icon yellow">🎯</div>
               </div>
-
-              <div class="goal-item">
-                <div class="goal-info">
-                  <div class="goal-name">2.5L de agua</div>
-                  <div class="goal-progress">2.5/2.5L</div>
-                </div>
-                <div class="goal-badge completed">✓</div>
+              <div class="stat-value">
+                {{ d.summary.mealsCompletedToday }}/{{ d.summary.mealsPlannedToday }}
               </div>
-
-              <div class="goal-item">
-                <div class="goal-info">
-                  <div class="goal-name">10,000 pasos</div>
-                  <div class="goal-progress">7,200/10,000</div>
-                </div>
-                <div class="goal-badge progress">72</div>
+              <div class="stat-footer">
+                <span class="stat-change positive">
+                  {{
+                    (d.summary.mealsPlannedToday
+                      ? (d.summary.mealsCompletedToday / d.summary.mealsPlannedToday) * 100
+                      : 0
+                    ) | number:'1.0-0'
+                  }}%
+                </span>
+                <span class="stat-subtitle">progreso hoy</span>
               </div>
+            </div>
 
-              <div class="goal-item">
-                <div class="goal-info">
-                  <div class="goal-name">3 frutas al día</div>
-                  <div class="goal-progress">2/3 frutas</div>
-                </div>
-                <div class="goal-badge progress">67</div>
+            <!-- Entrenamientos -->
+            <div class="stat-card red-border">
+              <div class="stat-header">
+                <span class="stat-title">Entrenamientos</span>
+                <div class="stat-icon red">🏃‍♂️</div>
+              </div>
+              <div class="stat-value">
+                {{ d.summary.workoutsCompletedToday }}
+              </div>
+              <div class="stat-footer">
+                <span class="stat-change positive">
+                  {{ d.summary.workoutsCaloriesToday | number:'1.0-0' }}
+                </span>
+                <span class="stat-subtitle">calorías quemadas</span>
+              </div>
+            </div>
+
+            <!-- Racha activa -->
+            <div class="stat-card purple-border">
+              <div class="stat-header">
+                <span class="stat-title">Racha Activa</span>
+                <div class="stat-icon purple">🔥</div>
+              </div>
+              <div class="stat-value">
+                {{ d.summary.activeStreakDays }}
+              </div>
+              <div class="stat-footer">
+                <span class="stat-change positive">
+                  +{{ d.summary.activeStreakDays > 0 ? 1 : 0 }}
+                </span>
+                <span class="stat-subtitle">días consecutivos</span>
               </div>
             </div>
           </div>
 
-          <!-- Recent Activity -->
-          <div class="activity-card">
-            <h2>Actividad Reciente</h2>
-            
-            <div class="activity-list">
-              <div class="activity-item">
-                <div class="activity-icon green">🥗</div>
-                <div class="activity-info">
-                  <div class="activity-name">Almuerzo registrado</div>
-                  <div class="activity-time">Hace 30 min</div>
+          <!-- Main Content Grid -->
+          <div class="content-section">
+            <!-- Weekly Analysis Chart -->
+            <div class="chart-card">
+              <div class="chart-header">
+                <h2>Análisis Semanal</h2>
+                <div class="chart-tabs">
+                  <button
+                    class="tab-btn"
+                    [class.active]="activeTab() === 'nutrition'"
+                    (click)="setTab('nutrition')">
+                    Nutrición
+                  </button>
+                  <button
+                    class="tab-btn"
+                    [class.active]="activeTab() === 'exercise'"
+                    (click)="setTab('exercise')">
+                    Ejercicio
+                  </button>
+                  <button
+                    class="tab-btn"
+                    [class.active]="activeTab() === 'goals'"
+                    (click)="setTab('goals')">
+                    Metas
+                  </button>
                 </div>
-                <div class="activity-value">650 cal</div>
               </div>
 
-              <div class="activity-item">
-                <div class="activity-icon red">🏃‍♂️</div>
-                <div class="activity-info">
-                  <div class="activity-name">Correr completado</div>
-                  <div class="activity-time">Hace 1 hora</div>
+              <div class="chart-body">
+                <!-- Nutrición -->
+                <div *ngIf="activeTab() === 'nutrition' && nutritionChartData()">
+                  <div class="chart-wrapper">
+                    <canvas
+                      baseChart
+                      [data]="nutritionChartData()!"
+                      [options]="chartOptions"
+                      [type]="'bar'">
+                    </canvas>
+                  </div>
+                  <div class="chart-summary">
+                    Promedio diario:
+                    {{ d.weekly.nutrition.averageCalories | number:'1.0-0' }} cal
+                  </div>
                 </div>
-                <div class="activity-value">30 min</div>
+
+                <!-- Ejercicio -->
+                <div *ngIf="activeTab() === 'exercise' && exerciseChartData()">
+                  <div class="chart-wrapper">
+                    <canvas
+                      baseChart
+                      [data]="exerciseChartData()!"
+                      [options]="chartOptions"
+                      [type]="'bar'">
+                    </canvas>
+                  </div>
+                </div>
+
+                <!-- Metas (peso) -->
+                <div *ngIf="activeTab() === 'goals' && goalsChartData()">
+                  <div class="chart-wrapper">
+                    <canvas
+                      baseChart
+                      [data]="goalsChartData()!"
+                      [options]="chartOptions"
+                      [type]="'line'">
+                    </canvas>
+                  </div>
+                  <div class="chart-summary" *ngIf="d.weekly.goals.weight.length === 0">
+                    Aún no tienes mediciones suficientes para mostrar el gráfico.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Two Column Layout (ahora conectado al backend) -->
+            <div class="two-column-section">
+              <!-- Daily Goals -->
+              <div class="goals-card" *ngIf="d.dailyGoals && d.dailyGoals.length">
+                <h2>Metas de Hoy</h2>
+                
+                <div class="progress-circle">
+                  <div class="circle-container">
+                    <svg viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="40" class="circle-bg"></circle>
+                      <circle
+                        cx="50" cy="50" r="40"
+                        class="circle-progress"
+                        [style.strokeDashoffset]="251.2 - (251.2 * d.dailyGoalsCompletionPercent / 100)">
+                      </circle>
+                    </svg>
+                    <div class="circle-text">
+                      <div class="circle-percent">
+                        {{ d.dailyGoalsCompletionPercent | number:'1.0-0' }}%
+                      </div>
+                      <div class="circle-label">completado</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="goals-list">
+                  <div class="goal-item" *ngFor="let goal of d.dailyGoals">
+                    <div class="goal-info">
+                      <div class="goal-name">{{ goal.name }}</div>
+                      <div class="goal-progress">
+                        {{ goal.current }}/{{ goal.target }} {{ goal.unit }}
+                      </div>
+                    </div>
+                    <div
+                      class="goal-badge"
+                      [ngClass]="goal.completed ? 'completed' : 'progress'">
+                      {{
+                        goal.completed
+                          ? '✓'
+                          : (goal.target
+                              ? ((goal.current / goal.target * 100) | number:'1.0-0')
+                              : 0
+                        )
+                      }}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div class="activity-item">
-                <div class="activity-icon yellow">🎯</div>
-                <div class="activity-info">
-                  <div class="activity-name">Meta completada</div>
-                  <div class="activity-time">Hace 2 horas</div>
+              <!-- Recent Activity -->
+              <div class="activity-card" *ngIf="d.recentActivity && d.recentActivity.length">
+                <h2>Actividad Reciente</h2>
+                
+                <div class="activity-list">
+                  <div class="activity-item" *ngFor="let a of d.recentActivity">
+                    <div class="activity-icon" [ngClass]="a.color">
+                      {{ a.icon }}
+                    </div>
+                    <div class="activity-info">
+                      <div class="activity-name">{{ a.title }}</div>
+                      <div class="activity-time">{{ a.timeAgo }}</div>
+                    </div>
+                    <div class="activity-value">{{ a.value }}</div>
+                  </div>
                 </div>
-                <div class="activity-value">5/5</div>
               </div>
 
-              <div class="activity-item">
-                <div class="activity-icon blue">💧</div>
-                <div class="activity-info">
-                  <div class="activity-name">Hidratación actualizada</div>
-                  <div class="activity-time">Hace 3 horas</div>
+              <!-- Exercise Summary -->
+              <div class="exercise-card" *ngIf="d.exerciseSummary">
+                <div class="exercise-header">
+                  <h2>Resumen de Ejercicios</h2>
+                  <!-- Cambia la ruta si tienes una propia -->
+                  <a routerLink="/usuario/ejercicios" class="view-all">Ver todos</a>
                 </div>
-                <div class="activity-value">+500ml</div>
+
+                <div class="exercise-grid">
+                  <div class="exercise-stat">
+                    <div class="exercise-value">
+                      {{ d.exerciseSummary.workoutsThisMonth }}
+                    </div>
+                    <div class="exercise-label">ESTE MES</div>
+                  </div>
+                  <div class="exercise-stat">
+                    <div class="exercise-value">
+                      {{ d.exerciseSummary.totalHours | number:'1.0-1' }}h
+                    </div>
+                    <div class="exercise-label">TIEMPO TOTAL</div>
+                  </div>
+                  <div class="exercise-stat">
+                    <div class="exercise-value">
+                      {{ d.exerciseSummary.caloriesBurned | number:'1.0-0' }}
+                    </div>
+                    <div class="exercise-label">CAL QUEMADAS</div>
+                  </div>
+                  <div class="exercise-stat">
+                    <div class="exercise-value">
+                      {{ d.exerciseSummary.workoutsThisWeek }}
+                    </div>
+                    <div class="exercise-label">ESTA SEMANA</div>
+                  </div>
+                </div>
+
+                <div class="exercise-icon-box">
+                  <div class="exercise-icon">💪</div>
+                </div>
               </div>
             </div>
           </div>
-
-          <!-- Exercise Summary -->
-          <div class="exercise-card">
-            <div class="exercise-header">
-              <h2>Resumen de Ejercicios</h2>
-              <a href="#" class="view-all">Ver todos</a>
-            </div>
-
-            <div class="exercise-grid">
-              <div class="exercise-stat">
-                <div class="exercise-value">24</div>
-                <div class="exercise-label">ESTE MES</div>
-              </div>
-              <div class="exercise-stat">
-                <div class="exercise-value">18.5h</div>
-                <div class="exercise-label">TIEMPO TOTAL</div>
-              </div>
-              <div class="exercise-stat">
-                <div class="exercise-value">3,240</div>
-                <div class="exercise-label">CAL QUEMADAS</div>
-              </div>
-              <div class="exercise-stat">
-                <div class="exercise-value">4</div>
-                <div class="exercise-label">ESTA SEMANA</div>
-              </div>
-            </div>
-
-            <div class="exercise-icon-box">
-              <div class="exercise-icon">💪</div>
-            </div>
-            
-          </div>
-        </div>
-      </div>
+        </ng-container>
+      </ng-template>
     </div>
   `,
   styles: [`
     .dashboard-container {
-      
       padding: 30px;
       min-height: 100vh;
     }
 
-    /* Welcome Card */
-    .welcome-card {
-      background: white;
-      border-radius: 16px;
-      padding: 25px 30px;
-      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.04);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-    }
-
-    .welcome-content h1 {
-      color: #333333;
-      font-size: 32px;
-      font-weight: 700;
-      margin: 0 0 5px 0;
-    }
-
-    .welcome-content p {
+    .loading-text {
       color: #6C757D;
       font-size: 14px;
-      margin: 0;
     }
 
-    .welcome-actions {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .quick-buttons {
-      display: flex;
-      gap: 10px;
-    }
-
-    .quick-btn {
-      background: linear-gradient(159deg, #28A745 0%, #20C997 100%);
-      color: white;
-      border: none;
+    .error-message {
+      background: #F8D7DA;
       border-radius: 8px;
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .quick-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-    }
-
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .avatar {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #28A745 0%, #20C997 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .user-name {
-      color: #333333;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .user-plan {
-      color: #6C757D;
-      font-size: 12px;
+      padding: 12px 16px;
+      color: #721C24;
+      font-size: 13px;
+      margin-bottom: 16px;
     }
 
     /* Stats Grid */
@@ -313,8 +324,8 @@ import { RouterModule } from '@angular/router';
     }
 
     .stat-card {
-      flex: 1 1 260px;       /* min = 260px, grow = 1 */
-      max-width: 100%;       /* evita overflow */
+      flex: 1 1 260px;
+      max-width: 100%;
       background: white;
       border-radius: 16px;
       padding: 25px;
@@ -398,6 +409,10 @@ import { RouterModule } from '@angular/router';
       color: #28A745;
     }
 
+    .stat-change.negative {
+      color: #E23A69;
+    }
+
     .stat-subtitle {
       color: #6C757D;
       font-size: 12px;
@@ -458,34 +473,25 @@ import { RouterModule } from '@angular/router';
       box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
     }
 
-    .chart-placeholder {
-      background: linear-gradient(155deg, #F8F9FA 0%, #E9ECEF 100%);
-      border-radius: 12px;
-      height: 320px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 10px;
+    .chart-body {
+      min-height: 260px;
     }
 
-    .chart-icon {
-      font-size: 48px;
-      opacity: 0.5;
+    .chart-wrapper {
+      width: 100%;
+      height: 260px;
     }
 
-    .chart-placeholder h3 {
-      color: #6C757D;
-      font-size: 14px;
-      font-weight: 700;
-      margin: 0;
+    .chart-wrapper canvas {
+      width: 100% !important;
+      height: 100% !important;
     }
 
-    .chart-placeholder p {
-      color: #6C757D;
+    .chart-summary {
+      margin-top: 12px;
       font-size: 12px;
-      margin: 0;
+      color: #6C757D;
+      text-align: center;
     }
 
     /* Two Column Section */
@@ -776,48 +782,86 @@ import { RouterModule } from '@angular/router';
     }
 
     /* Responsive */
-    @media (max-width: 1200px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
     @media (max-width: 768px) {
       .dashboard-container {
         padding: 16px;
       }
 
-      .welcome-card {
-        flex-direction: column;
-        gap: 20px;
-        align-items: flex-start;
-      }
-
-      .welcome-actions {
-        width: 100%;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .quick-buttons {
-        width: 100%;
-        justify-content: space-between;
-      }
-
       .stats-grid {
-        grid-template-columns: 1fr;
+        flex-direction: column;
       }
 
       .two-column-section {
         grid-template-columns: 1fr;
       }
-
-      .welcome-content h1 {
-        font-size: 24px;
-      }
     }
   `]
 })
-export class DashboardComponent {
-  // Aquí puedes agregar lógica de datos cuando integres con tu backend
+export class DashboardComponent implements OnInit {
+  private dashboardService = inject(DashboardService);
+
+  loading = signal(true);
+  error = signal<string | null>(null);
+
+  data = signal<DashboardData | null>(null);
+  activeTab = signal<WeeklyTab>('nutrition');
+
+  nutritionChartData = signal<ChartConfiguration['data'] | null>(null);
+  exerciseChartData = signal<ChartConfiguration['data'] | null>(null);
+  goalsChartData = signal<ChartConfiguration['data'] | null>(null);
+
+  chartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: true } },
+    scales: {
+      x: {},
+      y: { beginAtZero: true }
+    }
+  };
+
+  ngOnInit(): void {
+    this.dashboardService.getDashboardData().subscribe({
+      next: (data) => {
+        this.data.set(data);
+        this.buildCharts(data);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('No se pudo cargar el dashboard. Inténtalo más tarde.');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  setTab(tab: WeeklyTab): void {
+    this.activeTab.set(tab);
+  }
+
+  private buildCharts(data: DashboardData): void {
+    const n = data.weekly.nutrition;
+    this.nutritionChartData.set({
+      labels: n.labels,
+      datasets: [
+        { label: 'Calorías consumidas', data: n.calories },
+        { label: 'Objetivo calórico', data: n.targetCalories }
+      ]
+    });
+
+    const e = data.weekly.exercise;
+    this.exerciseChartData.set({
+      labels: e.labels,
+      datasets: [
+        { label: 'Calorías quemadas', data: e.caloriesBurned }
+      ]
+    });
+
+    const g = data.weekly.goals;
+    this.goalsChartData.set({
+      labels: g.labels,
+      datasets: [
+        { label: `Peso (${g.unit})`, data: g.weight }
+      ]
+    });
+  }
 }
