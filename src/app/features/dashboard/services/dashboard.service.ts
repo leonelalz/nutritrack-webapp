@@ -4,49 +4,7 @@ import { Observable, forkJoin, of, map, catchError } from 'rxjs';
 import { environment } from '../../../../enviroments/enviroment';
 import { ApiResponse } from '../../../core/models/common.model';
 
-export interface DashboardStats {
-  // Perfil
-  nombreCompleto: string;
-  objetivo: string;
-  nivelActividad: string;
-  
-  // Mediciones
-  pesoActual: number;
-  pesoInicial: number;
-  pesoObjetivo: number;
-  altura: number;
-  imc: number;
-  categoriaIMC: string;
-  cambiosPeso: number;
-  
-  // Progreso del día
-  caloriasConsumidas: number;
-  caloriasObjetivo: number;
-  proteinasConsumidas: number;
-  proteinasObjetivo: number;
-  carbohidratosConsumidos: number;
-  carbohidratosObjetivo: number;
-  grasasConsumidas: number;
-  grasasObjetivo: number;
-  
-  // Ejercicios
-  caloriasQuemadas: number;
-  ejerciciosCompletados: number;
-  ejerciciosProgramados: number;
-  minutosEntrenamiento: number;
-  
-  // Rachas y logros
-  rachaActual: number;
-  rachaMasLarga: number;
-  diasActivo: number;
-  
-  // Plan y rutina activa
-  planActivo: any;
-  rutinaActiva: any;
-  diasEnPlan: number;
-  diasEnRutina: number;
-  semanasEnRutina: number;
-}
+// ===== INTERFACES PARA RESPUESTAS DE API =====
 
 export interface HistorialMedida {
   id: number;
@@ -55,16 +13,6 @@ export interface HistorialMedida {
   imc: number;
   fechaMedicion: string;
   unidadPeso: string;
-}
-
-export interface ProgresoSemanal {
-  fecha: string;
-  calorias: number;
-  proteinas: number;
-  carbohidratos: number;
-  grasas: number;
-  caloriasQuemadas: number;
-  ejerciciosCompletados: number;
 }
 
 export interface Logro {
@@ -79,6 +27,198 @@ export interface Logro {
   tipo: 'racha' | 'peso' | 'ejercicio' | 'nutricion' | 'consistencia';
 }
 
+// Respuesta de /usuario/planes/activo
+export interface UsuarioPlanResponse {
+  id: number;
+  planId: number;
+  planNombre: string;
+  planDescripcion: string;
+  planDuracionDias: number;
+  fechaInicio: string;
+  fechaFin: string;
+  diaActual: number;
+  estado: string;
+  notas: string;
+}
+
+// Respuesta de /usuario/rutinas/activa
+export interface UsuarioRutinaResponse {
+  id: number;
+  rutinaId: number;
+  rutinaNombre: string;
+  rutinaDescripcion: string;
+  rutinaDuracionSemanas: number;
+  fechaInicio: string;
+  fechaFin: string;
+  semanaActual: number;
+  estado: string;
+  notas: string;
+}
+
+// Respuesta de /usuario/registros/plan/hoy (ActividadesDiaResponse)
+export interface ActividadesDiaResponse {
+  fecha: string;
+  diaSemana: number;
+  nombreDia: string;
+  diaActual: number;
+  diaPlan: number;
+  duracionDias: number;
+  nombrePlan: string;
+  caloriasObjetivo: number;
+  proteinasObjetivo: number;
+  carbohidratosObjetivo: number;
+  grasasObjetivo: number;
+  caloriasConsumidas: number;
+  proteinasConsumidas: number;
+  carbohidratosConsumidos: number;
+  grasasConsumidas: number;
+  caloriasPlanificadas: number;
+  proteinasPlanificadas: number;
+  carbohidratosPlanificados: number;
+  grasasPlanificadas: number;
+  comidas: ComidaDiaInfo[];
+}
+
+export interface ComidaDiaInfo {
+  comidaId: number;
+  nombre: string;
+  tipoComida: string;
+  tipoComidaId: number;
+  calorias: number;
+  proteinas: number;
+  carbohidratos: number;
+  grasas: number;
+  descripcion: string;
+  tiempoPreparacionMinutos: number;
+  porciones: number;
+  notas: string;
+  registrada: boolean;
+  registroId: number | null;
+}
+
+// Respuesta de /usuario/registros/rutina/hoy (EjerciciosDiaResponse)
+export interface EjerciciosDiaResponse {
+  fecha: string;
+  diaSemana: number;
+  nombreDia: string;
+  semanaActual: number;
+  semanaBase: number;
+  ejercicios: EjercicioDiaInfo[];
+}
+
+export interface EjercicioDiaInfo {
+  ejercicioId: number;
+  nombre: string;
+  seriesObjetivo: number;
+  repeticionesObjetivo: number;
+  pesoSugerido: number;
+  duracionMinutos: number;
+  descansoSegundos: number;
+  notas: string;
+  registrado: boolean;
+  registroId: number | null;
+}
+
+// Respuesta de /usuario/registros/plan/progreso (ProgresoPlanResponse)
+export interface ProgresoPlanResponse {
+  usuarioPlanId: number;
+  planId: number;
+  nombrePlan: string;
+  fechaInicio: string;
+  fechaActual: string;
+  diaActual: number;
+  diaPlanCiclico: number;
+  duracionDias: number;
+  cicloActual: number;
+  diasCompletados: number;
+  diasParciales: number;
+  diasSinRegistro: number;
+  porcentajeDiasCompletados: number;
+  totalComidasProgramadas: number;
+  totalComidasRegistradas: number;
+  porcentajeComidasRegistradas: number;
+  comidasHoyProgramadas: number;
+  comidasHoyCompletadas: number;
+  diaActualCompleto: boolean;
+  rachaActual: number;
+  rachaMejor: number;
+  historialDias: DiaPlanInfo[];
+}
+
+export interface DiaPlanInfo {
+  fecha: string;
+  diaPlan: number;
+  comidasProgramadas: number;
+  comidasCompletadas: number;
+  completo: boolean;
+  estado: string;
+}
+
+// Respuesta de /usuario/registros/comidas/progreso/semanal (ProgresoNutricionalResponse)
+export interface ProgresoNutricionalResponse {
+  inicioSemana: string;
+  finSemana: string;
+  nombrePlan: string;
+  caloriasObjetivoSemanal: number;
+  proteinasObjetivoSemanal: number;
+  carbohidratosObjetivoSemanal: number;
+  grasasObjetivoSemanal: number;
+  caloriasConsumidasSemanal: number;
+  proteinasConsumidasSemanal: number;
+  carbohidratosConsumidosSemanal: number;
+  grasasConsumidasSemanal: number;
+  porcentajeCaloriasCumplido: number;
+  porcentajeProteinasCumplido: number;
+  porcentajeCarbohidratosCumplido: number;
+  porcentajeGrasasCumplido: number;
+  caloriasPromedioDiario: number;
+  proteinasPromedioDiario: number;
+  carbohidratosPromedioDiario: number;
+  grasasPromedioDiario: number;
+  diasConRegistro: number;
+  comidasRegistradas: number;
+  comidasProgramadas: number;
+  porcentajeComidasCumplido: number;
+  diasSemana: DiaNutricional[];
+}
+
+export interface DiaNutricional {
+  fecha: string;
+  nombreDia: string;
+  diaSemana: number;
+  caloriasObjetivo: number;
+  proteinasObjetivo: number;
+  carbohidratosObjetivo: number;
+  grasasObjetivo: number;
+  caloriasConsumidas: number;
+  proteinasConsumidas: number;
+  carbohidratosConsumidos: number;
+  grasasConsumidas: number;
+  comidasRegistradas: number;
+  comidasProgramadas: number;
+  diaCompleto: boolean;
+}
+
+// Respuesta de /usuario/registros/ejercicios/progreso/semanal (ProgresoSemanalResponse)
+export interface ProgresoSemanalEjerciciosResponse {
+  inicioSemana: string;
+  finSemana: string;
+  ejerciciosCompletados: number;
+  ejerciciosProgramados: number;
+  porcentajeCumplimiento: number;
+  caloriasQuemadasTotal: number;
+  tiempoTotalMinutos: number;
+  diasSemana: DiaSemanaInfo[];
+}
+
+export interface DiaSemanaInfo {
+  fecha: string;
+  diaSemana: string;
+  ejerciciosCompletados: number;
+  caloriasQuemadas: number;
+  tiempoMinutos: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -88,6 +228,7 @@ export class DashboardService {
 
   /**
    * Obtener perfil completo del usuario
+   * GET /api/v1/perfil/completo
    */
   obtenerPerfilCompleto(): Observable<ApiResponse<any>> {
     return this.http.get<ApiResponse<any>>(`${this.apiUrl}/perfil/completo`);
@@ -95,85 +236,119 @@ export class DashboardService {
 
   /**
    * Obtener historial de mediciones
+   * GET /api/v1/perfil/mediciones
    */
   obtenerHistorialMediciones(): Observable<ApiResponse<HistorialMedida[]>> {
     return this.http.get<ApiResponse<HistorialMedida[]>>(`${this.apiUrl}/perfil/mediciones`);
   }
 
   /**
-   * Obtener plan activo
+   * Obtener plan activo del usuario
+   * GET /api/v1/usuario/planes/activo
    */
-  obtenerPlanActivo(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/usuario/planes/activo`);
+  obtenerPlanActivo(): Observable<ApiResponse<UsuarioPlanResponse>> {
+    return this.http.get<ApiResponse<UsuarioPlanResponse>>(`${this.apiUrl}/usuario/planes/activo`);
   }
 
   /**
-   * Obtener rutina activa
+   * Obtener rutina activa del usuario
+   * GET /api/v1/usuario/rutinas/activa
    */
-  obtenerRutinaActiva(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/usuario/rutinas/activa`);
+  obtenerRutinaActiva(): Observable<ApiResponse<UsuarioRutinaResponse>> {
+    return this.http.get<ApiResponse<UsuarioRutinaResponse>>(`${this.apiUrl}/usuario/rutinas/activa`);
   }
 
   /**
-   * Obtener progreso del plan de hoy
+   * Obtener actividades del plan de hoy (comidas programadas y su estado)
+   * GET /api/v1/usuario/registros/plan/hoy
    */
-  obtenerProgresoHoy(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/usuario/registros/plan/hoy`);
+  obtenerProgresoHoy(): Observable<ActividadesDiaResponse> {
+    return this.http.get<ActividadesDiaResponse>(`${this.apiUrl}/usuario/registros/plan/hoy`);
   }
 
   /**
-   * Obtener ejercicios de hoy
+   * Obtener progreso acumulado del plan (estadísticas completas, rachas, historial)
+   * GET /api/v1/usuario/registros/plan/progreso
    */
-  obtenerEjerciciosHoy(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/usuario/registros/rutina/hoy`);
+  obtenerProgresoPlan(): Observable<ProgresoPlanResponse> {
+    return this.http.get<ProgresoPlanResponse>(`${this.apiUrl}/usuario/registros/plan/progreso`);
   }
 
   /**
-   * Obtener progreso semanal de comidas
+   * Obtener ejercicios programados de hoy y su estado
+   * GET /api/v1/usuario/registros/rutina/hoy
    */
-  obtenerProgresoSemanalComidas(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/usuario/registros/comidas/progreso/semanal`);
+  obtenerEjerciciosHoy(): Observable<EjerciciosDiaResponse> {
+    return this.http.get<EjerciciosDiaResponse>(`${this.apiUrl}/usuario/registros/rutina/hoy`);
+  }
+
+  /**
+   * Obtener progreso nutricional semanal
+   * GET /api/v1/usuario/registros/comidas/progreso/semanal
+   */
+  obtenerProgresoSemanalComidas(fecha?: string): Observable<ProgresoNutricionalResponse> {
+    if (fecha) {
+      return this.http.get<ProgresoNutricionalResponse>(
+        `${this.apiUrl}/usuario/registros/comidas/progreso/semanal`,
+        { params: { fecha } }
+      );
+    }
+    return this.http.get<ProgresoNutricionalResponse>(
+      `${this.apiUrl}/usuario/registros/comidas/progreso/semanal`
+    );
   }
 
   /**
    * Obtener progreso semanal de ejercicios
+   * GET /api/v1/usuario/registros/ejercicios/progreso/semanal
    */
-  obtenerProgresoSemanalEjercicios(): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/usuario/registros/ejercicios/progreso/semanal`);
+  obtenerProgresoSemanalEjercicios(fecha?: string): Observable<ProgresoSemanalEjerciciosResponse> {
+    if (fecha) {
+      return this.http.get<ProgresoSemanalEjerciciosResponse>(
+        `${this.apiUrl}/usuario/registros/ejercicios/progreso/semanal`,
+        { params: { fecha } }
+      );
+    }
+    return this.http.get<ProgresoSemanalEjerciciosResponse>(
+      `${this.apiUrl}/usuario/registros/ejercicios/progreso/semanal`
+    );
   }
 
   /**
-   * Obtener historial de comidas
+   * Obtener historial de comidas en un rango de fechas
+   * GET /api/v1/usuario/registros/comidas/historial
    */
-  obtenerHistorialComidas(fechaInicio: string, fechaFin: string): Observable<ApiResponse<any[]>> {
-    return this.http.get<ApiResponse<any[]>>(
+  obtenerHistorialComidas(fechaInicio: string, fechaFin: string): Observable<any[]> {
+    return this.http.get<any[]>(
       `${this.apiUrl}/usuario/registros/comidas/historial`,
       { params: { fechaInicio, fechaFin } }
     );
   }
 
   /**
-   * Obtener historial de ejercicios
+   * Obtener historial de ejercicios en un rango de fechas
+   * GET /api/v1/usuario/registros/ejercicios/historial
    */
-  obtenerHistorialEjercicios(fechaInicio: string, fechaFin: string): Observable<ApiResponse<any[]>> {
-    return this.http.get<ApiResponse<any[]>>(
+  obtenerHistorialEjercicios(fechaInicio: string, fechaFin: string): Observable<any[]> {
+    return this.http.get<any[]>(
       `${this.apiUrl}/usuario/registros/ejercicios/historial`,
       { params: { fechaInicio, fechaFin } }
     );
   }
 
   /**
-   * Cargar todos los datos del dashboard
+   * Cargar todos los datos del dashboard en paralelo
    */
   cargarDashboardCompleto(): Observable<{
     perfil: any;
     mediciones: HistorialMedida[];
-    planActivo: any;
-    rutinaActiva: any;
-    progresoHoy: any;
-    ejerciciosHoy: any;
-    progresoSemanalComidas: any;
-    progresoSemanalEjercicios: any;
+    planActivo: UsuarioPlanResponse | null;
+    rutinaActiva: UsuarioRutinaResponse | null;
+    progresoHoy: ActividadesDiaResponse | null;
+    progresoPlan: ProgresoPlanResponse | null;
+    ejerciciosHoy: EjerciciosDiaResponse | null;
+    progresoSemanalComidas: ProgresoNutricionalResponse | null;
+    progresoSemanalEjercicios: ProgresoSemanalEjerciciosResponse | null;
   }> {
     return forkJoin({
       perfil: this.obtenerPerfilCompleto().pipe(
@@ -193,32 +368,33 @@ export class DashboardService {
         catchError(() => of(null))
       ),
       progresoHoy: this.obtenerProgresoHoy().pipe(
-        map(r => r.data),
+        catchError(() => of(null))
+      ),
+      progresoPlan: this.obtenerProgresoPlan().pipe(
         catchError(() => of(null))
       ),
       ejerciciosHoy: this.obtenerEjerciciosHoy().pipe(
-        map(r => r.data),
         catchError(() => of(null))
       ),
       progresoSemanalComidas: this.obtenerProgresoSemanalComidas().pipe(
-        map(r => r.data),
         catchError(() => of(null))
       ),
       progresoSemanalEjercicios: this.obtenerProgresoSemanalEjercicios().pipe(
-        map(r => r.data),
         catchError(() => of(null))
       )
     });
   }
 
   /**
-   * Calcular logros basados en los datos
+   * Calcular logros basados en los datos del dashboard
    */
   calcularLogros(data: any): Logro[] {
     const logros: Logro[] = [];
     const mediciones = data.mediciones || [];
     const perfil = data.perfil;
-    const progresoSemanal = data.progresoSemanalComidas;
+    const progresoPlan = data.progresoPlan;
+    const progresoSemanalEjercicios = data.progresoSemanalEjercicios;
+    const progresoHoy = data.progresoHoy;
 
     // Logro: Primera medición
     logros.push({
@@ -232,8 +408,8 @@ export class DashboardService {
       tipo: 'peso'
     });
 
-    // Logro: 7 días de racha
-    const rachaActual = this.calcularRacha(data);
+    // Logro: 7 días de racha (usar datos reales del API)
+    const rachaActual = progresoPlan?.rachaActual || this.calcularRacha(data);
     logros.push({
       id: 'racha-7',
       nombre: 'Semana Perfecta',
@@ -276,7 +452,7 @@ export class DashboardService {
     }
 
     // Logro: 10 ejercicios completados
-    const ejerciciosTotal = data.progresoSemanalEjercicios?.ejerciciosCompletados || 0;
+    const ejerciciosTotal = progresoSemanalEjercicios?.ejerciciosCompletados || 0;
     logros.push({
       id: 'ejercicios-10',
       nombre: 'En Movimiento',
@@ -289,8 +465,8 @@ export class DashboardService {
     });
 
     // Logro: Meta diaria cumplida
-    const comidasHoy = data.progresoHoy?.comidas?.filter((c: any) => c.registrada)?.length || 0;
-    const totalComidasHoy = data.progresoHoy?.comidas?.length || 0;
+    const comidasHoy = progresoHoy?.comidas?.filter((c: any) => c.registrada)?.length || 0;
+    const totalComidasHoy = progresoHoy?.comidas?.length || 0;
     logros.push({
       id: 'meta-diaria',
       nombre: 'Día Perfecto',
@@ -315,14 +491,44 @@ export class DashboardService {
       tipo: 'consistencia'
     });
 
+    // Logro: 100 ejercicios completados
+    logros.push({
+      id: 'ejercicios-100',
+      nombre: 'Atleta Dedicado',
+      descripcion: 'Completa 100 ejercicios en total',
+      icono: '🏅',
+      desbloqueado: ejerciciosTotal >= 100,
+      progreso: Math.min(ejerciciosTotal, 100),
+      objetivo: 100,
+      tipo: 'ejercicio'
+    });
+
+    // Logro: Días completados en el plan
+    const diasCompletados = progresoPlan?.diasCompletados || 0;
+    logros.push({
+      id: 'plan-10-dias',
+      nombre: 'Comprometido',
+      descripcion: 'Completa 10 días de tu plan nutricional',
+      icono: '📅',
+      desbloqueado: diasCompletados >= 10,
+      progreso: Math.min(diasCompletados, 10),
+      objetivo: 10,
+      tipo: 'consistencia'
+    });
+
     return logros;
   }
 
   /**
-   * Calcular racha de días activos
+   * Calcular racha de días activos (fallback si no hay datos del API)
    */
   calcularRacha(data: any): number {
-    // Simplificación: usar días desde inicio del plan/rutina
+    // Primero intentar usar datos del progreso del plan (más precisos)
+    if (data.progresoPlan?.rachaActual) {
+      return data.progresoPlan.rachaActual;
+    }
+
+    // Fallback: calcular desde fecha de inicio
     const planActivo = data.planActivo;
     const rutinaActiva = data.rutinaActiva;
     
