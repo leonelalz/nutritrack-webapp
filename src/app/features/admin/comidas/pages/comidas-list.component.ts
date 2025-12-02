@@ -1,28 +1,29 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { Observable } from 'rxjs';
 import { ComidaService } from '../../../../core/services/comida.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import { IngredienteService } from '../../../../core/services/ingrediente.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+
 import {
   Comida,
-  ComidaRequest,
   TipoComida,
   TIPO_COMIDA_LABELS,
   TIPO_COMIDA_ICONS,
-  RecetaIngrediente
+  
 } from '../../../../core/models/comida.model';
-import { Etiqueta, PageResponse } from '../../../../core/models/etiqueta.model';
+import { Etiqueta, ApiResponse, PageResponse } from '../../../../core/models';
 import { Ingrediente } from '../../../../core/models/ingrediente.model';
-import { ApiResponse } from '../../../../core/models/common.model';
+import { CrudValidators, getErrorMessage } from '../../validator/crud.validators';
+
 
 @Component({
   selector: 'app-comidas-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule],
   template: `
     <div class="comidas-container">
       <!-- Page Header -->
@@ -364,7 +365,6 @@ import { ApiResponse } from '../../../../core/models/common.model';
         </div>
       }
 
-      <!-- Modal Crear/Editar Comida -->
       @if (mostrarModal) {
         <div class="modal-overlay" (click)="intentarCerrarModal()">
           <div class="modal-content large" (click)="$event.stopPropagation()">
@@ -379,7 +379,7 @@ import { ApiResponse } from '../../../../core/models/common.model';
               </button>
             </div>
 
-            <div class="modal-body">
+            <form [formGroup]="comidaForm" class="modal-body">
               <!-- Información básica -->
               <div class="form-group">
                 <label>
@@ -387,10 +387,14 @@ import { ApiResponse } from '../../../../core/models/common.model';
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="formulario.nombre"
+                  formControlName="nombre"
                   class="form-input"
+                  [class.input-error]="hasError('nombre')"
                   placeholder="Ej: Ensalada César"
                 />
+                @if (hasError('nombre')) {
+                  <span class="error-message">{{ getErrorMessage('nombre') }}</span>
+                }
               </div>
 
               <div class="form-group">
@@ -398,8 +402,9 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   Tipo de Comida <span class="required">*</span>
                 </label>
                 <select
-                  [(ngModel)]="formulario.tipoComida"
+                  formControlName="tipoComida"
                   class="form-input"
+                  [class.input-error]="hasError('tipoComida')"
                   (change)="onTipoComidaChange()"
                 >
                   <option value="">Selecciona un tipo</option>
@@ -410,8 +415,12 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   }
                   <option value="__CUSTOM__">➕ Agregar nuevo tipo...</option>
                 </select>
+                @if (hasError('tipoComida')) {
+                  <span class="error-message">{{ getErrorMessage('tipoComida') }}</span>
+                }
               </div>
 
+              <!-- Tipo Personalizado (standalone) -->
               @if (mostrarCampoTipoComidaPersonalizado) {
                 <div class="form-group custom-type-group">
                   <label>
@@ -420,6 +429,7 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   <input
                     type="text"
                     [(ngModel)]="tipoComidaPersonalizado"
+                    [ngModelOptions]="{standalone: true}"
                     (input)="onTipoComidaPersonalizadoChange()"
                     class="form-input"
                     placeholder="Ej: BRUNCH"
@@ -427,54 +437,72 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   <span class="help-text">
                     Se formateará automáticamente a MAYÚSCULAS_CON_GUIONES_BAJOS
                   </span>
+                  @if (tipoComidaPersonalizado) {
+                    <div class="preview-text">
+                      Vista previa: <strong>{{ tipoComidaPersonalizado }}</strong>
+                    </div>
+                  }
                 </div>
               }
-
-              <div class="form-group">
-              </div>
 
               <div class="form-row">
                 <div class="form-group">
                   <label>Porciones</label>
                   <input
                     type="number"
-                    [(ngModel)]="formulario.porciones"
+                    formControlName="porciones"
                     class="form-input"
+                    [class.input-error]="hasError('porciones')"
                     placeholder="0"
                     min="0"
                   />
+                  @if (hasError('porciones')) {
+                    <span class="error-message">{{ getErrorMessage('porciones') }}</span>
+                  }
                 </div>
 
                 <div class="form-group">
                   <label>Tiempo de Preparación (min)</label>
                   <input
                     type="number"
-                    [(ngModel)]="formulario.tiempoPreparacionMinutos"
+                    formControlName="tiempoPreparacionMinutos"
                     class="form-input"
+                    [class.input-error]="hasError('tiempoPreparacionMinutos')"
                     placeholder="0"
                     min="0"
                   />
+                  @if (hasError('tiempoPreparacionMinutos')) {
+                    <span class="error-message">{{ getErrorMessage('tiempoPreparacionMinutos') }}</span>
+                  }
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Descripción</label>
                 <textarea
-                  [(ngModel)]="formulario.descripcion"
+                  formControlName="descripcion"
                   rows="3"
                   class="form-input"
+                  [class.input-error]="hasError('descripcion')"
                   placeholder="Descripción breve de la comida..."
                 ></textarea>
+                @if (hasError('descripcion')) {
+                  <span class="error-message">{{ getErrorMessage('descripcion') }}</span>
+                }
               </div>
 
               <div class="form-group">
                 <label>Instrucciones de Preparación</label>
                 <textarea
-                  [(ngModel)]="formulario.instrucciones"
+                  formControlName="instrucciones"
                   rows="5"
                   class="form-input"
+                  [class.input-error]="hasError('instrucciones')"
                   placeholder="Paso a paso de cómo preparar la comida..."
                 ></textarea>
+                @if (hasError('instrucciones')) {
+                  <span class="error-message">{{ getErrorMessage('instrucciones') }}</span>
+                }
               </div>
 
               <!-- Etiquetas -->
@@ -496,13 +524,15 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   }
                 </div>
               </div>
+            </form>
 
-              <!-- Ingredientes -->
+            <!-- ✅ INGREDIENTES (fuera del formGroup principal) -->
+            <div class="modal-body">
               <div class="form-section-title">Ingredientes de la Receta</div>
               
               <div class="ingredients-form-section">
                 <div class="ingredients-form-header">
-                  <span>Ingredientes agregados ({{ formulario.ingredientes.length }})</span>
+                  <span>Ingredientes agregados ({{ ingredientesTemporales.length }})</span>
                   <button 
                     type="button"
                     (click)="mostrarFormIngrediente = !mostrarFormIngrediente" 
@@ -512,38 +542,47 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   </button>
                 </div>
 
+                <!-- Formulario de ingrediente -->
                 @if (mostrarFormIngrediente) {
-                  <div class="ingredient-form">
+                  <form [formGroup]="ingredienteForm" class="ingredient-form">
                     <div class="form-row">
                       <div class="form-group">
                         <label>Ingrediente <span class="required">*</span></label>
                         <select
-                          [(ngModel)]="formularioIngrediente.ingredienteId"
+                          formControlName="ingredienteId"
                           class="form-input"
+                          [class.input-error]="hasError('ingredienteId', ingredienteForm)"
                         >
                           <option value="0">Selecciona un ingrediente</option>
                           @for (ingrediente of ingredientesDisponibles(); track ingrediente.id) {
                             <option [value]="ingrediente.id">{{ ingrediente.nombre }}</option>
                           }
                         </select>
+                        @if (hasError('ingredienteId', ingredienteForm)) {
+                          <span class="error-message">{{ getErrorMessage('ingredienteId', ingredienteForm) }}</span>
+                        }
                       </div>
                       <div class="form-group">
                         <label>Cantidad (gramos) <span class="required">*</span></label>
                         <input
                           type="number"
-                          [(ngModel)]="formularioIngrediente.cantidadGramos"
+                          formControlName="cantidadGramos"
                           class="form-input"
+                          [class.input-error]="hasError('cantidadGramos', ingredienteForm)"
                           placeholder="0"
                           min="0"
                           step="1"
                         />
+                        @if (hasError('cantidadGramos', ingredienteForm)) {
+                          <span class="error-message">{{ getErrorMessage('cantidadGramos', ingredienteForm) }}</span>
+                        }
                       </div>
                     </div>
                     <div class="form-group">
                       <label>Notas</label>
                       <input
                         type="text"
-                        [(ngModel)]="formularioIngrediente.notas"
+                        formControlName="notas"
                         class="form-input"
                         placeholder="Ej: En trozos pequeños"
                       />
@@ -552,16 +591,17 @@ import { ApiResponse } from '../../../../core/models/common.model';
                       type="button"
                       (click)="agregarIngredienteALista()" 
                       class="btn-primary"
-                      [disabled]="!formularioIngrediente.ingredienteId || !formularioIngrediente.cantidadGramos"
+                      [disabled]="ingredienteForm.invalid"
                     >
                       Agregar a la lista
                     </button>
-                  </div>
+                  </form>
                 }
 
-                @if (formulario.ingredientes.length > 0) {
+                <!-- Lista de ingredientes temporales -->
+                @if (ingredientesTemporales.length > 0) {
                   <div class="ingredients-preview-list">
-                    @for (ing of formulario.ingredientes; track ing.ingredienteId) {
+                    @for (ing of ingredientesTemporales; track ing.ingredienteId) {
                       <div class="ingredient-preview-item">
                         <div class="ingredient-preview-info">
                           <span class="ingredient-preview-name">{{ getIngredienteNombre(ing.ingredienteId) }}</span>
@@ -599,9 +639,12 @@ import { ApiResponse } from '../../../../core/models/common.model';
               </button>
               <button
                 (click)="guardar()"
-                [disabled]="guardando"
+                [disabled]="guardando || comidaForm.invalid"
                 class="btn-primary"
               >
+                @if (guardando) {
+                  <span class="btn-spinner"></span>
+                }
                 {{ guardando ? 'Guardando...' : 'Guardar' }}
               </button>
             </div>
@@ -709,7 +752,7 @@ import { ApiResponse } from '../../../../core/models/common.model';
         </div>
       }
 
-      <!-- Modal Agregar Ingrediente -->
+      <!-- Modal Agregar Ingrediente (para receta existente) -->
       @if (mostrarModalIngrediente) {
         <div class="modal-overlay" (click)="cerrarModalIngrediente()">
           <div class="modal-content" (click)="$event.stopPropagation()">
@@ -717,14 +760,15 @@ import { ApiResponse } from '../../../../core/models/common.model';
               <h2>Agregar Ingrediente</h2>
             </div>
 
-            <div class="modal-body">
+            <form [formGroup]="ingredienteForm" class="modal-body">
               <div class="form-group">
                 <label>
                   Ingrediente <span class="required">*</span>
                 </label>
                 <select
-                  [(ngModel)]="formularioIngrediente.ingredienteId"
+                  formControlName="ingredienteId"
                   class="form-input"
+                  [class.input-error]="hasError('ingredienteId', ingredienteForm)"
                 >
                   <option [value]="0">Selecciona un ingrediente</option>
                   @for (ingrediente of ingredientesDisponibles(); track ingrediente.id) {
@@ -733,6 +777,9 @@ import { ApiResponse } from '../../../../core/models/common.model';
                     </option>
                   }
                 </select>
+                @if (hasError('ingredienteId', ingredienteForm)) {
+                  <span class="error-message">{{ getErrorMessage('ingredienteId', ingredienteForm) }}</span>
+                }
               </div>
 
               <div class="form-group">
@@ -741,24 +788,28 @@ import { ApiResponse } from '../../../../core/models/common.model';
                 </label>
                 <input
                   type="number"
-                  [(ngModel)]="formularioIngrediente.cantidadGramos"
+                  formControlName="cantidadGramos"
                   class="form-input"
+                  [class.input-error]="hasError('cantidadGramos', ingredienteForm)"
                   placeholder="0"
                   min="0"
                   step="0.1"
                 />
+                @if (hasError('cantidadGramos', ingredienteForm)) {
+                  <span class="error-message">{{ getErrorMessage('cantidadGramos', ingredienteForm) }}</span>
+                }
               </div>
 
               <div class="form-group">
                 <label>Notas (opcional)</label>
                 <textarea
-                  [(ngModel)]="formularioIngrediente.notas"
+                  formControlName="notas"
                   rows="2"
                   class="form-input"
                   placeholder="Ej: picado, cocido, al gusto..."
                 ></textarea>
               </div>
-            </div>
+            </form>
 
             <div class="modal-footer">
               <button
@@ -770,9 +821,12 @@ import { ApiResponse } from '../../../../core/models/common.model';
               </button>
               <button
                 (click)="agregarIngrediente()"
-                [disabled]="guardandoIngrediente"
+                [disabled]="guardandoIngrediente || ingredienteForm.invalid"
                 class="btn-primary"
               >
+                @if (guardandoIngrediente) {
+                  <span class="btn-spinner"></span>
+                }
                 {{ guardandoIngrediente ? 'Agregando...' : 'Agregar' }}
               </button>
             </div>
@@ -806,37 +860,42 @@ import { ApiResponse } from '../../../../core/models/common.model';
                 [disabled]="eliminando"
                 class="btn-danger"
               >
+                @if (eliminando) {
+                  <span class="btn-spinner"></span>
+                }
                 {{ eliminando ? 'Eliminando...' : 'Eliminar' }}
               </button>
             </div>
           </div>
         </div>
       }
-     @if (mostrarConfirmacionCerrar) {
-       <div class="modal-overlay confirmation-overlay" (click)="cancelarCierre()">
-         <div class="modal-content small" (click)="$event.stopPropagation()">
-           <div class="modal-body centered">
-             <div class="warning-icon">⚠️</div>
-             <h3>¿Salir sin guardar?</h3>
-             <p>
-               Tienes cambios sin guardar en el formulario.
-               @if (formulario.ingredientes.length > 0) {
-                 <strong>Incluye {{ formulario.ingredientes.length }} ingrediente(s).</strong>
-               }
-               Si sales ahora, perderás toda la información.
-             </p>
-           </div>
-           <div class="modal-footer">
-             <button (click)="cancelarCierre()" class="btn-secondary">
-               Seguir Editando
-             </button>
-             <button (click)="confirmarCerrarModal()" class="btn-danger">
-               Descartar Cambios
-             </button>
-           </div>
-         </div>
-       </div>
-     }
+
+      <!-- Modal Confirmación Cerrar -->
+      @if (mostrarConfirmacionCerrar) {
+        <div class="modal-overlay confirmation-overlay" (click)="cancelarCierre()">
+          <div class="modal-content small" (click)="$event.stopPropagation()">
+            <div class="modal-body centered">
+              <div class="warning-icon">⚠️</div>
+              <h3>¿Descartar cambios?</h3>
+              <p>
+                Tienes cambios sin guardar en el formulario.
+                @if (ingredientesTemporales.length > 0) {
+                  <br><strong>Incluye {{ ingredientesTemporales.length }} ingrediente(s).</strong>
+                }
+                Si sales ahora, perderás toda la información.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button (click)="cancelarCierre()" class="btn-secondary">
+                Seguir Editando
+              </button>
+              <button (click)="confirmarCerrarModal()" class="btn-danger">
+                Descartar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      }
 
   `,
   styles: [`
@@ -2366,6 +2425,7 @@ export class ComidasListComponent implements OnInit {
   private etiquetaService = inject(EtiquetaService);
   private ingredienteService = inject(IngredienteService);
   private notificationService = inject(NotificationService);
+  private fb = inject(FormBuilder);
 
   // Signals
   loading = signal(false);
@@ -2379,7 +2439,7 @@ export class ComidasListComponent implements OnInit {
   totalPages = 0;
   totalElements = 0;
   
-  // Búsqueda y filtros
+  // Búsqueda y filtros (NO FormControl)
   searchTerm = '';
   tipoFiltro: TipoComida | '' = '';
   searchTimeout: any;
@@ -2398,25 +2458,7 @@ export class ComidasListComponent implements OnInit {
   // Confirmación
   mostrarConfirmacion = false;
   comidaAEliminar: Comida | null = null;
-  
-  // Formulario comida
-  formulario = {
-    nombre: '',
-    tipoComida: '' as string,  // Ahora es string dinámico (ej: 'DESAYUNO', 'ALMUERZO', etc.)
-    descripcion: '',
-    tiempoPreparacionMinutos: 0,
-    porciones: 0,
-    instrucciones: '',
-    etiquetaIds: [] as number[],
-    ingredientes: [] as { ingredienteId: number; cantidadGramos: number; notas?: string }[]
-  };
-  
-  // Formulario ingrediente (US-10)
-  formularioIngrediente = {
-    ingredienteId: 0,
-    cantidadGramos: 0,
-    notas: ''
-  };
+  mostrarConfirmacionCerrar = false;
   
   // Estados
   guardando = false;
@@ -2426,25 +2468,73 @@ export class ComidasListComponent implements OnInit {
   // Listas para selects
   tiposComida = Object.values(TipoComida);
 
-  // Tipos personalizados
+  // Tipos personalizados (NO FormControl)
   mostrarCampoTipoComidaPersonalizado = false;
   tipoComidaPersonalizado = '';
  
   // Control de formulario de ingrediente en modal principal
   mostrarFormIngrediente = false;
- 
-  mostrarConfirmacionCerrar = false;
+  
+  // FormGroups
+  comidaForm!: FormGroup;
+  ingredienteForm!: FormGroup;
   formularioInicial: any = null;
 
+  // Lista temporal de ingredientes (para crear/editar)
+  ingredientesTemporales: { ingredienteId: number; cantidadGramos: number; notas?: string }[] = [];
+
   ngOnInit(): void {
+    this.inicializarFormularios();
     this.cargarComidas();
     this.cargarEtiquetas();
     this.cargarIngredientes();
   }
 
   /**
-   * Carga la lista de comidas
+   * Inicializa los FormGroups
    */
+  inicializarFormularios(): void {
+    // Formulario principal de comida
+    this.comidaForm = this.fb.group({
+      nombre: ['', [
+        Validators.required,
+        CrudValidators.minLengthTrimmed(2),
+        CrudValidators.maxLengthTrimmed(100),
+        CrudValidators.noWhitespaceOnly(),
+        CrudValidators.safeString()
+      ]],
+      tipoComida: ['', Validators.required],
+      descripcion: ['', [
+        CrudValidators.maxLengthTrimmed(500)
+      ]],
+      tiempoPreparacionMinutos: [0, [
+        CrudValidators.nonNegativeNumber(),
+        CrudValidators.range(0, 600)
+      ]],
+      porciones: [0, [
+        CrudValidators.positiveNumber(),
+        CrudValidators.range(1, 50)
+      ]],
+      instrucciones: ['', [
+        CrudValidators.maxLengthTrimmed(2000)
+      ]],
+      etiquetaIds: [[]]
+    });
+
+    // Formulario de ingrediente (para agregar a receta)
+    this.ingredienteForm = this.fb.group({
+      ingredienteId: [0, [Validators.required, Validators.min(1)]],
+      cantidadGramos: [0, [
+        Validators.required,
+        CrudValidators.positiveNumber(),
+        CrudValidators.range(1, 10000)
+      ]],
+      notas: ['', [
+        CrudValidators.maxLengthTrimmed(200)
+      ]]
+    });
+  }
+
   cargarComidas(): void {
     this.loading.set(true);
     
@@ -2465,7 +2555,7 @@ export class ComidasListComponent implements OnInit {
         this.totalElements = response.data.totalElements;
         this.loading.set(false);
       },
-     error: (error) => {
+      error: (error) => {
         console.error('Error al cargar comidas:', error);
         this.loading.set(false);
         
@@ -2478,9 +2568,6 @@ export class ComidasListComponent implements OnInit {
     });
   }
 
-  /**
-   * Carga las etiquetas disponibles
-   */
   cargarEtiquetas(): void {
     this.etiquetaService.listar(0, 1000).subscribe({
       next: (response) => {
@@ -2492,9 +2579,6 @@ export class ComidasListComponent implements OnInit {
     });
   }
 
-  /**
-   * Carga los ingredientes disponibles
-   */
   cargarIngredientes(): void {
     this.ingredienteService.listar(0, 1000).subscribe({
       next: (response) => {
@@ -2506,9 +2590,6 @@ export class ComidasListComponent implements OnInit {
     });
   }
 
-  /**
-   * Búsqueda con debounce
-   */
   onSearch(): void {
     clearTimeout(this.searchTimeout);
     this.searchTimeout = setTimeout(() => {
@@ -2517,18 +2598,12 @@ export class ComidasListComponent implements OnInit {
     }, 500);
   }
 
-  /**
-   * Filtrar por tipo
-   */
   filtrarPorTipo(tipo: TipoComida | ''): void {
     this.tipoFiltro = tipo;
     this.currentPage = 0;
     this.cargarComidas();
   }
 
-  /**
-   * Cambiar página
-   */
   cambiarPagina(page: number): void {
     if (page >= 0 && page < this.totalPages) {
       this.currentPage = page;
@@ -2537,86 +2612,58 @@ export class ComidasListComponent implements OnInit {
   }
 
   // ========== CRUD COMIDA ==========
-  
-  private hayaCambios(): boolean {
-    if (!this.formularioInicial) return false;
-    
-    const formularioActual = {
-      nombre: this.formulario.nombre?.trim() || '',
-      tipoComida: this.mostrarCampoTipoComidaPersonalizado 
-        ? this.tipoComidaPersonalizado?.trim() || ''
-        : this.formulario.tipoComida || '',
-      descripcion: this.formulario.descripcion?.trim() || '',
-      tiempoPreparacionMinutos: this.formulario.tiempoPreparacionMinutos || 0,
-      porciones: this.formulario.porciones || 0,
-      instrucciones: this.formulario.instrucciones?.trim() || '',
-      etiquetaIds: JSON.stringify(this.formulario.etiquetaIds.sort()),
-      ingredientes: JSON.stringify(this.formulario.ingredientes.sort((a, b) => 
-        a.ingredienteId - b.ingredienteId
-      ))
-    };
 
-    const formularioInicial = {
-      nombre: this.formularioInicial.nombre?.trim() || '',
-      tipoComida: this.formularioInicial.tipoComida || '',
-      descripcion: this.formularioInicial.descripcion?.trim() || '',
-      tiempoPreparacionMinutos: this.formularioInicial.tiempoPreparacionMinutos || 0,
-      porciones: this.formularioInicial.porciones || 0,
-      instrucciones: this.formularioInicial.instrucciones?.trim() || '',
-      etiquetaIds: JSON.stringify(this.formularioInicial.etiquetaIds.sort()),
-      ingredientes: JSON.stringify(this.formularioInicial.ingredientes.sort((a: any, b: any) => 
-        a.ingredienteId - b.ingredienteId
-      ))
-    };
-
-    return JSON.stringify(formularioActual) !== JSON.stringify(formularioInicial);
-  }
-
-  /**
-   * Abre el modal para crear comida
-   */
   abrirModalCrear(): void {
     this.comidaEditando = null;
-    this.formulario = {
+    this.comidaForm.reset({
       nombre: '',
       tipoComida: '',
       descripcion: '',
       tiempoPreparacionMinutos: 0,
       porciones: 0,
       instrucciones: '',
-      etiquetaIds: [],
-      ingredientes: []
-    };
-    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
+      etiquetaIds: []
+    });
+    this.ingredientesTemporales = [];
+    this.mostrarCampoTipoComidaPersonalizado = false;
+    this.tipoComidaPersonalizado = '';
     this.mostrarFormIngrediente = false;
+    this.formularioInicial = this.comidaForm.value;
     this.mostrarModal = true;
   }
 
-  
-
-  /**
-   * Abre el modal para editar comida
-   */
   abrirModalEditar(comida: Comida): void {
     this.comidaEditando = comida;
-    this.formulario = {
+    
+    const esPersonalizado = !this.tiposComida.includes(comida.tipoComida as TipoComida);
+    
+    this.comidaForm.patchValue({
       nombre: comida.nombre,
-      tipoComida: comida.tipoComida,
+      tipoComida: esPersonalizado ? '__CUSTOM__' : comida.tipoComida,
       descripcion: comida.descripcion || '',
       tiempoPreparacionMinutos: comida.tiempoPreparacionMinutos || 0,
       porciones: comida.porciones || 0,
       instrucciones: comida.instrucciones || '',
-      etiquetaIds: comida.etiquetas.map(e => e.id),
-      ingredientes: comida.ingredientes.map(ing => ({
-        ingredienteId: ing.ingredienteId,
-        cantidadGramos: ing.cantidadGramos,
-        notas: ing.notas
-      }))
+      etiquetaIds: comida.etiquetas.map(e => e.id)
+    });
+    
+    if (esPersonalizado) {
+      this.mostrarCampoTipoComidaPersonalizado = true;
+      this.tipoComidaPersonalizado = comida.tipoComida;
+    }
+    
+    this.ingredientesTemporales = comida.ingredientes.map(ing => ({
+      ingredienteId: ing.ingredienteId,
+      cantidadGramos: ing.cantidadGramos,
+      notas: ing.notas
+    }));
+    
+    this.formularioInicial = {
+      ...this.comidaForm.value,
+      ingredientes: [...this.ingredientesTemporales]
     };
-    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
     this.mostrarModal = true;
   }
-
 
   intentarCerrarModal(): void {
     if (this.guardando) {
@@ -2630,83 +2677,94 @@ export class ComidasListComponent implements OnInit {
       this.cerrarModalDirecto();
     }
   }
-  cancelarCierre(): void {
-    this.mostrarConfirmacionCerrar = false;
+
+  private hayaCambios(): boolean {
+    if (!this.formularioInicial) return false;
+    
+    const actual = {
+      ...this.comidaForm.value,
+      ingredientes: JSON.stringify(this.ingredientesTemporales.sort((a, b) => a.ingredienteId - b.ingredienteId))
+    };
+    
+    const inicial = {
+      ...this.formularioInicial,
+      ingredientes: JSON.stringify((this.formularioInicial.ingredientes || []).sort((a: any, b: any) => 
+        a.ingredienteId - b.ingredienteId
+      ))
+    };
+    
+    return JSON.stringify(actual) !== JSON.stringify(inicial);
   }
 
   confirmarCerrarModal(): void {
     this.mostrarConfirmacionCerrar = false;
     this.cerrarModalDirecto();
     
-    // Mensaje especial si había ingredientes
-    if (this.formulario.ingredientes.length > 0) {
+    if (this.ingredientesTemporales.length > 0) {
       this.notificationService.info(
         'Cambios descartados',
-        `Se descartaron los cambios incluyendo ${this.formulario.ingredientes.length} ingrediente(s).`
+        `Se descartaron los cambios incluyendo ${this.ingredientesTemporales.length} ingrediente(s).`
       );
     } else {
       this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
     }
   }
 
-  private cerrarModalDirecto(): void {
-    this.mostrarModal = false;
-    this.comidaEditando = null;
-    this.mostrarCampoTipoComidaPersonalizado = false;
-    this.tipoComidaPersonalizado = '';
-    this.mostrarFormIngrediente = false;
-    this.formularioInicial = null;
-    this.formularioIngrediente = {
-      ingredienteId: 0,
-      cantidadGramos: 0,
-      notas: ''
-    };
+  cancelarCierre(): void {
+    this.mostrarConfirmacionCerrar = false;
   }
 
+  getTipoLabel(tipo: TipoComida | string): string {
+  const label = TIPO_COMIDA_LABELS[tipo as TipoComida];
+  if (label) return label;
+  
+  return tipo.split('_').map(palabra => 
+    palabra.charAt(0) + palabra.slice(1).toLowerCase()
+  ).join(' ');
+  }
 
-  /**
-   * Guarda una comida
-   */
+  getTipoIcon(tipo: TipoComida | string): string {
+    return TIPO_COMIDA_ICONS[tipo as TipoComida] || '🍽️';
+  }
+    private cerrarModalDirecto(): void {
+      this.mostrarModal = false;
+      this.comidaEditando = null;
+      this.mostrarCampoTipoComidaPersonalizado = false;
+      this.tipoComidaPersonalizado = '';
+      this.mostrarFormIngrediente = false;
+      this.ingredientesTemporales = [];
+      this.formularioInicial = null;
+      this.ingredienteForm.reset({ ingredienteId: 0, cantidadGramos: 0, notas: '' });
+    }
+
   guardar(): void {
-    // Validar tipo personalizado si está activo
-     if (!this.formulario.nombre || this.formulario.nombre.trim().length === 0) {
-      this.notificationService.showWarning('El campo "Nombre" es obligatorio.');
+    Object.keys(this.comidaForm.controls).forEach(key => {
+      this.comidaForm.get(key)?.markAsTouched();
+    });
+
+    if (this.comidaForm.invalid) {
+      this.notificationService.showWarning('Por favor, corrige los errores en el formulario.');
       return;
     }
+
+    const tipoFinal = this.mostrarCampoTipoComidaPersonalizado 
+      ? this.tipoComidaPersonalizado 
+      : this.comidaForm.value.tipoComida;
 
     if (this.mostrarCampoTipoComidaPersonalizado && !this.tipoComidaPersonalizado.trim()) {
       this.notificationService.showWarning('Por favor, ingresa el nombre del nuevo tipo de comida.');
       return;
     }
-    const tipoFinal = this.mostrarCampoTipoComidaPersonalizado 
-      ? this.tipoComidaPersonalizado 
-      : this.formulario.tipoComida;
 
-    if (!tipoFinal) {
-      this.notificationService.showWarning('El campo "Tipo de Comida" es obligatorio. Por favor, selecciona un tipo.');
-      return;
-    }
-
-    // Validar valores numéricos
-    if (this.formulario.porciones && this.formulario.porciones < 0) {
-      this.notificationService.showWarning('Las porciones no pueden ser un valor negativo.');
-      return;
-    }
-
-    if (this.formulario.tiempoPreparacionMinutos && this.formulario.tiempoPreparacionMinutos < 0) {
-      this.notificationService.showWarning('El tiempo de preparación no puede ser un valor negativo.');
-      return;
-    }
-
+    
     this.guardando = true;
-    const request: ComidaRequest = {
-      nombre: this.formulario.nombre.trim(),
-      tipoComidaNombre: tipoFinal,  // Backend espera tipoComidaNombre
-      descripcion: this.formulario.descripcion?.trim() || undefined,
-      tiempoPreparacionMinutos: this.formulario.tiempoPreparacionMinutos || undefined,
-      porciones: this.formulario.porciones || undefined,
-      instrucciones: this.formulario.instrucciones?.trim() || undefined,
-      etiquetaIds: this.formulario.etiquetaIds.length > 0 ? this.formulario.etiquetaIds : undefined
+    const request = {
+      nombre: this.comidaForm.value.nombre.trim(),
+      tipoComidaNombre: tipoFinal,
+      tiempoPreparacionMinutos: this.comidaForm.value.tiempoPreparacionMinutos || undefined,
+      porciones: this.comidaForm.value.porciones || undefined,
+      instrucciones: this.comidaForm.value.instrucciones?.trim() || undefined,
+      etiquetaIds: this.comidaForm.value.etiquetaIds.length > 0 ? this.comidaForm.value.etiquetaIds : undefined
     };
 
     const observable = this.comidaEditando
@@ -2718,20 +2776,14 @@ export class ComidasListComponent implements OnInit {
         const comidaCreada = response.data;
         
         // Si hay ingredientes para agregar
-        if (!this.comidaEditando && this.formulario.ingredientes.length > 0) {
-          this.enviarIngredientes(comidaCreada.id, this.formulario.ingredientes);
-        } else if (this.comidaEditando && this.formulario.ingredientes.length > 0) {
-          this.sincronizarIngredientes(comidaCreada.id, this.formulario.ingredientes);
+        if (!this.comidaEditando && this.ingredientesTemporales.length > 0) {
+          this.enviarIngredientes(comidaCreada.id, this.ingredientesTemporales);
+        } else if (this.comidaEditando && this.ingredientesTemporales.length > 0) {
+          this.sincronizarIngredientes(comidaCreada.id, this.ingredientesTemporales);
         } else {
-          if (this.comidaEditando) {
-            this.notificationService.showSuccess(
-              `La comida "${response.data.nombre}" se actualizó correctamente.`
-            );
-          } else {
-            this.notificationService.showSuccess(
-              `La comida "${response.data.nombre}" se creó exitosamente.`
-            );
-          }
+          this.notificationService.showSuccess(
+            `La comida "${response.data.nombre}" se ${this.comidaEditando ? 'actualizó' : 'creó'} exitosamente.`
+          );
           
           this.cerrarModalDirecto();
           this.cargarComidas();
@@ -2745,41 +2797,40 @@ export class ComidasListComponent implements OnInit {
         if (error.status === 409) {
           this.notificationService.error(
             'No se puede guardar',
-            `Ya existe una comida con el nombre "${this.formulario.nombre}". Por favor, usa un nombre diferente.`
+            `Ya existe una comida con el nombre "${this.comidaForm.value.nombre}".`
           );
         } else if (error.status === 400) {
-          this.notificationService.error(
-            'Datos inválidos',
-            error.error?.message || 'Los datos ingresados no son válidos. Verifica que todos los campos estén correctos.'
-          );
+          this.notificationService.error('Datos inválidos', error.error?.message);
         } else if (error.status) {
           this.notificationService.showHttpError(error.status, error.error?.message);
         } else {
-          this.notificationService.showError('No se pudo guardar la comida. Verifica tu conexión a internet.');
+          this.notificationService.showError('No se pudo guardar la comida.');
         }
       }
     });
   }
 
-  /**
-   * Confirmar eliminación
-   */
+  getErrorMessage(controlName: string, formGroup: FormGroup = this.comidaForm): string {
+    const control = formGroup.get(controlName);
+    if (!control || !control.errors || !control.touched) return '';
+    return getErrorMessage(control.errors, controlName);
+  }
+
+  hasError(controlName: string, formGroup: FormGroup = this.comidaForm): boolean {
+    const control = formGroup.get(controlName);
+    return !!(control && control.invalid && control.touched);
+  }
+
   confirmarEliminar(comida: Comida): void {
     this.comidaAEliminar = comida;
     this.mostrarConfirmacion = true;
   }
 
-  /**
-   * Cerrar confirmación
-   */
   cerrarConfirmacion(): void {
     this.mostrarConfirmacion = false;
     this.comidaAEliminar = null;
   }
 
-  /**
-   * Eliminar comida
-   */
   eliminar(): void {
     if (!this.comidaAEliminar) return;
 
@@ -2824,61 +2875,47 @@ export class ComidasListComponent implements OnInit {
 
   // ========== US-10: GESTIÓN DE RECETA ==========
 
-  /**
-   * Abre el modal de receta (ingredientes)
-   */
   abrirModalReceta(comida: Comida): void {
     this.comidaReceta = comida;
     this.mostrarModalReceta = true;
   }
 
-  /**
-   * Cierra el modal de receta
-   */
   cerrarModalReceta(): void {
     this.mostrarModalReceta = false;
     this.comidaReceta = null;
   }
 
-  /**
-   * Abre el modal para agregar ingrediente
-   */
   abrirModalAgregarIngrediente(): void {
-    this.formularioIngrediente = {
-      ingredienteId: 0,
-      cantidadGramos: 0,
-      notas: ''
-    };
+    this.ingredienteForm.reset({ ingredienteId: 0, cantidadGramos: 0, notas: '' });
     this.mostrarModalIngrediente = true;
   }
 
-  /**
-   * Cierra el modal de ingrediente
-   */
   cerrarModalIngrediente(): void {
     this.mostrarModalIngrediente = false;
   }
 
-  /**
-   * Agrega ingrediente a la receta
-   */
   agregarIngrediente(): void {
-    if (!this.comidaReceta || !this.formularioIngrediente.ingredienteId || 
-        this.formularioIngrediente.cantidadGramos <= 0) {
-      this.notificationService.showWarning('Por favor, selecciona un ingrediente y especifica una cantidad válida.');
+    Object.keys(this.ingredienteForm.controls).forEach(key => {
+      this.ingredienteForm.get(key)?.markAsTouched();
+    });
+
+    if (this.ingredienteForm.invalid) {
+      this.notificationService.showWarning('Por favor, completa correctamente el formulario.');
       return;
     }
 
+    if (!this.comidaReceta) return;
+
     this.guardandoIngrediente = true;
     const request = {
-      ingredienteId: this.formularioIngrediente.ingredienteId,
-      cantidadGramos: this.formularioIngrediente.cantidadGramos,
-      notas: this.formularioIngrediente.notas?.trim() || undefined
+      ingredienteId: this.ingredienteForm.value.ingredienteId,
+      cantidadGramos: this.ingredienteForm.value.cantidadGramos,
+      notas: this.ingredienteForm.value.notas?.trim() || undefined
     };
 
     this.comidaService.agregarIngrediente(this.comidaReceta.id, request).subscribe({
       next: (response) => {
-        const nombreIngrediente = this.getIngredienteNombre(this.formularioIngrediente.ingredienteId);
+        const nombreIngrediente = this.getIngredienteNombre(this.ingredienteForm.value.ingredienteId);
         this.notificationService.showSuccess(
           `El ingrediente "${nombreIngrediente}" se agregó correctamente a la receta.`
         );
@@ -2891,28 +2928,23 @@ export class ComidasListComponent implements OnInit {
       error: (error) => {
         console.error('Error al agregar ingrediente:', error);
         this.guardandoIngrediente = false;
+        
         if (error.status === 409) {
           this.notificationService.error(
             'Ingrediente duplicado',
-            'Este ingrediente ya está en la receta. Si quieres cambiar la cantidad, primero elimínalo y agrégalo nuevamente.'
+            'Este ingrediente ya está en la receta.'
           );
         } else if (error.status === 400) {
-          this.notificationService.error(
-            'Datos inválidos',
-            error.error?.message || 'La cantidad debe ser un valor numérico positivo.'
-          );
+          this.notificationService.error('Datos inválidos', error.error?.message);
         } else if (error.status) {
           this.notificationService.showHttpError(error.status, error.error?.message);
         } else {
-          this.notificationService.showError('No se pudo agregar el ingrediente. Verifica tu conexión a internet.');
+          this.notificationService.showError('No se pudo agregar el ingrediente.');
         }
       }
     });
   }
 
-  /**
-   * Elimina un ingrediente de la receta
-   */
   eliminarIngrediente(ingredienteId: number): void {
     if (!this.comidaReceta) return;
 
@@ -2941,126 +2973,45 @@ export class ComidasListComponent implements OnInit {
     });
   }
 
-  // ========== UTILIDADES ==========
+  // ========== INGREDIENTES TEMPORALES (MODAL CREAR/EDITAR) ==========
 
-  /**
-   * Toggle etiqueta
-   */
-  toggleEtiqueta(etiquetaId: number): void {
-    const index = this.formulario.etiquetaIds.indexOf(etiquetaId);
-    if (index > -1) {
-      this.formulario.etiquetaIds.splice(index, 1);
-    } else {
-      this.formulario.etiquetaIds.push(etiquetaId);
-    }
-  }
-
-  /**
-   * Verifica si una etiqueta está seleccionada
-   */
-  isEtiquetaSeleccionada(etiquetaId: number): boolean {
-    return this.formulario.etiquetaIds.includes(etiquetaId);
-  }
-
-  /**
-   * Obtiene el label del tipo
-   */
-  getTipoLabel(tipo: string): string {
-    const label = TIPO_COMIDA_LABELS[tipo as TipoComida];
-    if (label) return label;
-    
-    // Para tipos personalizados, formatear de MAYUSCULAS_CON_GUIONES a "Mayúsculas Con Guiones"
-    return tipo.split('_').map(palabra => 
-      palabra.charAt(0) + palabra.slice(1).toLowerCase()
-    ).join(' ');
-  }
-
-  /**
-   * Obtiene el icono del tipo
-   */
-  getTipoIcon(tipo: string): string {
-    return TIPO_COMIDA_ICONS[tipo as TipoComida] || '🍽️';
-  }
-
-  /**
-   * Maneja el cambio en el select de tipo de comida
-   */
-  onTipoComidaChange(): void {
-    if (this.formulario.tipoComida === '__CUSTOM__') {
-      this.mostrarCampoTipoComidaPersonalizado = true;
-      this.tipoComidaPersonalizado = '';
-    } else {
-      this.mostrarCampoTipoComidaPersonalizado = false;
-      this.tipoComidaPersonalizado = '';
-    }
-  }
-
-  /**
-   * Maneja cambios en el campo de tipo personalizado
-   */
-  onTipoComidaPersonalizadoChange(): void {
-    // Convertir a mayúsculas y reemplazar espacios por guiones bajos
-    this.tipoComidaPersonalizado = this.tipoComidaPersonalizado
-      .toUpperCase()
-      .replace(/\s+/g, '_')
-      .replace(/[^A-Z0-9_]/g, '');
-  }
-
-  /**
-   * Agrega un ingrediente a la lista temporal del formulario
-   */
   agregarIngredienteALista(): void {
-    if (!this.formularioIngrediente.ingredienteId || !this.formularioIngrediente.cantidadGramos) {
-      this.notificationService.showWarning('Por favor, selecciona un ingrediente y especifica la cantidad.');
+    Object.keys(this.ingredienteForm.controls).forEach(key => {
+      this.ingredienteForm.get(key)?.markAsTouched();
+    });
+
+    if (this.ingredienteForm.invalid) {
+      this.notificationService.showWarning('Por favor, completa correctamente el formulario.');
       return;
     }
 
-    if (this.formularioIngrediente.cantidadGramos <= 0) {
-      this.notificationService.showWarning('La cantidad debe ser mayor a 0.');
-      return;
-    }
-
-    // Verificar si el ingrediente ya está en la lista
-    const yaExiste = this.formulario.ingredientes.some(
-      ing => ing.ingredienteId === this.formularioIngrediente.ingredienteId
+    const yaExiste = this.ingredientesTemporales.some(
+      ing => ing.ingredienteId === this.ingredienteForm.value.ingredienteId
     );
 
     if (yaExiste) {
-      this.notificationService.showWarning('Este ingrediente ya fue agregado. Quítalo primero si deseas modificarlo.');
+      this.notificationService.showWarning('Este ingrediente ya fue agregado.');
       return;
     }
 
-
-    // Agregar a la lista
-    this.formulario.ingredientes.push({
-      ingredienteId: this.formularioIngrediente.ingredienteId,
-      cantidadGramos: this.formularioIngrediente.cantidadGramos,
-      notas: this.formularioIngrediente.notas?.trim() || undefined
+    this.ingredientesTemporales.push({
+      ingredienteId: this.ingredienteForm.value.ingredienteId,
+      cantidadGramos: this.ingredienteForm.value.cantidadGramos,
+      notas: this.ingredienteForm.value.notas?.trim() || undefined
     });
 
-    // Resetear formulario de ingrediente
-    this.formularioIngrediente = {
-      ingredienteId: 0,
-      cantidadGramos: 0,
-      notas: ''
-    };
-
-    // Ocultar formulario
+    this.ingredienteForm.reset({ ingredienteId: 0, cantidadGramos: 0, notas: '' });
     this.mostrarFormIngrediente = false;
   }
 
-  /**
-   * Quita un ingrediente de la lista temporal
-   */
   quitarIngredienteDeLista(ingredienteId: number): void {
-    this.formulario.ingredientes = this.formulario.ingredientes.filter(
+    this.ingredientesTemporales = this.ingredientesTemporales.filter(
       ing => ing.ingredienteId !== ingredienteId
     );
   }
 
-  /**
-   * Envía ingredientes a una comida recién creada
-   */
+  // ========== UTILIDADES ==========
+
   private enviarIngredientes(comidaId: number, ingredientes: any[]): void {
     let ingredientesEnviados = 0;
     let errores: string[] = [];
@@ -3087,25 +3038,17 @@ export class ComidasListComponent implements OnInit {
     });
   }
 
-  /**
-   * Sincroniza ingredientes de una comida editada
-   */
   private sincronizarIngredientes(comidaId: number, ingredientes: any[]): void {
-      // Para simplificar, usar los ingredientes tal como están
-    // Una implementación más sofisticada haría diff de ingredientes
     this.enviarIngredientes(comidaId, ingredientes);
   }
 
-  /**
-   * Finaliza el guardado después de procesar ingredientes
-   */
-   private finalizarGuardadoConIngredientes(errores: string[]): void {
+  private finalizarGuardadoConIngredientes(errores: string[]): void {
     if (errores.length === 0) {
       this.notificationService.showSuccess('La comida y su receta se guardaron exitosamente.');
     } else {
       this.notificationService.error(
         'Guardado parcial',
-        `La comida se guardó pero algunos ingredientes no se pudieron agregar: ${errores.join(', ')}`,
+        `La comida se guardó pero algunos ingredientes no se pudieron agregar.`,
         10000
       );
     }
@@ -3114,9 +3057,40 @@ export class ComidasListComponent implements OnInit {
     this.guardando = false;
   }
 
-  /**
-   * Obtiene el nombre del ingrediente por ID
-   */
+  toggleEtiqueta(etiquetaId: number): void {
+    const etiquetaIds = this.comidaForm.value.etiquetaIds;
+    const index = etiquetaIds.indexOf(etiquetaId);
+    
+    if (index > -1) {
+      etiquetaIds.splice(index, 1);
+    } else {
+      etiquetaIds.push(etiquetaId);
+    }
+    
+    this.comidaForm.patchValue({ etiquetaIds });
+  }
+
+  isEtiquetaSeleccionada(etiquetaId: number): boolean {
+    return this.comidaForm.value.etiquetaIds.includes(etiquetaId);
+  }
+
+  onTipoComidaChange(): void {
+    if (this.comidaForm.value.tipoComida === '__CUSTOM__') {
+      this.mostrarCampoTipoComidaPersonalizado = true;
+      this.tipoComidaPersonalizado = '';
+    } else {
+      this.mostrarCampoTipoComidaPersonalizado = false;
+      this.tipoComidaPersonalizado = '';
+    }
+  }
+
+  onTipoComidaPersonalizadoChange(): void {
+    this.tipoComidaPersonalizado = this.tipoComidaPersonalizado
+      .toUpperCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Z0-9_]/g, '');
+  }
+
   getIngredienteNombre(id: number): string {
     const ingrediente = this.ingredientesDisponibles().find(i => i.id === id);
     return ingrediente?.nombre || 'Desconocido';

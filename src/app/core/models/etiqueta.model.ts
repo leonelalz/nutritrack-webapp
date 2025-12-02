@@ -26,7 +26,6 @@ export interface Etiqueta {
   createdAt: string | null;
   updatedAt: string | null;
 }
-
 /**
  * DTO para crear/actualizar una etiqueta
  */

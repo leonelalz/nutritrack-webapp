@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { IngredienteService } from '../../../../core/services/ingrediente.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   Ingrediente,
   CategoriaAlimento,
@@ -16,10 +17,12 @@ import {
 } from '../../../../core/models/ingrediente.model';
 import { Etiqueta, PageResponse } from '../../../../core/models/etiqueta.model';
 import { ApiResponse } from '../../../../core/models/common.model';
+import { CrudValidators, getErrorMessage } from '../../validator/crud.validators';
+
 @Component({
   selector: 'app-ingredientes-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule],
   template: `
     <div class="ingredientes-container">
       <!-- Page Header -->
@@ -94,7 +97,6 @@ import { ApiResponse } from '../../../../core/models/common.model';
               placeholder="Buscar ingredientes por nombre..."
               class="search-input"
             />
-            
           </div>
           <button (click)="abrirModalCrear()" class="btn-primary">
             <span>+</span>
@@ -358,7 +360,8 @@ import { ApiResponse } from '../../../../core/models/common.model';
               <h2>{{ ingredienteEditando ? 'Editar Ingrediente' : 'Nuevo Ingrediente' }}</h2>
             </div>
 
-            <div class="modal-body">
+            <!-- ✅ ENVOLVER CON formGroup -->
+            <form [formGroup]="ingredienteForm" class="modal-body">
               <!-- Nombre -->
               <div class="form-group">
                 <label>
@@ -366,10 +369,14 @@ import { ApiResponse } from '../../../../core/models/common.model';
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="formulario.nombre"
+                  formControlName="nombre"
                   class="form-input"
+                  [class.error]="hasError('nombre')"
                   placeholder="Ej: Pechuga de pollo"
                 />
+                @if (hasError('nombre')) {
+                  <span class="error-message">{{ getErrorMessage('nombre') }}</span>
+                }
               </div>
 
               <!-- Categoría -->
@@ -378,8 +385,9 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   Categoría <span class="required">*</span>
                 </label>
                 <select
-                  [(ngModel)]="formulario.categoriaAlimento"
+                  formControlName="categoriaAlimento"
                   class="form-input"
+                  [class.error]="hasError('categoriaAlimento')"
                   (change)="onCategoriaChange()"
                 >
                   <option value="">Selecciona una categoría</option>
@@ -390,8 +398,12 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   }
                   <option value="__CUSTOM__">➕ Agregar nueva categoría...</option>
                 </select>
+                @if (hasError('categoriaAlimento')) {
+                  <span class="error-message">{{ getErrorMessage('categoriaAlimento') }}</span>
+                }
               </div>
 
+              <!-- Categoría Personalizada (NO es FormControl) -->
               @if (mostrarCampoCategoriaPersonalizada) {
                 <div class="form-group custom-type-group">
                   <label>
@@ -400,6 +412,7 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   <input
                     type="text"
                     [(ngModel)]="categoriaPersonalizada"
+                    [ngModelOptions]="{standalone: true}"
                     (input)="onCategoriaPersonalizadaChange()"
                     class="form-input"
                     placeholder="Ej: SUPERALIMENTOS"
@@ -410,9 +423,6 @@ import { ApiResponse } from '../../../../core/models/common.model';
                 </div>
               }
 
-              <div class="form-group">
-              </div>
-
               <!-- Información Nutricional -->
               <div class="form-section-title">Información Nutricional (por 100g)</div>
               
@@ -421,24 +431,32 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   <label>Energía (kcal) <span class="required">*</span></label>
                   <input
                     type="number"
-                    [(ngModel)]="formulario.energia"
+                    formControlName="energia"
                     class="form-input"
+                    [class.error]="hasError('energia')"
                     placeholder="0"
                     min="0"
                     step="0.1"
                   />
+                  @if (hasError('energia')) {
+                    <span class="error-message">{{ getErrorMessage('energia') }}</span>
+                  }
                 </div>
 
                 <div class="form-group">
                   <label>Proteínas (g) <span class="required">*</span></label>
                   <input
                     type="number"
-                    [(ngModel)]="formulario.proteinas"
+                    formControlName="proteinas"
                     class="form-input"
+                    [class.error]="hasError('proteinas')"
                     placeholder="0"
                     min="0"
                     step="0.1"
                   />
+                  @if (hasError('proteinas')) {
+                    <span class="error-message">{{ getErrorMessage('proteinas') }}</span>
+                  }
                 </div>
               </div>
 
@@ -447,24 +465,32 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   <label>Carbohidratos (g) <span class="required">*</span></label>
                   <input
                     type="number"
-                    [(ngModel)]="formulario.carbohidratos"
+                    formControlName="carbohidratos"
                     class="form-input"
+                    [class.error]="hasError('carbohidratos')"
                     placeholder="0"
                     min="0"
                     step="0.1"
                   />
+                  @if (hasError('carbohidratos')) {
+                    <span class="error-message">{{ getErrorMessage('carbohidratos') }}</span>
+                  }
                 </div>
 
                 <div class="form-group">
                   <label>Grasas (g) <span class="required">*</span></label>
                   <input
                     type="number"
-                    [(ngModel)]="formulario.grasas"
+                    formControlName="grasas"
                     class="form-input"
+                    [class.error]="hasError('grasas')"
                     placeholder="0"
                     min="0"
                     step="0.1"
                   />
+                  @if (hasError('grasas')) {
+                    <span class="error-message">{{ getErrorMessage('grasas') }}</span>
+                  }
                 </div>
               </div>
 
@@ -472,23 +498,47 @@ import { ApiResponse } from '../../../../core/models/common.model';
                 <label>Fibra (g)</label>
                 <input
                   type="number"
-                  [(ngModel)]="formulario.fibra"
+                  formControlName="fibra"
                   class="form-input"
+                  [class.error]="hasError('fibra')"
                   placeholder="0"
                   min="0"
                   step="0.1"
                 />
+                @if (hasError('fibra')) {
+                  <span class="error-message">{{ getErrorMessage('fibra') }}</span>
+                }
               </div>
+
+              <!-- Errores de validación a nivel de formulario -->
+              @if (ingredienteForm.hasError('incoherentNutrition') && ingredienteForm.touched) {
+                <div class="form-error-global">
+                  ⚠️ Los valores nutricionales no son coherentes. 
+                  La energía calculada es {{ ingredienteForm.errors?.['incoherentNutrition'].calculated }} kcal
+                  pero ingresaste {{ ingredienteForm.errors?.['incoherentNutrition'].provided }} kcal.
+                </div>
+              }
+
+              @if (ingredienteForm.hasError('macrosExceed100') && ingredienteForm.touched) {
+                <div class="form-error-global">
+                  ⚠️ La suma de macronutrientes ({{ ingredienteForm.errors?.['macrosExceed100'].total }}g) 
+                  excede los 100g por porción.
+                </div>
+              }
 
               <!-- Descripción -->
               <div class="form-group">
                 <label>Descripción</label>
                 <textarea
-                  [(ngModel)]="formulario.descripcion"
+                  formControlName="descripcion"
                   rows="3"
                   class="form-input"
+                  [class.error]="hasError('descripcion')"
                   placeholder="Descripción opcional del ingrediente..."
                 ></textarea>
+                @if (hasError('descripcion')) {
+                  <span class="error-message">{{ getErrorMessage('descripcion') }}</span>
+                }
               </div>
 
               <!-- Etiquetas -->
@@ -510,7 +560,7 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   }
                 </div>
               </div>
-            </div>
+            </form>
 
             <div class="modal-footer">
               <button
@@ -522,7 +572,7 @@ import { ApiResponse } from '../../../../core/models/common.model';
               </button>
               <button
                 (click)="guardar()"
-                [disabled]="guardando"
+                [disabled]="guardando || ingredienteForm.invalid"
                 class="btn-primary"
               >
                 {{ guardando ? 'Guardando...' : 'Guardar' }}
@@ -564,6 +614,7 @@ import { ApiResponse } from '../../../../core/models/common.model';
           </div>
         </div>
       }
+
       @if (mostrarConfirmacionCerrar) {
         <div class="modal-overlay confirmation-overlay" (click)="cancelarCierre()">
           <div class="modal-content small" (click)="$event.stopPropagation()">
@@ -583,7 +634,6 @@ import { ApiResponse } from '../../../../core/models/common.model';
           </div>
         </div>
       }
-
     </div>
   `,
   styles: [`
@@ -1757,6 +1807,7 @@ export class IngredientesListComponent implements OnInit {
   private ingredienteService = inject(IngredienteService);
   private etiquetaService = inject(EtiquetaService);
   private notificationService = inject(NotificationService);
+  private fb = inject(FormBuilder);
 
   // Signals
   loading = signal(false);
@@ -1782,19 +1833,6 @@ export class IngredientesListComponent implements OnInit {
   mostrarConfirmacion = false;
   ingredienteAEliminar: Ingrediente | null = null;
   
-  // Formulario
-  formulario = {
-    nombre: '',
-    proteinas: 0,
-    carbohidratos: 0,
-    grasas: 0,
-    energia: 0,
-    fibra: 0,
-    categoriaAlimento: '' as CategoriaAlimento | '' | '__CUSTOM__',
-    descripcion: '',
-    etiquetaIds: [] as number[]
-  };
-  
   // Estados
   guardando = false;
   eliminando = false;
@@ -1809,11 +1847,61 @@ export class IngredientesListComponent implements OnInit {
   mostrarConfirmacionCerrar = false;
   formularioInicial: any = null;
 
+  ingredienteForm!: FormGroup;
+
+  
   ngOnInit(): void {
+    this.inicializarFormulario();
     this.cargarIngredientes();
     this.cargarEtiquetas();
   }
 
+  inicializarFormulario(): void {
+    this.ingredienteForm = this.fb.group({
+      nombre: ['', [
+        Validators.required,
+        CrudValidators.minLengthTrimmed(2),
+        CrudValidators.maxLengthTrimmed(100),
+        CrudValidators.noWhitespaceOnly(),
+        CrudValidators.safeString()
+      ]],
+      categoriaAlimento: ['', Validators.required],
+      energia: [0, [
+        Validators.required,
+        CrudValidators.positiveNumber(),
+        CrudValidators.range(0, 9000)
+      ]],
+      proteinas: [0, [
+        Validators.required,
+        CrudValidators.nonNegativeNumber(),
+        CrudValidators.range(0, 100)
+      ]],
+      carbohidratos: [0, [
+        Validators.required,
+        CrudValidators.nonNegativeNumber(),
+        CrudValidators.range(0, 100)
+      ]],
+      grasas: [0, [
+        Validators.required,
+        CrudValidators.nonNegativeNumber(),
+        CrudValidators.range(0, 100)
+      ]],
+      fibra: [0, [
+        CrudValidators.nonNegativeNumber(),
+        CrudValidators.range(0, 100)
+      ]],
+      descripcion: ['', [
+        CrudValidators.maxLengthTrimmed(500)
+      ]],
+      etiquetaIds: [[]]
+    }, {
+      // Validadores a nivel de formulario
+      validators: [
+        CrudValidators.nutritionalValuesCoherent(),
+        CrudValidators.macrosNotExceed100g()
+      ]
+    });
+  }
   /**
    * Carga la lista de ingredientes
    */
@@ -1895,49 +1983,44 @@ export class IngredientesListComponent implements OnInit {
 
   abrirModalCrear(): void {
     this.ingredienteEditando = null;
-    this.formulario = {
+    this.ingredienteForm.reset({
       nombre: '',
+      categoriaAlimento: '',
+      energia: 0,
       proteinas: 0,
       carbohidratos: 0,
       grasas: 0,
-      energia: 0,
       fibra: 0,
-      categoriaAlimento: '',
       descripcion: '',
       etiquetaIds: []
-    };
-    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
+    });
+    this.formularioInicial = this.ingredienteForm.value;
     this.mostrarModal = true;
   }
 
   abrirModalEditar(ingrediente: Ingrediente): void {
     this.ingredienteEditando = ingrediente;
     
-    // Verificar si la categoría es personalizada
     const esPersonalizada = !this.categorias.includes(ingrediente.categoriaAlimento as CategoriaAlimento);
     
-    this.formulario = {
+    this.ingredienteForm.patchValue({
       nombre: ingrediente.nombre,
+      categoriaAlimento: esPersonalizada ? '__CUSTOM__' : ingrediente.categoriaAlimento,
+      energia: ingrediente.energia,
       proteinas: ingrediente.proteinas,
       carbohidratos: ingrediente.carbohidratos,
       grasas: ingrediente.grasas,
-      energia: ingrediente.energia,
       fibra: ingrediente.fibra || 0,
-      categoriaAlimento: esPersonalizada ? '__CUSTOM__' : ingrediente.categoriaAlimento,
       descripcion: ingrediente.descripcion || '',
       etiquetaIds: ingrediente.etiquetas.map((e: Etiqueta) => e.id)
-    };
+    });
     
     if (esPersonalizada) {
       this.mostrarCampoCategoriaPersonalizada = true;
       this.categoriaPersonalizada = ingrediente.categoriaAlimento;
     }
     
-    this.formularioInicial = JSON.parse(JSON.stringify({
-      ...this.formulario,
-      categoriaAlimento: esPersonalizada ? this.categoriaPersonalizada : this.formulario.categoriaAlimento
-    }));
-    
+    this.formularioInicial = this.ingredienteForm.value;
     this.mostrarModal = true;
   }
 
@@ -1953,37 +2036,19 @@ export class IngredientesListComponent implements OnInit {
     }
   }
 
-   private hayaCambios(): boolean {
-    if (!this.formularioInicial) return false;
-    
-    const formularioActual = {
-      nombre: this.formulario.nombre?.trim() || '',
-      categoriaAlimento: this.mostrarCampoCategoriaPersonalizada 
-        ? this.categoriaPersonalizada?.trim() || ''
-        : this.formulario.categoriaAlimento || '',
-      descripcion: this.formulario.descripcion?.trim() || '',
-      proteinas: this.formulario.proteinas || 0,
-      carbohidratos: this.formulario.carbohidratos || 0,
-      grasas: this.formulario.grasas || 0,
-      energia: this.formulario.energia || 0,
-      fibra: this.formulario.fibra || 0,
-      etiquetaIds: JSON.stringify(this.formulario.etiquetaIds.sort())
-    };
-
-    const formularioInicial = {
-      nombre: this.formularioInicial.nombre?.trim() || '',
-      categoriaAlimento: this.formularioInicial.categoriaAlimento || '',
-      descripcion: this.formularioInicial.descripcion?.trim() || '',
-      proteinas: this.formularioInicial.proteinas || 0,
-      carbohidratos: this.formularioInicial.carbohidratos || 0,
-      grasas: this.formularioInicial.grasas || 0,
-      energia: this.formularioInicial.energia || 0,
-      fibra: this.formularioInicial.fibra || 0,
-      etiquetaIds: JSON.stringify(this.formularioInicial.etiquetaIds.sort())
-    };
-
-    return JSON.stringify(formularioActual) !== JSON.stringify(formularioInicial);
-  }
+  private hayaCambios(): boolean {
+  if (!this.formularioInicial) return false;
+  
+  const actual = this.ingredienteForm.value;
+  const inicial = this.formularioInicial;
+  
+  return Object.keys(actual).some(key => {
+    if (Array.isArray(actual[key]) && Array.isArray(inicial[key])) {
+      return JSON.stringify(actual[key].sort()) !== JSON.stringify(inicial[key].sort());
+    }
+    return actual[key] !== inicial[key];
+  });
+}
 
   confirmarCerrarModal(): void {
     this.mostrarConfirmacionCerrar = false;
@@ -1994,10 +2059,10 @@ export class IngredientesListComponent implements OnInit {
     this.formularioInicial = null;
     
     // Notificación al descartar (opcional, puedes quitarla si no la quieres)
-    if (this.formulario.etiquetaIds.length > 0) {
+    if (this.ingredienteForm.value.etiquetaIds.length > 0) {
       this.notificationService.info(
         'Cambios descartados',
-        `Se descartaron los cambios incluyendo ${this.formulario.etiquetaIds.length} etiqueta(s).`
+        `Se descartaron los cambios incluyendo ${this.ingredienteForm.value.etiquetaIds.length} etiqueta(s).`
       );
     } else {
       this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
@@ -2013,50 +2078,33 @@ export class IngredientesListComponent implements OnInit {
    * Guarda un ingrediente
    */
   guardar(): void {
-    
-    if (!this.formulario.nombre || this.formulario.nombre.trim().length === 0) {
-      this.notificationService.showWarning('El campo "Nombre" es obligatorio.');
-      return;
-    }
+    // Marcar todos los campos como touched para mostrar errores
+    Object.keys(this.ingredienteForm.controls).forEach(key => {
+      this.ingredienteForm.get(key)?.markAsTouched();
+    });
 
-    if (this.mostrarCampoCategoriaPersonalizada && !this.categoriaPersonalizada.trim()) {
-      this.notificationService.showWarning('Por favor, ingresa el nombre de la nueva categoría de alimento.');
+    if (this.ingredienteForm.invalid) {
+      this.notificationService.showWarning('Por favor, corrige los errores en el formulario.');
       return;
     }
 
     const categoriaFinal = this.mostrarCampoCategoriaPersonalizada 
       ? this.categoriaPersonalizada 
-      : this.formulario.categoriaAlimento;
-
-    if (!categoriaFinal) {
-      this.notificationService.showWarning('El campo "Categoría" es obligatorio. Por favor, selecciona una categoría.');
-      return;
-    }
-
-    // Validar valores nutricionales
-    if (this.formulario.energia < 0 || this.formulario.proteinas < 0 || 
-        this.formulario.carbohidratos < 0 || this.formulario.grasas < 0) {
-      this.notificationService.showWarning('Los valores nutricionales no pueden ser negativos.');
-      return;
-    }
-
-    if (!this.formulario.energia || !this.formulario.proteinas || 
-        !this.formulario.carbohidratos || !this.formulario.grasas) {
-      this.notificationService.showWarning('Los campos de información nutricional (Energía, Proteínas, Carbohidratos y Grasas) son obligatorios.');
-      return;
-    }
+      : this.ingredienteForm.value.categoriaAlimento;
 
     this.guardando = true;
     const request = {
-      nombre: this.formulario.nombre.trim(),
-      proteinas: this.formulario.proteinas,
-      carbohidratos: this.formulario.carbohidratos,
-      grasas: this.formulario.grasas,
-      energia: this.formulario.energia,
-      fibra: this.formulario.fibra || undefined,
+      nombre: this.ingredienteForm.value.nombre.trim(),
+      proteinas: this.ingredienteForm.value.proteinas,
+      carbohidratos: this.ingredienteForm.value.carbohidratos,
+      grasas: this.ingredienteForm.value.grasas,
+      energia: this.ingredienteForm.value.energia,
+      fibra: this.ingredienteForm.value.fibra || undefined,
       categoriaAlimento: categoriaFinal as CategoriaAlimento,
-      descripcion: this.formulario.descripcion?.trim() || undefined,
-      etiquetaIds: this.formulario.etiquetaIds.length > 0 ? this.formulario.etiquetaIds : undefined
+      descripcion: this.ingredienteForm.value.descripcion?.trim() || undefined,
+      etiquetaIds: this.ingredienteForm.value.etiquetaIds.length > 0 
+        ? this.ingredienteForm.value.etiquetaIds 
+        : undefined
     };
 
     const observable = this.ingredienteEditando
@@ -2065,16 +2113,9 @@ export class IngredientesListComponent implements OnInit {
 
     observable.subscribe({
       next: (response) => {
-        if (this.ingredienteEditando) {
-          this.notificationService.showSuccess(
-            `El ingrediente "${response.data.nombre}" se actualizó correctamente.`
-          );
-        } else {
-          this.notificationService.showSuccess(
-            `El ingrediente "${response.data.nombre}" se creó exitosamente.`
-          );
-        }
-
+        this.notificationService.showSuccess(
+          `El ingrediente "${response.data.nombre}" se ${this.ingredienteEditando ? 'actualizó' : 'creó'} exitosamente.`
+        );
         this.formularioInicial = null;
         this.cerrarModal();
         this.cargarIngredientes();
@@ -2087,20 +2128,28 @@ export class IngredientesListComponent implements OnInit {
         if (error.status === 409) {
           this.notificationService.error(
             'No se puede guardar',
-            `Ya existe un ingrediente con el nombre "${this.formulario.nombre}". Por favor, usa un nombre diferente.`
+            `Ya existe un ingrediente con el nombre "${this.ingredienteForm.value.nombre}".`
           );
         } else if (error.status === 400) {
-          this.notificationService.error(
-            'Datos inválidos',
-            error.error?.message || 'Los datos ingresados no son válidos. Verifica que todos los campos estén correctos.'
-          );
+          this.notificationService.error('Datos inválidos', error.error?.message);
         } else if (error.status) {
           this.notificationService.showHttpError(error.status, error.error?.message);
         } else {
-          this.notificationService.showError('No se pudo guardar el ingrediente. Verifica tu conexión a internet.');
+          this.notificationService.showError('No se pudo guardar el ingrediente.');
         }
       }
     });
+  }
+
+  getErrorMessage(controlName: string): string {
+    const control = this.ingredienteForm.get(controlName);
+    if (!control || !control.errors || !control.touched) return '';
+    return getErrorMessage(control.errors, controlName);
+  }
+
+  hasError(controlName: string): boolean {
+    const control = this.ingredienteForm.get(controlName);
+    return !!(control && control.invalid && control.touched);
   }
 
   /**
@@ -2167,22 +2216,25 @@ export class IngredientesListComponent implements OnInit {
   /**
    * Toggle etiqueta en el formulario
    */
-  toggleEtiqueta(etiquetaId: number): void {
-    const index = this.formulario.etiquetaIds.indexOf(etiquetaId);
+   toggleEtiqueta(etiquetaId: number): void {
+    const etiquetaIds = this.ingredienteForm.value.etiquetaIds;
+    const index = etiquetaIds.indexOf(etiquetaId);
+    
     if (index > -1) {
-      this.formulario.etiquetaIds.splice(index, 1);
+      etiquetaIds.splice(index, 1);
     } else {
-      this.formulario.etiquetaIds.push(etiquetaId);
+      etiquetaIds.push(etiquetaId);
     }
+    
+    this.ingredienteForm.patchValue({ etiquetaIds });
   }
 
   /**
    * Verifica si una etiqueta está seleccionada
    */
   isEtiquetaSeleccionada(etiquetaId: number): boolean {
-    return this.formulario.etiquetaIds.includes(etiquetaId);
-  }
-
+  return this.ingredienteForm.value.etiquetaIds.includes(etiquetaId);
+}
   /**
    * Obtiene el label de la categoría
    */
@@ -2207,7 +2259,7 @@ export class IngredientesListComponent implements OnInit {
    * Maneja el cambio en el select de categoría
    */
   onCategoriaChange(): void {
-    if (this.formulario.categoriaAlimento === '__CUSTOM__') {
+   if (this.ingredienteForm.value.categoriaAlimento === '__CUSTOM__') {
       this.mostrarCampoCategoriaPersonalizada = true;
       this.categoriaPersonalizada = '';
     } else {

@@ -1,8 +1,7 @@
 // src/app/features/etiquetas/pages/etiquetas-list.component.ts
-
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import { NotificationService } from '../../../../core/services/notification.service';
@@ -16,11 +15,12 @@ import {
   PageResponse
 } from '../../../../core/models/etiqueta.model';
 import { ApiResponse } from '../../../../core/models/common.model';
+import { CrudValidators, getErrorMessage } from '../../validator/crud.validators';
 
 @Component({
   selector: 'app-etiquetas-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatIconModule],
   template: `
     <div class="etiquetas-container">
       <!-- Page Header -->
@@ -306,101 +306,124 @@ import { ApiResponse } from '../../../../core/models/common.model';
           </button>
         </div>
       }
+    html<!-- Modal Crear/Editar -->
+    @if (mostrarModal) {
+      <div class="modal-overlay" (click)="intentarCerrarModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2>{{ etiquetaEditando ? 'Editar Etiqueta' : 'Nueva Etiqueta' }}</h2>
+            <button 
+              (click)="intentarCerrarModal()" 
+              class="btn-close-modal"
+              title="Cerrar"
+            >
+              ✕
+            </button>
+          </div>
 
-      <!-- Modal Crear/Editar -->
-      @if (mostrarModal) {
-        <div class="modal-overlay" (click)="intentarCerrarModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h2>{{ etiquetaEditando ? 'Editar Etiqueta' : 'Nueva Etiqueta' }}</h2>
-              <button 
-                (click)="intentarCerrarModal()" 
-                class="btn-close-modal"
-                title="Cerrar"
-              >
-                ✕
-              </button>
+          <form [formGroup]="etiquetaForm" class="modal-body">
+            <!-- Nombre -->
+            <div class="form-group">
+              <label>
+                Nombre <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                formControlName="nombre"
+                class="form-input"
+                [class.input-error]="hasError('nombre')"
+                placeholder="Ej: Sin Gluten"
+              />
+              @if (hasError('nombre')) {
+                <span class="error-message">{{ getErrorMessage('nombre') }}</span>
+              }
             </div>
 
-            <div class="modal-body">
-              <!-- Formulario completo igual que antes -->
-              <div class="form-group">
+            <!-- Tipo de Etiqueta -->
+            <div class="form-group">
+              <label>
+                Tipo de Etiqueta <span class="required">*</span>
+              </label>
+              <select
+                formControlName="tipoEtiqueta"
+                (change)="onTipoChange()"
+                class="form-input"
+                [class.input-error]="hasError('tipoEtiqueta')"
+              >
+                <option value="">Selecciona un tipo</option>
+                @for (tipo of tiposEtiqueta; track tipo) {
+                  <option [value]="tipo">{{ getTipoIcon(tipo) }} {{ getTipoLabel(tipo) }}</option>
+                }
+                <option value="__CUSTOM__">➕ Agregar nuevo tipo...</option>
+              </select>
+              @if (hasError('tipoEtiqueta')) {
+                <span class="error-message">{{ getErrorMessage('tipoEtiqueta') }}</span>
+              }
+            </div>
+
+            <!-- Tipo Personalizado (NO es FormControl) -->
+            @if (mostrarCampoTipoPersonalizado) {
+              <div class="form-group custom-type-group">
                 <label>
-                  Nombre <span class="required">*</span>
+                  Nombre del Nuevo Tipo <span class="required">*</span>
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="formulario.nombre"
+                  [(ngModel)]="tipoPersonalizado"
+                  [ngModelOptions]="{standalone: true}"
                   class="form-input"
-                  placeholder="Ej: Sin Gluten"
+                  placeholder="Ej: CATEGORIA_ALIMENTO"
+                  (input)="onTipoPersonalizadoChange()"
                 />
+                <small class="help-text">
+                  💡 Usa MAYÚSCULAS y guiones bajos (Ej: MI_TIPO_PERSONALIZADO)
+                </small>
+                @if (tipoPersonalizado) {
+                  <div class="preview-text">
+                    Vista previa: <strong>{{ tipoPersonalizado }}</strong>
+                  </div>
+                }
               </div>
+            }
 
-              <div class="form-group">
-                <label>
-                  Tipo de Etiqueta <span class="required">*</span>
-                </label>
-                <select
-                  [(ngModel)]="formulario.tipoEtiqueta"
-                  (change)="onTipoChange()"
-                  class="form-input"
-                >
-                  <option value="">Selecciona un tipo</option>
-                  @for (tipo of tiposEtiqueta; track tipo) {
-                    <option [value]="tipo">{{ getTipoIcon(tipo) }} {{ getTipoLabel(tipo) }}</option>
-                  }
-                  <option value="__CUSTOM__">➕ Agregar nuevo tipo...</option>
-                </select>
-              </div>
-
-              @if (mostrarCampoTipoPersonalizado) {
-                <div class="form-group custom-type-group">
-                  <label>
-                    Nombre del Nuevo Tipo <span class="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    [(ngModel)]="tipoPersonalizado"
-                    class="form-input"
-                    placeholder="Ej: CATEGORIA_ALIMENTO"
-                    (input)="onTipoPersonalizadoChange()"
-                  />
-                  <small class="help-text">
-                    💡 Usa MAYÚSCULAS y guiones bajos (Ej: MI_TIPO_PERSONALIZADO)
-                  </small>
-                </div>
+            <!-- Descripción -->
+            <div class="form-group">
+              <label>Descripción</label>
+              <textarea
+                formControlName="descripcion"
+                rows="3"
+                class="form-input"
+                [class.input-error]="hasError('descripcion')"
+                placeholder="Descripción opcional de la etiqueta..."
+              ></textarea>
+              @if (hasError('descripcion')) {
+                <span class="error-message">{{ getErrorMessage('descripcion') }}</span>
               }
-
-              <div class="form-group">
-                <label>Descripción</label>
-                <textarea
-                  [(ngModel)]="formulario.descripcion"
-                  rows="3"
-                  class="form-input"
-                  placeholder="Descripción opcional de la etiqueta..."
-                ></textarea>
-              </div>
             </div>
+          </form>
 
-            <div class="modal-footer">
-              <button
-                (click)="intentarCerrarModal()"
-                [disabled]="guardando"
-                class="btn-secondary"
-              >
-                Cancelar
-              </button>
-              <button
-                (click)="guardar()"
-                [disabled]="guardando"
-                class="btn-primary"
-              >
-                {{ guardando ? 'Guardando...' : 'Guardar' }}
-              </button>
-            </div>
+          <div class="modal-footer">
+            <button
+              (click)="intentarCerrarModal()"
+              [disabled]="guardando"
+              class="btn-secondary"
+            >
+              Cancelar
+            </button>
+            <button
+              (click)="guardar()"
+              [disabled]="guardando || etiquetaForm.invalid"
+              class="btn-primary"
+            >
+              @if (guardando) {
+                <span class="btn-spinner"></span>
+              }
+              {{ guardando ? 'Guardando...' : 'Guardar' }}
+            </button>
           </div>
         </div>
-      }
+      </div>
+    }
 
       <!-- Modal Confirmación Eliminar -->
       @if (mostrarConfirmacion) {
@@ -1524,11 +1547,140 @@ import { ApiResponse } from '../../../../core/models/common.model';
       color: #DC3545;
       transform: scale(1.1);
     }
-  `]
+    /* Input con error */
+.form-input.input-error {
+  border-color: #DC3545 !important;
+  background-color: #FFF5F5;
+}
+
+.form-input.input-error:focus {
+  border-color: #DC3545 !important;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+}
+
+/* Mensaje de error */
+.error-message {
+  display: block;
+  color: #DC3545;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Preview de tipo personalizado */
+.preview-text {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #28A745;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6C757D;
+  animation: fadeIn 0.3s ease;
+}
+
+.preview-text strong {
+  color: #28A745;
+  font-weight: 700;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Spinner en botón */
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Campo tipo personalizado mejorado */
+.custom-type-group {
+  background: linear-gradient(135deg, #F0FFF4 0%, #E8F5E8 100%);
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #28A745;
+  animation: slideDown 0.3s ease;
+}
+
+.custom-type-group label {
+  color: #28A745 !important;
+}
+
+.custom-type-group .form-input {
+  background: white;
+  border: 2px solid #28A745;
+}
+
+.custom-type-group .form-input:focus {
+  border-color: #20C997;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.15);
+}
+
+/* Overlay de confirmación con mayor z-index */
+.confirmation-overlay {
+  z-index: 1001 !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Mejora visual del botón deshabilitado */
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Tooltip para campos requeridos */
+.required {
+  color: #DC3545;
+  font-weight: 700;
+}
+
+/* Mejora de accesibilidad para focus */
+.form-input:focus-visible {
+  outline: 2px solid #28A745;
+  outline-offset: 2px;
+}
+
+.btn-action:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 2px solid #28A745;
+  outline-offset: 2px;
+}
+`]
 })
 export class EtiquetasListComponent implements OnInit {
-  private etiquetaService: EtiquetaService = inject(EtiquetaService);
-  private notificationService = inject(NotificationService); 
+  private etiquetaService = inject(EtiquetaService);
+  private notificationService = inject(NotificationService);
+  private fb = inject(FormBuilder);
+
   // Signals para estado reactivo
   loading = signal(false);
   etiquetas = signal<Etiqueta[]>([]);
@@ -1539,7 +1691,7 @@ export class EtiquetasListComponent implements OnInit {
   totalPages = 0;
   totalElements = 0;
   
-  // Búsqueda y filtros
+  // Búsqueda y filtros (NO son parte del FormGroup)
   searchTerm = '';
   tipoFiltro = '';
   searchTimeout: any;
@@ -1551,13 +1703,7 @@ export class EtiquetasListComponent implements OnInit {
   // Confirmación
   mostrarConfirmacion = false;
   etiquetaAEliminar: Etiqueta | null = null;
-  
-  // Formulario
-  formulario = {
-    nombre: '',
-    tipoEtiqueta: '',
-    descripcion: ''
-  };
+  mostrarConfirmacionCerrar = false;
   
   // Estados de guardado/eliminado
   guardando = false;
@@ -1566,15 +1712,36 @@ export class EtiquetasListComponent implements OnInit {
   // Lista de tipos para el select
   tiposEtiqueta = Object.values(TipoEtiqueta);
 
-  // Tipo personalizado
+  // Tipo personalizado (NO es FormControl)
   mostrarCampoTipoPersonalizado = false;
   tipoPersonalizado = '';
 
-  mostrarConfirmacionCerrar = false;
-  formularioInicial: any = null; // Para comparar cambios
+  // FormGroup y estado inicial
+  etiquetaForm!: FormGroup;
+  formularioInicial: any = null;
 
   ngOnInit(): void {
+    this.inicializarFormulario();
     this.cargarEtiquetas();
+  }
+
+  /**
+   * Inicializa el FormGroup con validadores
+   */
+  inicializarFormulario(): void {
+    this.etiquetaForm = this.fb.group({
+      nombre: ['', [
+        Validators.required,
+        CrudValidators.minLengthTrimmed(2),
+        CrudValidators.maxLengthTrimmed(50),
+        CrudValidators.noWhitespaceOnly(),
+        CrudValidators.safeString()
+      ]],
+      tipoEtiqueta: ['', Validators.required],
+      descripcion: ['', [
+        CrudValidators.maxLengthTrimmed(200)
+      ]]
+    });
   }
 
   /**
@@ -1599,7 +1766,7 @@ export class EtiquetasListComponent implements OnInit {
         this.etiquetas.set(etiquetas);
         this.totalPages = response.data.totalPages;
         this.totalElements = this.tipoFiltro 
-          ? etiquetas.length // Cuando hay filtro, mostrar solo los filtrados
+          ? etiquetas.length 
           : response.data.totalElements;
         this.loading.set(false);
       },
@@ -1653,46 +1820,131 @@ export class EtiquetasListComponent implements OnInit {
       this.cargarEtiquetas();
     }
   }
+
   /**
-   * Cierra el modal de formulario
+   * Abre el modal para crear
    */
-  cerrarModal(): void {
+  abrirModalCrear(): void {
+    this.etiquetaEditando = null;
+    this.etiquetaForm.reset({
+      nombre: '',
+      tipoEtiqueta: '',
+      descripcion: ''
+    });
+    this.mostrarCampoTipoPersonalizado = false;
+    this.tipoPersonalizado = '';
+    this.formularioInicial = this.etiquetaForm.value;
+    this.mostrarModal = true;
+  }
+
+  /**
+   * Abre el modal para editar
+   */
+  abrirModalEditar(etiqueta: Etiqueta): void {
+    this.etiquetaEditando = etiqueta;
+    
+    // Verificar si es un tipo personalizado
+    const esPersonalizado = !this.tiposEtiqueta.includes(etiqueta.tipoEtiqueta as TipoEtiqueta);
+    
+    this.etiquetaForm.patchValue({
+      nombre: etiqueta.nombre,
+      tipoEtiqueta: esPersonalizado ? '__CUSTOM__' : etiqueta.tipoEtiqueta,
+      descripcion: etiqueta.descripcion || ''
+    });
+    
+    if (esPersonalizado) {
+      this.mostrarCampoTipoPersonalizado = true;
+      this.tipoPersonalizado = etiqueta.tipoEtiqueta;
+    }
+    
+    this.formularioInicial = this.etiquetaForm.value;
+    this.mostrarModal = true;
+  }
+
+  /**
+   * Intenta cerrar el modal (verifica cambios)
+   */
+  intentarCerrarModal(): void {
+    if (this.guardando) {
+      this.notificationService.showWarning('Espera a que se complete el guardado.');
+      return;
+    }
+
+    if (this.hayaCambios()) {
+      this.mostrarConfirmacionCerrar = true;
+    } else {
+      this.cerrarModalDirecto();
+    }
+  }
+
+  /**
+   * Verifica si hay cambios en el formulario
+   */
+  private hayaCambios(): boolean {
+    if (!this.formularioInicial) return false;
+    
+    const actual = this.etiquetaForm.value;
+    const inicial = this.formularioInicial;
+    
+    return Object.keys(actual).some(key => actual[key] !== inicial[key]);
+  }
+
+  /**
+   * Confirma el cierre descartando cambios
+   */
+  confirmarCerrarModal(): void {
+    this.mostrarConfirmacionCerrar = false;
+    this.cerrarModalDirecto();
+    this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
+  }
+
+  /**
+   * Cancela el cierre del modal
+   */
+  cancelarCierre(): void {
+    this.mostrarConfirmacionCerrar = false;
+  }
+
+  /**
+   * Cierra el modal directamente
+   */
+  private cerrarModalDirecto(): void {
     this.mostrarModal = false;
     this.etiquetaEditando = null;
     this.mostrarCampoTipoPersonalizado = false;
     this.tipoPersonalizado = '';
+    this.formularioInicial = null;
   }
 
   /**
    * Guarda una etiqueta (crear o actualizar)
    */
   guardar(): void {
-    // Validar campos obligatorios
-    if (!this.formulario.nombre || this.formulario.nombre.trim().length === 0) {
-      this.notificationService.showWarning('El campo "Nombre" es obligatorio. Por favor, ingresa un nombre para la etiqueta.');
+    // Marcar todos los campos como touched para mostrar errores
+    Object.keys(this.etiquetaForm.controls).forEach(key => {
+      this.etiquetaForm.get(key)?.markAsTouched();
+    });
+
+    if (this.etiquetaForm.invalid) {
+      this.notificationService.showWarning('Por favor, corrige los errores en el formulario.');
       return;
     }
 
-    // Determinar el tipo a usar
-    let tipoFinal = this.formulario.tipoEtiqueta;
-    
-    if (this.mostrarCampoTipoPersonalizado) {
-      if (!this.tipoPersonalizado || this.tipoPersonalizado.trim().length === 0) {
-        this.notificationService.showWarning('Por favor, ingresa el nombre del nuevo tipo de etiqueta o selecciona uno existente.');
-        return;
-      }
-      tipoFinal = this.tipoPersonalizado.trim();
-    } else if (!tipoFinal) {
-      this.notificationService.showWarning('El campo "Tipo de Etiqueta" es obligatorio. Por favor, selecciona un tipo.');
+    // Determinar el tipo final
+    const tipoFinal = this.mostrarCampoTipoPersonalizado 
+      ? this.tipoPersonalizado 
+      : this.etiquetaForm.value.tipoEtiqueta;
+
+    if (this.mostrarCampoTipoPersonalizado && (!this.tipoPersonalizado || this.tipoPersonalizado.trim().length === 0)) {
+      this.notificationService.showWarning('Por favor, ingresa el nombre del nuevo tipo de etiqueta.');
       return;
     }
-
 
     this.guardando = true;
     const request: EtiquetaRequest = {
-      nombre: this.formulario.nombre.trim(),
+      nombre: this.etiquetaForm.value.nombre.trim(),
       tipoEtiqueta: tipoFinal as any,
-      descripcion: this.formulario.descripcion?.trim() || undefined
+      descripcion: this.etiquetaForm.value.descripcion?.trim() || undefined
     };
 
     const observable = this.etiquetaEditando
@@ -1701,48 +1953,50 @@ export class EtiquetasListComponent implements OnInit {
 
     observable.subscribe({
       next: (response: ApiResponse<Etiqueta>) => {
-        if (this.etiquetaEditando) {
-          this.notificationService.showSuccess(
-            `La etiqueta "${response.data.nombre}" se actualizó correctamente.`
-          );
-        } else {
-          this.notificationService.showSuccess(
-            `La etiqueta "${response.data.nombre}" se creó exitosamente.`
-          );
-        }
+        this.notificationService.showSuccess(
+          `La etiqueta "${response.data.nombre}" se ${this.etiquetaEditando ? 'actualizó' : 'creó'} exitosamente.`
+        );
         
+        this.formularioInicial = null;
         this.cerrarModalDirecto();
         this.cargarEtiquetas();
         this.guardando = false;
-        
-        this.mostrarCampoTipoPersonalizado = false;
-        this.tipoPersonalizado = '';
       },
       error: (error: any) => {
         console.error('Error al guardar:', error);
         this.guardando = false;
         
         if (error.status === 409) {
-          // Conflicto - nombre duplicado
           this.notificationService.error(
             'No se puede guardar',
-            `Ya existe una etiqueta con el nombre "${this.formulario.nombre}". Por favor, usa un nombre diferente.`
+            `Ya existe una etiqueta con el nombre "${this.etiquetaForm.value.nombre}".`
           );
         } else if (error.status === 400) {
-          // Bad Request - validación del backend
-          this.notificationService.error(
-            'Datos inválidos',
-            error.error?.message || 'Los datos ingresados no son válidos. Verifica que todos los campos estén correctos.'
-          );
+          this.notificationService.error('Datos inválidos', error.error?.message);
         } else if (error.status) {
-          // Otros errores HTTP
           this.notificationService.showHttpError(error.status, error.error?.message);
         } else {
-          // Error de red
-          this.notificationService.showError('No se pudo guardar la etiqueta. Verifica tu conexión a internet e intenta nuevamente.');
+          this.notificationService.showError('No se pudo guardar la etiqueta.');
         }
       }
     });
+  }
+
+  /**
+   * Obtiene el mensaje de error de un campo
+   */
+  getErrorMessage(controlName: string): string {
+    const control = this.etiquetaForm.get(controlName);
+    if (!control || !control.errors || !control.touched) return '';
+    return getErrorMessage(control.errors, controlName);
+  }
+
+  /**
+   * Verifica si un campo tiene error
+   */
+  hasError(controlName: string): boolean {
+    const control = this.etiquetaForm.get(controlName);
+    return !!(control && control.invalid && control.touched);
   }
 
   /**
@@ -1761,88 +2015,10 @@ export class EtiquetasListComponent implements OnInit {
     this.etiquetaAEliminar = null;
   }
 
-  abrirModalEditar(etiqueta: Etiqueta): void {
-    this.etiquetaEditando = etiqueta;
-    this.formulario = {
-      nombre: etiqueta.nombre,
-      tipoEtiqueta: etiqueta.tipoEtiqueta,
-      descripcion: etiqueta.descripcion || ''
-    };
-    
-    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
-    this.mostrarModal = true;
-  }
-
-  abrirModalCrear(): void {
-    this.etiquetaEditando = null;
-    this.formulario = {
-      nombre: '',
-      tipoEtiqueta: '',
-      descripcion: ''
-    };
-    this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
-    this.mostrarModal = true;
-  }
-
-  private hayaCambios(): boolean {
-    if (!this.formularioInicial) return false;
-    
-    // Comparar formulario actual con inicial
-    const formularioActual = {
-      nombre: this.formulario.nombre?.trim() || '',
-      tipoEtiqueta: this.mostrarCampoTipoPersonalizado 
-        ? this.tipoPersonalizado?.trim() || ''
-        : this.formulario.tipoEtiqueta || '',
-      descripcion: this.formulario.descripcion?.trim() || ''
-    };
-
-    const formularioInicial = {
-      nombre: this.formularioInicial.nombre?.trim() || '',
-      tipoEtiqueta: this.formularioInicial.tipoEtiqueta || '',
-      descripcion: this.formularioInicial.descripcion?.trim() || ''
-    };
-
-    return JSON.stringify(formularioActual) !== JSON.stringify(formularioInicial);
-  }
-
-  intentarCerrarModal(): void {
-    // Si está guardando, no permitir cerrar
-    if (this.guardando) {
-      this.notificationService.showWarning('Espera a que se complete el guardado.');
-      return;
-    }
-
-    // Si hay cambios, pedir confirmación
-    if (this.hayaCambios()) {
-      this.mostrarConfirmacionCerrar = true;
-    } else {
-      // Si no hay cambios, cerrar directamente
-      this.cerrarModalDirecto();
-    }
-  }
-
-  cancelarCierre(): void {
-    this.mostrarConfirmacionCerrar = false;
-  }
-  confirmarCerrarModal(): void {
-    this.mostrarConfirmacionCerrar = false;
-    this.cerrarModalDirecto();
-    this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
-  }
-
-  private cerrarModalDirecto(): void {
-    this.mostrarModal = false;
-    this.etiquetaEditando = null;
-    this.mostrarCampoTipoPersonalizado = false;
-    this.tipoPersonalizado = '';
-    this.formularioInicial = null;
-  }
-
   /**
    * Elimina una etiqueta
    */
-
- eliminar(): void {
+  eliminar(): void {
     if (!this.etiquetaAEliminar) return;
 
     this.eliminando = true;
@@ -1863,14 +2039,12 @@ export class EtiquetasListComponent implements OnInit {
         this.eliminando = false;
         
         if (error.status === 409 || (error.error?.message && error.error.message.includes('en uso'))) {
-          // Dependencia - etiqueta en uso
           this.notificationService.error(
             'No se puede eliminar',
-            `La etiqueta "${nombreEtiqueta}" está siendo usada por ingredientes, comidas o ejercicios. Primero debes eliminar esas referencias.`,
-            10000 // Duración más larga para errores complejos
+            `La etiqueta "${nombreEtiqueta}" está siendo usada. Primero debes eliminar esas referencias.`,
+            10000
           );
         } else if (error.status === 404) {
-          // No encontrada
           this.notificationService.error(
             'Etiqueta no encontrada',
             'La etiqueta que intentas eliminar ya no existe. La página se actualizará.'
@@ -1885,11 +2059,12 @@ export class EtiquetasListComponent implements OnInit {
       }
     });
   }
+
   /**
    * Maneja el cambio de tipo de etiqueta
    */
   onTipoChange(): void {
-    if (this.formulario.tipoEtiqueta === '__CUSTOM__') {
+    if (this.etiquetaForm.value.tipoEtiqueta === '__CUSTOM__') {
       this.mostrarCampoTipoPersonalizado = true;
       this.tipoPersonalizado = '';
     } else {
@@ -1902,7 +2077,6 @@ export class EtiquetasListComponent implements OnInit {
    * Maneja el cambio en el campo de tipo personalizado
    */
   onTipoPersonalizadoChange(): void {
-    // Convertir a mayúsculas y reemplazar espacios con guiones bajos
     this.tipoPersonalizado = this.tipoPersonalizado
       .toUpperCase()
       .replace(/\s+/g, '_')
@@ -1913,11 +2087,9 @@ export class EtiquetasListComponent implements OnInit {
    * Obtiene la etiqueta en español del tipo
    */
   getTipoLabel(tipo: string): string {
-    // Primero intenta obtener del enum predefinido
     const label = TIPO_ETIQUETA_LABELS[tipo as TipoEtiqueta];
     if (label) return label;
     
-    // Si no existe, formatea el tipo personalizado a un formato legible
     return tipo
       .split('_')
       .map(palabra => palabra.charAt(0) + palabra.slice(1).toLowerCase())
@@ -1939,7 +2111,7 @@ export class EtiquetasListComponent implements OnInit {
   }
 
   /**
-   * Agrupa las etiquetas por tipo (para CA 2 - Vista agrupada)
+   * Agrupa las etiquetas por tipo
    */
   agruparPorTipo(): Map<string, Etiqueta[]> {
     const grupos = new Map<string, Etiqueta[]>();
@@ -1953,5 +2125,4 @@ export class EtiquetasListComponent implements OnInit {
     
     return grupos;
   }
-  
 }

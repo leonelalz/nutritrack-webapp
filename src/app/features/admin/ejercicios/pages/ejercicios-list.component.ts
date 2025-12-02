@@ -6,6 +6,7 @@ import { Observable } from 'rxjs';
 import { EjercicioService } from '../../../../core/services/ejercicio.service';
 import { EtiquetaService } from '../../../../core/services/etiqueta.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   Ejercicio,
   TipoEjercicio,
@@ -18,11 +19,12 @@ import {
 } from '../../../../core/models/ejercicio.model';
 import { Etiqueta, PageResponse } from '../../../../core/models/etiqueta.model';
 import { ApiResponse } from '../../../../core/models/common.model';
+import { CrudValidators, getErrorMessage } from '../../validator/crud.validators';
 
 @Component({
   selector: 'app-ejercicios-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, ReactiveFormsModule],
   template: `
     <div class="ejercicios-container">
       <!-- Page Header -->
@@ -400,9 +402,16 @@ import { ApiResponse } from '../../../../core/models/common.model';
           <div class="modal-content large" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h2>{{ ejercicioEditando ? 'Editar Ejercicio' : 'Nuevo Ejercicio' }}</h2>
+              <button 
+                (click)="cerrarModal()" 
+                class="btn-close-modal"
+                title="Cerrar"
+              >
+                ✕
+              </button>
             </div>
 
-            <div class="modal-body">
+            <form [formGroup]="ejercicioForm" class="modal-body">
               <!-- Información Básica -->
               <div class="form-section-title">Información Básica</div>
 
@@ -412,20 +421,28 @@ import { ApiResponse } from '../../../../core/models/common.model';
                 </label>
                 <input
                   type="text"
-                  [(ngModel)]="formulario.nombre"
+                  formControlName="nombre"
                   class="form-input"
+                  [class.input-error]="hasError('nombre')"
                   placeholder="Ej: Sentadillas"
                 />
+                @if (hasError('nombre')) {
+                  <span class="error-message">{{ getErrorMessage('nombre') }}</span>
+                }
               </div>
 
               <div class="form-group">
                 <label>Descripción</label>
                 <textarea
-                  [(ngModel)]="formulario.descripcion"
+                  formControlName="descripcion"
                   rows="3"
                   class="form-input"
+                  [class.input-error]="hasError('descripcion')"
                   placeholder="Descripción del ejercicio y cómo realizarlo..."
                 ></textarea>
+                @if (hasError('descripcion')) {
+                  <span class="error-message">{{ getErrorMessage('descripcion') }}</span>
+                }
               </div>
 
               <!-- Clasificación -->
@@ -437,8 +454,9 @@ import { ApiResponse } from '../../../../core/models/common.model';
                     Tipo de Ejercicio <span class="required">*</span>
                   </label>
                   <select
-                    [(ngModel)]="formulario.tipoEjercicio"
+                    formControlName="tipoEjercicio"
                     class="form-input"
+                    [class.input-error]="hasError('tipoEjercicio')"
                     (change)="onTipoEjercicioChange()"
                   >
                     <option value="">Selecciona un tipo</option>
@@ -449,27 +467,9 @@ import { ApiResponse } from '../../../../core/models/common.model';
                     }
                     <option value="__CUSTOM__">➕ Agregar nuevo tipo...</option>
                   </select>
-                </div>
-
-                @if (mostrarCampoTipoPersonalizado) {
-                  <div class="form-group custom-type-group">
-                    <label>
-                      Nuevo Tipo de Ejercicio <span class="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      [(ngModel)]="tipoPersonalizado"
-                      (input)="onTipoPersonalizadoChange()"
-                      class="form-input"
-                      placeholder="Ej: CROSSFIT"
-                    />
-                    <span class="help-text">
-                      Se formateará automáticamente a MAYÚSCULAS_CON_GUIONES_BAJOS
-                    </span>
-                  </div>
-                }
-
-                <div class="form-group">
+                  @if (hasError('tipoEjercicio')) {
+                    <span class="error-message">{{ getErrorMessage('tipoEjercicio') }}</span>
+                  }
                 </div>
 
                 <div class="form-group">
@@ -477,30 +477,63 @@ import { ApiResponse } from '../../../../core/models/common.model';
                     Grupo Muscular <span class="required">*</span>
                   </label>
                   <select
-                    [(ngModel)]="formulario.grupoMuscular"
+                    formControlName="grupoMuscular"
                     class="form-input"
+                    [class.input-error]="hasError('grupoMuscular')"
                   >
                     <option value="">Selecciona un grupo</option>
                     @for (grupo of gruposMusculares; track grupo) {
                       <option [value]="grupo">{{ getGrupoLabel(grupo) }}</option>
                     }
                   </select>
+                  @if (hasError('grupoMuscular')) {
+                    <span class="error-message">{{ getErrorMessage('grupoMuscular') }}</span>
+                  }
                 </div>
               </div>
+
+              <!-- Tipo Personalizado (standalone) -->
+              @if (mostrarCampoTipoPersonalizado) {
+                <div class="form-group custom-type-group">
+                  <label>
+                    Nuevo Tipo de Ejercicio <span class="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    [(ngModel)]="tipoPersonalizado"
+                    [ngModelOptions]="{standalone: true}"
+                    (input)="onTipoPersonalizadoChange()"
+                    class="form-input"
+                    placeholder="Ej: CROSSFIT"
+                  />
+                  <span class="help-text">
+                    Se formateará automáticamente a MAYÚSCULAS_CON_GUIONES_BAJOS
+                  </span>
+                  @if (tipoPersonalizado) {
+                    <div class="preview-text">
+                      Vista previa: <strong>{{ tipoPersonalizado }}</strong>
+                    </div>
+                  }
+                </div>
+              }
 
               <div class="form-group">
                 <label>
                   Nivel de Dificultad <span class="required">*</span>
                 </label>
                 <select
-                  [(ngModel)]="formulario.nivelDificultad"
+                  formControlName="nivelDificultad"
                   class="form-input"
+                  [class.input-error]="hasError('nivelDificultad')"
                 >
                   <option value="">Selecciona un nivel</option>
                   @for (nivel of nivelesDificultad; track nivel) {
                     <option [value]="nivel">{{ getNivelLabel(nivel) }}</option>
                   }
                 </select>
+                @if (hasError('nivelDificultad')) {
+                  <span class="error-message">{{ getErrorMessage('nivelDificultad') }}</span>
+                }
               </div>
 
               <!-- Datos Adicionales -->
@@ -511,23 +544,31 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   <label>Calorías Quemadas por Minuto</label>
                   <input
                     type="number"
-                    [(ngModel)]="formulario.caloriasQuemadasPorMinuto"
+                    formControlName="caloriasQuemadasPorMinuto"
                     class="form-input"
+                    [class.input-error]="hasError('caloriasQuemadasPorMinuto')"
                     placeholder="0"
                     min="0"
                     step="0.1"
                   />
+                  @if (hasError('caloriasQuemadasPorMinuto')) {
+                    <span class="error-message">{{ getErrorMessage('caloriasQuemadasPorMinuto') }}</span>
+                  }
                 </div>
 
                 <div class="form-group">
                   <label>Duración Estimada (minutos)</label>
                   <input
                     type="number"
-                    [(ngModel)]="formulario.duracionEstimadaMinutos"
+                    formControlName="duracionEstimadaMinutos"
                     class="form-input"
+                    [class.input-error]="hasError('duracionEstimadaMinutos')"
                     placeholder="0"
                     min="0"
                   />
+                  @if (hasError('duracionEstimadaMinutos')) {
+                    <span class="error-message">{{ getErrorMessage('duracionEstimadaMinutos') }}</span>
+                  }
                 </div>
               </div>
 
@@ -535,10 +576,14 @@ import { ApiResponse } from '../../../../core/models/common.model';
                 <label>Equipo Necesario</label>
                 <input
                   type="text"
-                  [(ngModel)]="formulario.equipoNecesario"
+                  formControlName="equipoNecesario"
                   class="form-input"
+                  [class.input-error]="hasError('equipoNecesario')"
                   placeholder="Ej: Mancuernas, Barra, Sin equipo..."
                 />
+                @if (hasError('equipoNecesario')) {
+                  <span class="error-message">{{ getErrorMessage('equipoNecesario') }}</span>
+                }
               </div>
 
               <!-- Etiquetas -->
@@ -561,7 +606,7 @@ import { ApiResponse } from '../../../../core/models/common.model';
                   }
                 </div>
               </div>
-            </div>
+            </form>
 
             <div class="modal-footer">
               <button
@@ -573,15 +618,19 @@ import { ApiResponse } from '../../../../core/models/common.model';
               </button>
               <button
                 (click)="guardar()"
-                [disabled]="guardando"
+                [disabled]="guardando || ejercicioForm.invalid"
                 class="btn-primary"
               >
+                @if (guardando) {
+                  <span class="btn-spinner"></span>
+                }
                 {{ guardando ? 'Guardando...' : 'Guardar' }}
               </button>
             </div>
           </div>
         </div>
       }
+
       <!-- Modal Confirmación Eliminar -->
       @if (mostrarConfirmacion) {
         <div class="modal-overlay" (click)="cerrarConfirmacion()">
@@ -608,38 +657,42 @@ import { ApiResponse } from '../../../../core/models/common.model';
                 [disabled]="eliminando"
                 class="btn-danger"
               >
+                @if (eliminando) {
+                  <span class="btn-spinner"></span>
+                }
                 {{ eliminando ? 'Eliminando...' : 'Eliminar' }}
               </button>
             </div>
           </div>
         </div>
-      }  
+      }
 
+      <!-- Modal Confirmación Cerrar -->
       @if (mostrarConfirmacionCerrar) {
-       <div class="modal-overlay confirmation-overlay" (click)="cancelarCerrarModal()">
-         <div class="modal-content small" (click)="$event.stopPropagation()">
-           <div class="modal-body centered">
-             <div class="warning-icon">⚠️</div>
-             <h3>¿Salir sin guardar?</h3>
-             <p>
-               Tienes cambios sin guardar en el formulario.
-               @if (formulario.etiquetaIds.length > 0) {
-                 <strong>Incluye {{ formulario.etiquetaIds.length }} etiqueta(s).</strong>
-               }
-               Si sales ahora, perderás toda la información.
-             </p>
-           </div>
-           <div class="modal-footer">
-             <button (click)="cancelarCerrarModal()" class="btn-secondary">
-               Seguir Editando
-             </button>
-             <button (click)="confirmarCerrarModal()" class="btn-danger">
-               Descartar Cambios
-             </button>
-           </div>
-         </div>
-       </div>
-     }
+        <div class="modal-overlay confirmation-overlay" (click)="cancelarCerrarModal()">
+          <div class="modal-content small" (click)="$event.stopPropagation()">
+            <div class="modal-body centered">
+              <div class="warning-icon">⚠️</div>
+              <h3>¿Descartar cambios?</h3>
+              <p>
+                Tienes cambios sin guardar en el formulario.
+                @if (ejercicioForm.value.etiquetaIds.length > 0) {
+                  <br><strong>Incluye {{ ejercicioForm.value.etiquetaIds.length }} etiqueta(s).</strong>
+                }
+                Si sales ahora, perderás toda la información.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button (click)="cancelarCerrarModal()" class="btn-secondary">
+                Seguir Editando
+              </button>
+              <button (click)="confirmarCerrarModal()" class="btn-danger">
+                Descartar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
     
   `,
@@ -1892,6 +1945,7 @@ export class EjerciciosListComponent implements OnInit {
   private ejercicioService = inject(EjercicioService);
   private etiquetaService = inject(EtiquetaService);
   private notificationService = inject(NotificationService);
+  private fb = inject(FormBuilder);
 
   // Signals
   loading = signal(false);
@@ -1904,7 +1958,7 @@ export class EjerciciosListComponent implements OnInit {
   totalPages = 0;
   totalElements = 0;
   
-  // Búsqueda y filtros
+  // Búsqueda y filtros (NO FormControl)
   searchTerm = '';
   tipoFiltro: TipoEjercicio | '' = '';
   grupoFiltro: GrupoMuscular | '' = '';
@@ -1918,19 +1972,7 @@ export class EjerciciosListComponent implements OnInit {
   // Confirmación
   mostrarConfirmacion = false;
   ejercicioAEliminar: Ejercicio | null = null;
-  
-  // Formulario
-  formulario = {
-    nombre: '',
-    descripcion: '',
-    tipoEjercicio: '' as TipoEjercicio | '' | '__CUSTOM__',
-    grupoMuscular: '' as GrupoMuscular | '',
-    nivelDificultad: '' as NivelDificultad | '',
-    caloriasQuemadasPorMinuto: 0,
-    duracionEstimadaMinutos: 0,
-    equipoNecesario: '',
-    etiquetaIds: [] as number[]
-  };
+  mostrarConfirmacionCerrar = false;
   
   // Estados
   guardando = false;
@@ -1941,16 +1983,49 @@ export class EjerciciosListComponent implements OnInit {
   gruposMusculares = Object.values(GrupoMuscular);
   nivelesDificultad = Object.values(NivelDificultad);
 
-  // Tipos personalizados
+  // Tipos personalizados (NO FormControl)
   mostrarCampoTipoPersonalizado = false;
   tipoPersonalizado = '';
   
-  mostrarConfirmacionCerrar = false;
+  // FormGroup
+  ejercicioForm!: FormGroup;
   formularioInicial: any = null;
 
   ngOnInit(): void {
+    this.inicializarFormulario();
     this.cargarEjercicios();
     this.cargarEtiquetas();
+  }
+
+  /**
+   * Inicializa el FormGroup
+   */
+  inicializarFormulario(): void {
+    this.ejercicioForm = this.fb.group({
+      nombre: ['', [
+        Validators.required,
+        CrudValidators.minLengthTrimmed(2),
+        CrudValidators.maxLengthTrimmed(100),
+        CrudValidators.noWhitespaceOnly(),
+        CrudValidators.safeString()
+      ]],
+      descripcion: ['', [
+        CrudValidators.maxLengthTrimmed(500)
+      ]],
+      tipoEjercicio: ['', Validators.required],
+      grupoMuscular: ['', Validators.required],
+      nivelDificultad: ['', Validators.required],
+      caloriasQuemadasPorMinuto: [0, [
+        CrudValidators.caloriesBurnedPerMinute()
+      ]],
+      duracionEstimadaMinutos: [0, [
+        CrudValidators.exerciseDuration()
+      ]],
+      equipoNecesario: ['', [
+        CrudValidators.maxLengthTrimmed(200)
+      ]],
+      etiquetaIds: [[]]
+    });
   }
 
   cargarEjercicios(): void {
@@ -1992,9 +2067,6 @@ export class EjerciciosListComponent implements OnInit {
     });
   }
 
-  /**
-   * Carga las etiquetas disponibles
-   */
   cargarEtiquetas(): void {
     this.etiquetaService.listar(0, 1000).subscribe({
       next: (response) => {
@@ -2006,9 +2078,6 @@ export class EjerciciosListComponent implements OnInit {
     });
   }
 
-  /**
-   * Búsqueda con debounce
-   */
   onSearch(): void {
     clearTimeout(this.searchTimeout);
     this.searchTimeout = setTimeout(() => {
@@ -2017,17 +2086,11 @@ export class EjerciciosListComponent implements OnInit {
     }, 500);
   }
 
-  /**
-   * Aplicar filtros
-   */
   aplicarFiltros(): void {
     this.currentPage = 0;
     this.cargarEjercicios();
   }
 
-  /**
-   * Limpiar filtros
-   */
   limpiarFiltros(): void {
     this.tipoFiltro = '';
     this.grupoFiltro = '';
@@ -2037,186 +2100,136 @@ export class EjerciciosListComponent implements OnInit {
     this.cargarEjercicios();
   }
 
-  /**
-   * Cambiar página
-   */
   cambiarPagina(page: number): void {
     if (page >= 0 && page < this.totalPages) {
       this.currentPage = page;
       this.cargarEjercicios();
     }
   }
-  /**
-   * Cierra el modal
-   */
+
+  abrirModalCrear(): void {
+    this.ejercicioEditando = null;
+    this.ejercicioForm.reset({
+      nombre: '',
+      descripcion: '',
+      tipoEjercicio: '',
+      grupoMuscular: '',
+      nivelDificultad: '',
+      caloriasQuemadasPorMinuto: 0,
+      duracionEstimadaMinutos: 0,
+      equipoNecesario: '',
+      etiquetaIds: []
+    });
+    this.mostrarCampoTipoPersonalizado = false;
+    this.tipoPersonalizado = '';
+    this.formularioInicial = this.ejercicioForm.value;
+    this.mostrarModal = true;
+  }
+
+  abrirModalEditar(ejercicio: Ejercicio): void {
+    this.ejercicioEditando = ejercicio;
+    
+    const esPersonalizado = !this.tiposEjercicio.includes(ejercicio.tipoEjercicio as TipoEjercicio);
+    
+    this.ejercicioForm.patchValue({
+      nombre: ejercicio.nombre,
+      descripcion: ejercicio.descripcion || '',
+      tipoEjercicio: esPersonalizado ? '__CUSTOM__' : ejercicio.tipoEjercicio,
+      grupoMuscular: ejercicio.grupoMuscular,
+      nivelDificultad: ejercicio.nivelDificultad,
+      caloriasQuemadasPorMinuto: ejercicio.caloriasQuemadasPorMinuto || 0,
+      duracionEstimadaMinutos: ejercicio.duracionEstimadaMinutos || 0,
+      equipoNecesario: ejercicio.equipoNecesario || '',
+      etiquetaIds: ejercicio.etiquetas?.map(e => e.id) || []
+    });
+    
+    if (esPersonalizado) {
+      this.mostrarCampoTipoPersonalizado = true;
+      this.tipoPersonalizado = ejercicio.tipoEjercicio;
+    }
+    
+    this.formularioInicial = this.ejercicioForm.value;
+    this.mostrarModal = true;
+  }
+
   cerrarModal(): void {
     if (this.hayaCambios()) {
       this.mostrarConfirmacionCerrar = true;
     } else {
-      this.mostrarModal = false;
-      this.ejercicioEditando = null;
-      this.mostrarCampoTipoPersonalizado = false;
-      this.tipoPersonalizado = '';
-      this.formularioInicial = null;
+      this.cerrarModalDirecto();
     }
   }
-  // 2. Agregar métodos para confirmar/cancelar cierre
+
+  private hayaCambios(): boolean {
+    if (!this.formularioInicial) return false;
+    
+    const actual = this.ejercicioForm.value;
+    const inicial = this.formularioInicial;
+    
+    return Object.keys(actual).some(key => {
+      if (Array.isArray(actual[key]) && Array.isArray(inicial[key])) {
+        return JSON.stringify(actual[key].sort()) !== JSON.stringify(inicial[key].sort());
+      }
+      return actual[key] !== inicial[key];
+    });
+  }
+
   confirmarCerrarModal(): void {
     this.mostrarConfirmacionCerrar = false;
-    this.mostrarModal = false;
-    this.ejercicioEditando = null;
-    this.mostrarCampoTipoPersonalizado = false;
-    this.tipoPersonalizado = '';
-    this.formularioInicial = null;
-      if (this.formulario.etiquetaIds.length > 0) {
-        this.notificationService.info(
-          'Cambios descartados',
-          `Se descartaron los cambios incluyendo ${this.formulario.etiquetaIds.length} etiqueta(s).`
-        );
-      } else {
-        this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
-      }
+    this.cerrarModalDirecto();
+    
+    if (this.ejercicioForm.value.etiquetaIds.length > 0) {
+      this.notificationService.info(
+        'Cambios descartados',
+        `Se descartaron los cambios incluyendo ${this.ejercicioForm.value.etiquetaIds.length} etiqueta(s).`
+      );
+    } else {
+      this.notificationService.info('Cambios descartados', 'Los cambios del formulario se descartaron.');
+    }
   }
 
   cancelarCerrarModal(): void {
     this.mostrarConfirmacionCerrar = false;
   }
 
-
-  private hayaCambios(): boolean {
-   if (!this.formularioInicial) return false;
-    
-   const formularioActual = {
-      nombre: this.formulario.nombre?.trim() || '',
-      descripcion: this.formulario.descripcion?.trim() || '',
-      tipoEjercicio: this.mostrarCampoTipoPersonalizado 
-        ? this.tipoPersonalizado?.trim() || ''
-        : this.formulario.tipoEjercicio || '',
-      grupoMuscular: this.formulario.grupoMuscular || '',
-      nivelDificultad: this.formulario.nivelDificultad || '',
-      caloriasQuemadasPorMinuto: this.formulario.caloriasQuemadasPorMinuto || 0,
-      duracionEstimadaMinutos: this.formulario.duracionEstimadaMinutos || 0,
-      equipoNecesario: this.formulario.equipoNecesario?.trim() || '',
-      etiquetaIds: JSON.stringify(this.formulario.etiquetaIds.sort())
-    };
-
-    const formularioInicial = {
-      nombre: this.formularioInicial.nombre?.trim() || '',
-      descripcion: this.formularioInicial.descripcion?.trim() || '',
-      tipoEjercicio: this.formularioInicial.tipoEjercicio || '',
-      grupoMuscular: this.formularioInicial.grupoMuscular || '',
-      nivelDificultad: this.formularioInicial.nivelDificultad || '',
-      caloriasQuemadasPorMinuto: this.formularioInicial.caloriasQuemadasPorMinuto || 0,
-      duracionEstimadaMinutos: this.formularioInicial.duracionEstimadaMinutos || 0,
-      equipoNecesario: this.formularioInicial.equipoNecesario?.trim() || '',
-      etiquetaIds: JSON.stringify(this.formularioInicial.etiquetaIds.sort())
-    };
-
-    return JSON.stringify(formularioActual) !== JSON.stringify(formularioInicial);
+  private cerrarModalDirecto(): void {
+    this.mostrarModal = false;
+    this.ejercicioEditando = null;
+    this.mostrarCampoTipoPersonalizado = false;
+    this.tipoPersonalizado = '';
+    this.formularioInicial = null;
   }
-  abrirModalCrear(): void {
-  this.ejercicioEditando = null; // era "this.editando"
-  this.formulario = {
-    nombre: '',
-    descripcion: '',
-    tipoEjercicio: '' as TipoEjercicio | '' | '__CUSTOM__',
-    grupoMuscular: '' as GrupoMuscular | '',
-    nivelDificultad: '' as NivelDificultad | '',
-    caloriasQuemadasPorMinuto: 0,
-    duracionEstimadaMinutos: 0,
-    equipoNecesario: '',
-    etiquetaIds: [] as number[]
-  };
-  
-  this.formularioInicial = JSON.parse(JSON.stringify(this.formulario));
-  this.mostrarModal = true;
-}
 
-
-abrirModalEditar(ejercicio: Ejercicio): void { // era "item: TuTipo"
-  this.ejercicioEditando = ejercicio; // era "this.editando"
-  
-  // Verificar si el tipo es personalizado
-  const esPersonalizado = !this.tiposEjercicio.includes(ejercicio.tipoEjercicio as TipoEjercicio);
-  
-  this.formulario = {
-    nombre: ejercicio.nombre,
-    descripcion: ejercicio.descripcion || '',
-    tipoEjercicio: esPersonalizado ? '__CUSTOM__' : ejercicio.tipoEjercicio,
-    grupoMuscular: ejercicio.grupoMuscular,
-    nivelDificultad: ejercicio.nivelDificultad,
-    caloriasQuemadasPorMinuto: ejercicio.caloriasQuemadasPorMinuto || 0,
-    duracionEstimadaMinutos: ejercicio.duracionEstimadaMinutos || 0,
-    equipoNecesario: ejercicio.equipoNecesario || '',
-    etiquetaIds: ejercicio.etiquetas?.map(e => e.id) || []
-  };
-  
-  if (esPersonalizado) {
-    this.mostrarCampoTipoPersonalizado = true;
-    this.tipoPersonalizado = ejercicio.tipoEjercicio;
-  }
-  this.formularioInicial = JSON.parse(JSON.stringify({
-    ...this.formulario,
-    tipoEjercicio: esPersonalizado ? this.tipoPersonalizado : this.formulario.tipoEjercicio
-  }));
-  
-  this.mostrarModal = true;
-}
-
-  /**
-   * Guarda un ejercicio
-   */
   guardar(): void {
-    // Validar tipo personalizado si está activo
-    if (!this.formulario.nombre || this.formulario.nombre.trim().length === 0) {
-      this.notificationService.showWarning('El campo "Nombre" es obligatorio.');
+    Object.keys(this.ejercicioForm.controls).forEach(key => {
+      this.ejercicioForm.get(key)?.markAsTouched();
+    });
+
+    if (this.ejercicioForm.invalid) {
+      this.notificationService.showWarning('Por favor, corrige los errores en el formulario.');
       return;
     }
 
-    if (this.mostrarCampoTipoPersonalizado && !this.tipoPersonalizado.trim()){
+    const tipoFinal = this.mostrarCampoTipoPersonalizado 
+      ? this.tipoPersonalizado 
+      : this.ejercicioForm.value.tipoEjercicio;
+
+    if (this.mostrarCampoTipoPersonalizado && !this.tipoPersonalizado.trim()) {
       this.notificationService.showWarning('Por favor, ingresa el nombre del nuevo tipo de ejercicio.');
       return;
     }
 
-
-    const tipoFinal = this.mostrarCampoTipoPersonalizado 
-      ? this.tipoPersonalizado 
-      : this.formulario.tipoEjercicio;
-    if (!tipoFinal) {
-      this.notificationService.showWarning('El campo "Tipo de Ejercicio" es obligatorio.');
-      return;
-    }
-
-    if (!this.formulario.grupoMuscular) {
-      this.notificationService.showWarning('El campo "Grupo Muscular" es obligatorio.');
-      return;
-    }
-
-    if (!this.formulario.nivelDificultad) {
-      this.notificationService.showWarning('El campo "Nivel de Dificultad" es obligatorio.');
-      return;
-    }
-
-    if (this.formulario.caloriasQuemadasPorMinuto && this.formulario.caloriasQuemadasPorMinuto < 0) {
-      this.notificationService.showWarning('Las calorías quemadas no pueden ser un valor negativo.');
-      return;
-    }
-
-    if (this.formulario.duracionEstimadaMinutos && this.formulario.duracionEstimadaMinutos < 0) {
-      this.notificationService.showWarning('La duración estimada no puede ser un valor negativo.');
-      return;
-    }
     this.guardando = true;
     const request = {
-      nombre: this.formulario.nombre.trim(),
-      descripcion: this.formulario.descripcion?.trim() || undefined,
+      nombre: this.ejercicioForm.value.nombre.trim(),
+      descripcion: this.ejercicioForm.value.descripcion?.trim() || undefined,
       tipoEjercicio: tipoFinal as TipoEjercicio,
-      grupoMuscular: this.formulario.grupoMuscular as GrupoMuscular,
-      nivelDificultad: this.formulario.nivelDificultad as NivelDificultad,
-      caloriasQuemadasPorMinuto: this.formulario.caloriasQuemadasPorMinuto || undefined,
-      duracionEstimadaMinutos: this.formulario.duracionEstimadaMinutos || undefined,
-      equipoNecesario: this.formulario.equipoNecesario?.trim() || undefined,
-      etiquetaIds: this.formulario.etiquetaIds.length > 0 ? this.formulario.etiquetaIds : undefined
+      grupoMuscular: this.ejercicioForm.value.grupoMuscular as GrupoMuscular,
+      nivelDificultad: this.ejercicioForm.value.nivelDificultad as NivelDificultad,
+      caloriasQuemadasPorMinuto: this.ejercicioForm.value.caloriasQuemadasPorMinuto || undefined,
+      duracionEstimadaMinutos: this.ejercicioForm.value.duracionEstimadaMinutos || undefined,
+      equipoNecesario: this.ejercicioForm.value.equipoNecesario?.trim() || undefined,
+      etiquetaIds: this.ejercicioForm.value.etiquetaIds.length > 0 ? this.ejercicioForm.value.etiquetaIds : undefined
     };
 
     const observable = this.ejercicioEditando
@@ -2225,18 +2238,12 @@ abrirModalEditar(ejercicio: Ejercicio): void { // era "item: TuTipo"
 
     observable.subscribe({
       next: (response) => {
-        if (this.ejercicioEditando) {
-          this.notificationService.showSuccess(
-            `El ejercicio "${response.data.nombre}" se actualizó correctamente.`
-          );
-        } else {
-          this.notificationService.showSuccess(
-            `El ejercicio "${response.data.nombre}" se creó exitosamente.`
-          );
-        }
+        this.notificationService.showSuccess(
+          `El ejercicio "${response.data.nombre}" se ${this.ejercicioEditando ? 'actualizó' : 'creó'} exitosamente.`
+        );
         
         this.formularioInicial = null;
-        this.cerrarModal();
+        this.cerrarModalDirecto();
         this.cargarEjercicios();
         this.guardando = false;
       },
@@ -2247,41 +2254,40 @@ abrirModalEditar(ejercicio: Ejercicio): void { // era "item: TuTipo"
         if (error.status === 409) {
           this.notificationService.error(
             'No se puede guardar',
-            `Ya existe un ejercicio con el nombre "${this.formulario.nombre}". Por favor, usa un nombre diferente.`
+            `Ya existe un ejercicio con el nombre "${this.ejercicioForm.value.nombre}".`
           );
         } else if (error.status === 400) {
-          this.notificationService.error(
-            'Datos inválidos',
-            error.error?.message || 'Los datos ingresados no son válidos. Verifica que todos los campos estén correctos.'
-          );
+          this.notificationService.error('Datos inválidos', error.error?.message);
         } else if (error.status) {
           this.notificationService.showHttpError(error.status, error.error?.message);
         } else {
-          this.notificationService.showError('No se pudo guardar el ejercicio. Verifica tu conexión a internet.');
+          this.notificationService.showError('No se pudo guardar el ejercicio.');
         }
       }
     });
   }
 
-  /**
-   * Confirmar eliminación
-   */
+  getErrorMessage(controlName: string): string {
+    const control = this.ejercicioForm.get(controlName);
+    if (!control || !control.errors || !control.touched) return '';
+    return getErrorMessage(control.errors, controlName);
+  }
+
+  hasError(controlName: string): boolean {
+    const control = this.ejercicioForm.get(controlName);
+    return !!(control && control.invalid && control.touched);
+  }
+
   confirmarEliminar(ejercicio: Ejercicio): void {
     this.ejercicioAEliminar = ejercicio;
     this.mostrarConfirmacion = true;
   }
 
-  /**
-   * Cerrar confirmación
-   */
   cerrarConfirmacion(): void {
     this.mostrarConfirmacion = false;
     this.ejercicioAEliminar = null;
   }
 
-  /**
-   * Eliminar ejercicio
-   */
   eliminar(): void {
     if (!this.ejercicioAEliminar) return;
 
@@ -2324,64 +2330,46 @@ abrirModalEditar(ejercicio: Ejercicio): void { // era "item: TuTipo"
     });
   }
 
-  /**
-   * Toggle etiqueta
-   */
   toggleEtiqueta(etiquetaId: number): void {
-    const index = this.formulario.etiquetaIds.indexOf(etiquetaId);
+    const etiquetaIds = this.ejercicioForm.value.etiquetaIds;
+    const index = etiquetaIds.indexOf(etiquetaId);
+    
     if (index > -1) {
-      this.formulario.etiquetaIds.splice(index, 1);
+      etiquetaIds.splice(index, 1);
     } else {
-      this.formulario.etiquetaIds.push(etiquetaId);
+      etiquetaIds.push(etiquetaId);
     }
+    
+    this.ejercicioForm.patchValue({ etiquetaIds });
   }
 
-  /**
-   * Verifica si una etiqueta está seleccionada
-   */
   isEtiquetaSeleccionada(etiquetaId: number): boolean {
-    return this.formulario.etiquetaIds.includes(etiquetaId);
+    return this.ejercicioForm.value.etiquetaIds.includes(etiquetaId);
   }
 
-  /**
-   * Obtiene el label del tipo
-   */
   getTipoLabel(tipo: TipoEjercicio): string {
     const label = TIPO_EJERCICIO_LABELS[tipo];
     if (label) return label;
     
-    // Para tipos personalizados, formatear de MAYUSCULAS_CON_GUIONES a "Mayúsculas Con Guiones"
     return tipo.split('_').map(palabra => 
       palabra.charAt(0) + palabra.slice(1).toLowerCase()
     ).join(' ');
   }
 
-  /**
-   * Obtiene el label del grupo muscular
-   */
   getGrupoLabel(grupo: GrupoMuscular): string {
     return GRUPO_MUSCULAR_LABELS[grupo];
   }
 
-  /**
-   * Obtiene el label del nivel
-   */
   getNivelLabel(nivel: NivelDificultad): string {
     return NIVEL_DIFICULTAD_LABELS[nivel];
   }
 
-  /**
-   * Obtiene el icono del tipo
-   */
   getTipoIcon(tipo: TipoEjercicio): string {
     return TIPO_EJERCICIO_ICONS[tipo] || '🎯';
   }
 
-  /**
-   * Maneja el cambio en el select de tipo de ejercicio
-   */
   onTipoEjercicioChange(): void {
-    if (this.formulario.tipoEjercicio === '__CUSTOM__') {
+    if (this.ejercicioForm.value.tipoEjercicio === '__CUSTOM__') {
       this.mostrarCampoTipoPersonalizado = true;
       this.tipoPersonalizado = '';
     } else {
@@ -2390,11 +2378,7 @@ abrirModalEditar(ejercicio: Ejercicio): void { // era "item: TuTipo"
     }
   }
 
-  /**
-   * Maneja cambios en el campo de tipo personalizado
-   */
   onTipoPersonalizadoChange(): void {
-    // Convertir a mayúsculas y reemplazar espacios por guiones bajos
     this.tipoPersonalizado = this.tipoPersonalizado
       .toUpperCase()
       .replace(/\s+/g, '_')
