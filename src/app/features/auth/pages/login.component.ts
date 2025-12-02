@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { LoginRequest } from '../../../core/models/user.model';
+import { PerfilService } from '../../../core/services/perfil.service';
 
 @Component({
   selector: 'app-login',
@@ -527,6 +528,7 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private perfilService = inject(PerfilService);
 
   loading = signal(false);
   errorMessage = signal('');
@@ -555,20 +557,36 @@ export class LoginComponent {
 
       this.authService.login(credentials).subscribe({
         next: () => {
-          const isAdmin = this.authService.isAdmin();
-          if (isAdmin) {
-            console.log('✅ Redirigiendo a /admin/dashboard');
-            this.router.navigate(['/admin/dashboard']);
-          } else {
-            console.log('✅ Redirigiendo a /dashboard');
-            this.router.navigate(['/dashboard']);
-          }
+
+          this.perfilService.obtenerPerfilSalud().subscribe((perfilResp) => {
+            const isAdmin = this.authService.isAdmin();
+            if (isAdmin) {
+              this.router.navigate(['/admin/dashboard']);
+            } else {
+              const p = perfilResp.data;
+
+              const necesitaOnboarding =
+                !p ||
+                !p.objetivoActual ||
+                !p.nivelActividadActual ||
+                p.etiquetas === undefined ||
+                (p.etiquetas?.length ?? 0) === 0;
+
+              if (necesitaOnboarding) {
+                this.router.navigate(['/onboarding']);
+                return;
+              }
+              this.router.navigate(['/dashboard']);
+            }
+          });
+
         },
-        error: (error) => {
+        error: () => {
           this.errorMessage.set('Credenciales incorrectas. Por favor, verifica tus datos.');
           this.loading.set(false);
         }
       });
     }
   }
+
 }

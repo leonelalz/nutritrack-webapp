@@ -12,7 +12,7 @@ export const routes: Routes = [
         path: '',
         loadChildren: () => import('./features/home/home.routes').then(m => m.HOME_ROUTES)
     },
-
+    
     // =============================================================================
     // LANDING LAYOUT - Rutas de Autenticación (Login, Register)
     // =============================================================================
@@ -25,6 +25,12 @@ export const routes: Routes = [
                 loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES)
             },
         ]
+    },
+    {
+        path: 'onboarding',
+        loadChildren: () =>
+            import('./features/onboarding/onboarding.routes')
+            .then(m => m.ONBOARDING_ROUTES)
     },
 
     // =============================================================================

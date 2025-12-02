@@ -7,6 +7,7 @@ import { RegisterRequest } from '../../../core/models/user.model';
 import { AuthValidators } from '../validators/auth.validators';
 import { CommonValidators } from '../../../core/validators/common-validators';
 import { NATIONALITIES } from '../../../core/constants/nationalities';
+import { PerfilService } from '../../../core/services/perfil.service';
 
 @Component({
   selector: 'app-register',
@@ -781,6 +782,7 @@ export class RegisterComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private perfilService = inject(PerfilService)
 
   loading = signal(false);
   errorMessage = signal('');
@@ -877,34 +879,63 @@ export class RegisterComponent {
   }
 
   onSubmit() {
-    if (this.registerForm.valid) {
-      this.loading.set(true);
-      this.errorMessage.set('');
+  if (this.registerForm.valid) {
+    this.loading.set(true);
+    this.errorMessage.set('');
 
-      // Construir RegisterRequest con todos los campos
-      const formData = this.registerForm.value;
-      const registerData: RegisterRequest = {
-        email: formData.email,
-        password: formData.password,
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        phone: formData.phone || undefined,
-        dni: formData.dni || undefined,
-        address: formData.address || undefined,
-        dateOfBirth: formData.dateOfBirth || undefined,
-        nationality: formData.nationality || undefined,
-        occupation: formData.occupation || undefined
-      };
+    const formData = this.registerForm.value;
+    const registerData: RegisterRequest = {
+      email: formData.email,
+      password: formData.password,
+      nombre: formData.nombre,
+      apellido: formData.apellido,
+      phone: formData.phone || undefined,
+      dni: formData.dni || undefined,
+      address: formData.address || undefined,
+      dateOfBirth: formData.dateOfBirth || undefined,
+      nationality: formData.nationality || undefined,
+      occupation: formData.occupation || undefined
+    };
 
-      this.authService.register(registerData).subscribe({
-        next: () => {
-          this.router.navigate(['/dashboard']);
-        },
-        error: (err) => {
-          this.errorMessage.set(err.message || 'Error al registrar usuario.');
+    this.authService.register(registerData).subscribe({
+      next: () => {
+        
+        // ⭐ AUTO-LOGIN
+        this.authService.login({
+          email: registerData.email,
+          password: registerData.password
+        }).subscribe(() => {
+          
+           // ⭐ Verificar si necesita onboarding
+          this.perfilService.obtenerPerfilSalud().subscribe(perfil => {
+
+            const p = perfil.data;
+
+            const necesitaOnboarding =
+              !p ||
+              !p.objetivoActual ||
+              !p.nivelActividadActual ||
+              (p.etiquetas?.length ?? 0) === 0;
+
+            if (necesitaOnboarding) {
+              this.router.navigate(['/onboarding']);
+            } else {
+              this.router.navigate(['/dashboard']);
+            }
+
+          });
+
           this.loading.set(false);
-        }
-      });
-    }
+
+        });
+
+      },
+      error: (err) => {
+        this.errorMessage.set(err.message || 'Error al registrar usuario.');
+        this.loading.set(false);
+      }
+    });
   }
+}
+
 }
