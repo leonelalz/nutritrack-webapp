@@ -1,6 +1,57 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+
+// MODELOS REALES (ajusta los paths según tu proyecto)
+import {
+  Comida,
+  InformacionNutricional,
+} from '../../../core/models/comida.model';
+
+import {
+  Ejercicio,
+} from '../../../core/models/ejercicio.model';
+
+
+
+import {
+  HistorialMedidasResponse,
+  PerfilSaludResponse,
+} from '../../../core/models/perfil.model';
+
+import {
+  ObjetivoNutricional,
+} from '../../../core/models/plan.model';
+
+// ====== INTERFACES AUXILIARES PARA EL DASHBOARD ======
+
+interface MetaDiaResumen {
+  id: number;
+  nombre: string;
+  actual: number;
+  objetivo: number;
+  unidad: string;
+}
+
+interface DashboardHoyResponse {
+  perfil: PerfilSaludResponse;
+  ultimaMedicion: HistorialMedidasResponse | null;
+  comidas: Comida[];
+  ejercicios: Ejercicio[];
+  objetivoNutricional?: ObjetivoNutricional | null;
+  metasDia: MetaDiaResumen[];
+}
+
+interface DashboardSemanalResponse {
+  promedioCalorias: number;
+  promedioProteinas: number;
+  promedioCarbohidratos: number;
+  promedioGrasas: number;
+  rachaActivaDias: number;
+  entrenamientosSemana: number;
+  caloriasQuemadasSemana: number;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -10,50 +61,87 @@ import { RouterModule } from '@angular/router';
     <div class="dashboard-container">
       <!-- Stats Cards -->
       <div class="stats-grid">
+        <!-- Calorías Hoy -->
         <div class="stat-card green-border">
           <div class="stat-header">
             <span class="stat-title">Calorías Hoy</span>
             <div class="stat-icon green">🔥</div>
           </div>
-          <div class="stat-value">1,847</div>
+          <div class="stat-value">
+            {{ caloriasHoy() | number:'1.0-0' }}
+          </div>
           <div class="stat-footer">
-            <span class="stat-change positive">↗ 5.2%</span>
-            <span class="stat-subtitle">353 cal restantes</span>
+            <span
+              class="stat-change"
+              [class.positive]="caloriasRestantes() >= 0"
+              [class.negative]="caloriasRestantes() < 0"
+            >
+              {{
+                caloriasObjetivo()
+                  ? (caloriasPorcentaje() | number:'1.0-0') + '%'
+                  : '--'
+              }}
+            </span>
+            <span class="stat-subtitle">
+              {{
+                caloriasObjetivo()
+                  ? (caloriasRestantes() >= 0
+                      ? (caloriasRestantes() | number:'1.0-0') + ' cal restantes'
+                      : ((caloriasRestantes() * -1) | number:'1.0-0') + ' cal por encima'
+                    )
+                  : 'sin objetivo configurado'
+              }}
+            </span>
           </div>
         </div>
 
+        <!-- Metas Completadas -->
         <div class="stat-card yellow-border">
           <div class="stat-header">
             <span class="stat-title">Metas Completadas</span>
             <div class="stat-icon yellow">🎯</div>
           </div>
-          <div class="stat-value">4/6</div>
+          <div class="stat-value">
+            {{ metasCompletadasLabel() }}
+          </div>
           <div class="stat-footer">
-            <span class="stat-change positive">↗ 67%</span>
+            <span class="stat-change positive">
+              ↗ {{ metasProgresoPorcentaje() | number:'1.0-0' }}%
+            </span>
             <span class="stat-subtitle">progreso hoy</span>
           </div>
         </div>
 
+        <!-- Entrenamientos -->
         <div class="stat-card red-border">
           <div class="stat-header">
             <span class="stat-title">Entrenamientos</span>
             <div class="stat-icon red">🏃‍♂️</div>
           </div>
-          <div class="stat-value">2</div>
+          <div class="stat-value">
+            {{ entrenamientosHoy() }}
+          </div>
           <div class="stat-footer">
-            <span class="stat-change positive">↗ 605</span>
+            <span class="stat-change positive">
+              ↗ {{ caloriasQuemadasHoy() | number:'1.0-0' }}
+            </span>
             <span class="stat-subtitle">calorías quemadas</span>
           </div>
         </div>
 
+        <!-- Racha Activa -->
         <div class="stat-card purple-border">
           <div class="stat-header">
             <span class="stat-title">Racha Activa</span>
             <div class="stat-icon purple">🔥</div>
           </div>
-          <div class="stat-value">15</div>
+          <div class="stat-value">
+            {{ rachaActivaDias() }}
+          </div>
           <div class="stat-footer">
-            <span class="stat-change positive">↗ +1</span>
+            <span class="stat-change positive">
+              ↗ {{ rachaActivaDias() > 0 ? '+1' : '0' }}
+            </span>
             <span class="stat-subtitle">días consecutivos</span>
           </div>
         </div>
@@ -74,7 +162,19 @@ import { RouterModule } from '@angular/router';
           <div class="chart-placeholder">
             <span class="chart-icon">📊</span>
             <h3>Análisis Nutricional Semanal</h3>
-            <p>Promedio diario: 2,100 cal | Proteínas: 95g | Carbohidratos: 245g | Grasas: 78g</p>
+            <p *ngIf="dashboardSemana() as semana">
+              Promedio diario:
+              {{ semana.promedioCalorias | number:'1.0-0' }} cal |
+              Proteínas:
+              {{ semana.promedioProteinas | number:'1.0-0' }} g |
+              Carbohidratos:
+              {{ semana.promedioCarbohidratos | number:'1.0-0' }} g |
+              Grasas:
+              {{ semana.promedioGrasas | number:'1.0-0' }} g
+            </p>
+            <p *ngIf="!dashboardSemana()">
+              Aún no hay datos suficientes para el análisis semanal.
+            </p>
           </div>
         </div>
 
@@ -83,52 +183,53 @@ import { RouterModule } from '@angular/router';
           <!-- Daily Goals -->
           <div class="goals-card">
             <h2>Metas de Hoy</h2>
-            
+
             <div class="progress-circle">
               <div class="circle-container">
                 <svg viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" class="circle-bg"/>
-                  <circle cx="50" cy="50" r="40" class="circle-progress" 
-                          [style.strokeDashoffset]="100 - 67"/>
+                  <circle cx="50" cy="50" r="40" class="circle-bg" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    class="circle-progress"
+                    [style.strokeDashoffset]="
+                      251.2 * (1 - metasProgresoPorcentaje() / 100)
+                    "
+                  />
                 </svg>
                 <div class="circle-text">
-                  <div class="circle-percent">67%</div>
+                  <div class="circle-percent">
+                    {{ metasProgresoPorcentaje() | number:'1.0-0' }}%
+                  </div>
                   <div class="circle-label">completado</div>
                 </div>
               </div>
             </div>
 
             <div class="goals-list">
-              <div class="goal-item">
+              <div
+                class="goal-item"
+                *ngFor="let meta of metasDia()"
+              >
                 <div class="goal-info">
-                  <div class="goal-name">5 porciones vegetales</div>
-                  <div class="goal-progress">5/5 completado</div>
+                  <div class="goal-name">{{ meta.nombre }}</div>
+                  <div class="goal-progress">
+                    {{ meta.actual | number:'1.0-1' }}/{{ meta.objetivo | number:'1.0-1' }}
+                    {{ meta.unidad }}
+                  </div>
                 </div>
-                <div class="goal-badge completed">✓</div>
-              </div>
-
-              <div class="goal-item">
-                <div class="goal-info">
-                  <div class="goal-name">2.5L de agua</div>
-                  <div class="goal-progress">2.5/2.5L</div>
+                <div
+                  class="goal-badge"
+                  [class.completed]="(meta.actual / meta.objetivo) >= 1"
+                  [class.progress]="(meta.actual / meta.objetivo) < 1"
+                >
+                  {{
+                    (meta.actual / meta.objetivo) >= 1
+                      ? '✓'
+                      : (meta.actual / meta.objetivo * 100) | number:'1.0-0'
+                  }}
                 </div>
-                <div class="goal-badge completed">✓</div>
-              </div>
-
-              <div class="goal-item">
-                <div class="goal-info">
-                  <div class="goal-name">10,000 pasos</div>
-                  <div class="goal-progress">7,200/10,000</div>
-                </div>
-                <div class="goal-badge progress">72</div>
-              </div>
-
-              <div class="goal-item">
-                <div class="goal-info">
-                  <div class="goal-name">3 frutas al día</div>
-                  <div class="goal-progress">2/3 frutas</div>
-                </div>
-                <div class="goal-badge progress">67</div>
               </div>
             </div>
           </div>
@@ -136,42 +237,20 @@ import { RouterModule } from '@angular/router';
           <!-- Recent Activity -->
           <div class="activity-card">
             <h2>Actividad Reciente</h2>
-            
+
             <div class="activity-list">
-              <div class="activity-item">
-                <div class="activity-icon green">🥗</div>
-                <div class="activity-info">
-                  <div class="activity-name">Almuerzo registrado</div>
-                  <div class="activity-time">Hace 30 min</div>
+              <div
+                class="activity-item"
+                *ngFor="let item of actividadReciente()"
+              >
+                <div class="activity-icon" [ngClass]="item.color">
+                  {{ item.icono }}
                 </div>
-                <div class="activity-value">650 cal</div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-icon red">🏃‍♂️</div>
                 <div class="activity-info">
-                  <div class="activity-name">Correr completado</div>
-                  <div class="activity-time">Hace 1 hora</div>
+                  <div class="activity-name">{{ item.titulo }}</div>
+                  <div class="activity-time">{{ item.subtitulo }}</div>
                 </div>
-                <div class="activity-value">30 min</div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-icon yellow">🎯</div>
-                <div class="activity-info">
-                  <div class="activity-name">Meta completada</div>
-                  <div class="activity-time">Hace 2 horas</div>
-                </div>
-                <div class="activity-value">5/5</div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-icon blue">💧</div>
-                <div class="activity-info">
-                  <div class="activity-name">Hidratación actualizada</div>
-                  <div class="activity-time">Hace 3 horas</div>
-                </div>
-                <div class="activity-value">+500ml</div>
+                <div class="activity-value">{{ item.valor }}</div>
               </div>
             </div>
           </div>
@@ -183,29 +262,36 @@ import { RouterModule } from '@angular/router';
               <a href="#" class="view-all">Ver todos</a>
             </div>
 
-            <div class="exercise-grid">
+            <div class="exercise-grid" *ngIf="dashboardSemana() as semana">
               <div class="exercise-stat">
-                <div class="exercise-value">24</div>
-                <div class="exercise-label">ESTE MES</div>
-              </div>
-              <div class="exercise-stat">
-                <div class="exercise-value">18.5h</div>
-                <div class="exercise-label">TIEMPO TOTAL</div>
-              </div>
-              <div class="exercise-stat">
-                <div class="exercise-value">3,240</div>
-                <div class="exercise-label">CAL QUEMADAS</div>
-              </div>
-              <div class="exercise-stat">
-                <div class="exercise-value">4</div>
+                <div class="exercise-value">
+                  {{ semana.entrenamientosSemana }}
+                </div>
                 <div class="exercise-label">ESTA SEMANA</div>
+              </div>
+              <div class="exercise-stat">
+                <div class="exercise-value">
+                  {{ entrenamientosHoy() }}
+                </div>
+                <div class="exercise-label">HOY</div>
+              </div>
+              <div class="exercise-stat">
+                <div class="exercise-value">
+                  {{ semana.caloriasQuemadasSemana | number:'1.0-0' }}
+                </div>
+                <div class="exercise-label">CAL SEMANA</div>
+              </div>
+              <div class="exercise-stat">
+                <div class="exercise-value">
+                  {{ caloriasQuemadasHoy() | number:'1.0-0' }}
+                </div>
+                <div class="exercise-label">CAL HOY</div>
               </div>
             </div>
 
             <div class="exercise-icon-box">
               <div class="exercise-icon">💪</div>
             </div>
-            
           </div>
         </div>
       </div>
@@ -213,95 +299,8 @@ import { RouterModule } from '@angular/router';
   `,
   styles: [`
     .dashboard-container {
-      
       padding: 30px;
       min-height: 100vh;
-    }
-
-    /* Welcome Card */
-    .welcome-card {
-      background: white;
-      border-radius: 16px;
-      padding: 25px 30px;
-      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.04);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-    }
-
-    .welcome-content h1 {
-      color: #333333;
-      font-size: 32px;
-      font-weight: 700;
-      margin: 0 0 5px 0;
-    }
-
-    .welcome-content p {
-      color: #6C757D;
-      font-size: 14px;
-      margin: 0;
-    }
-
-    .welcome-actions {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .quick-buttons {
-      display: flex;
-      gap: 10px;
-    }
-
-    .quick-btn {
-      background: linear-gradient(159deg, #28A745 0%, #20C997 100%);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .quick-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-    }
-
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .avatar {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #28A745 0%, #20C997 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .user-name {
-      color: #333333;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .user-plan {
-      color: #6C757D;
-      font-size: 12px;
     }
 
     /* Stats Grid */
@@ -313,8 +312,8 @@ import { RouterModule } from '@angular/router';
     }
 
     .stat-card {
-      flex: 1 1 260px;       /* min = 260px, grow = 1 */
-      max-width: 100%;       /* evita overflow */
+      flex: 1 1 260px;
+      max-width: 100%;
       background: white;
       border-radius: 16px;
       padding: 25px;
@@ -322,21 +321,10 @@ import { RouterModule } from '@angular/router';
       overflow: hidden;
     }
 
-    .stat-card.green-border {
-      border-top: solid 5px #24B86F;
-    }
-
-    .stat-card.yellow-border {
-      border-top: solid 5px #FEA00D;
-    }
-    
-    .stat-card.red-border {
-      border-top: solid 5px #E23A69;
-    }
-
-    .stat-card.purple-border {
-      border-top: solid 5px #385EE0;
-    }
+    .stat-card.green-border { border-top: solid 5px #24B86F; }
+    .stat-card.yellow-border { border-top: solid 5px #FEA00D; }
+    .stat-card.red-border { border-top: solid 5px #E23A69; }
+    .stat-card.purple-border { border-top: solid 5px #385EE0; }
 
     .stat-header {
       display: flex;
@@ -361,21 +349,10 @@ import { RouterModule } from '@angular/router';
       font-size: 18px;
     }
 
-    .stat-icon.green {
-      background: #E8F5E8;
-    }
-
-    .stat-icon.yellow {
-      background: #FFF3CD;
-    }
-
-    .stat-icon.red {
-      background: #F8D7DA;
-    }
-
-    .stat-icon.purple {
-      background: #E2E3F1;
-    }
+    .stat-icon.green { background: #E8F5E8; }
+    .stat-icon.yellow { background: #FFF3CD; }
+    .stat-icon.red { background: #F8D7DA; }
+    .stat-icon.purple { background: #E2E3F1; }
 
     .stat-value {
       color: #333333;
@@ -387,16 +364,15 @@ import { RouterModule } from '@angular/router';
     .stat-footer {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .stat-change {
       font-size: 12px;
     }
-
-    .stat-change.positive {
-      color: #28A745;
-    }
+    .stat-change.positive { color: #28A745; }
+    .stat-change.negative { color: #E23A69; }
 
     .stat-subtitle {
       color: #6C757D;
@@ -468,6 +444,7 @@ import { RouterModule } from '@angular/router';
       justify-content: center;
       text-align: center;
       gap: 10px;
+      padding: 0 16px;
     }
 
     .chart-icon {
@@ -518,8 +495,8 @@ import { RouterModule } from '@angular/router';
 
     .circle-container {
       position: relative;
-      width: 100px;
-      height: 100px;
+      width: 120px;
+      height: 120px;
     }
 
     .circle-container svg {
@@ -576,9 +553,7 @@ import { RouterModule } from '@angular/router';
       border-bottom: 1px solid #F1F3F4;
     }
 
-    .goal-item:last-child {
-      border-bottom: none;
-    }
+    .goal-item:last-child { border-bottom: none; }
 
     .goal-name {
       color: #333333;
@@ -593,9 +568,9 @@ import { RouterModule } from '@angular/router';
     }
 
     .goal-badge {
-      width: 20px;
-      height: 20px;
-      border-radius: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -631,7 +606,6 @@ import { RouterModule } from '@angular/router';
     .activity-list {
       display: flex;
       flex-direction: column;
-      gap: 0;
     }
 
     .activity-item {
@@ -642,9 +616,7 @@ import { RouterModule } from '@angular/router';
       border-bottom: 1px solid #F1F3F4;
     }
 
-    .activity-item:last-child {
-      border-bottom: none;
-    }
+    .activity-item:last-child { border-bottom: none; }
 
     .activity-icon {
       width: 36px;
@@ -657,25 +629,12 @@ import { RouterModule } from '@angular/router';
       flex-shrink: 0;
     }
 
-    .activity-icon.green {
-      background: #E8F5E8;
-    }
+    .activity-icon.green { background: #E8F5E8; }
+    .activity-icon.red { background: #F8D7DA; }
+    .activity-icon.yellow { background: #FFF3CD; }
+    .activity-icon.blue { background: #D1ECF1; }
 
-    .activity-icon.red {
-      background: #F8D7DA;
-    }
-
-    .activity-icon.yellow {
-      background: #FFF3CD;
-    }
-
-    .activity-icon.blue {
-      background: #D1ECF1;
-    }
-
-    .activity-info {
-      flex: 1;
-    }
+    .activity-info { flex: 1; }
 
     .activity-name {
       color: #333333;
@@ -724,9 +683,7 @@ import { RouterModule } from '@angular/router';
       text-decoration: none;
     }
 
-    .view-all:hover {
-      text-decoration: underline;
-    }
+    .view-all:hover { text-decoration: underline; }
 
     .exercise-grid {
       display: grid;
@@ -776,48 +733,211 @@ import { RouterModule } from '@angular/router';
     }
 
     /* Responsive */
-    @media (max-width: 1200px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
     @media (max-width: 768px) {
-      .dashboard-container {
-        padding: 16px;
-      }
-
-      .welcome-card {
-        flex-direction: column;
-        gap: 20px;
-        align-items: flex-start;
-      }
-
-      .welcome-actions {
-        width: 100%;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .quick-buttons {
-        width: 100%;
-        justify-content: space-between;
-      }
-
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .two-column-section {
-        grid-template-columns: 1fr;
-      }
-
-      .welcome-content h1 {
-        font-size: 24px;
-      }
+      .dashboard-container { padding: 16px; }
+      .stats-grid { flex-direction: column; }
+      .two-column-section { grid-template-columns: 1fr; }
     }
   `]
 })
-export class DashboardComponent {
-  // Aquí puedes agregar lógica de datos cuando integres con tu backend
+export class DashboardComponent implements OnInit {
+  private http = inject(HttpClient);
+
+  // ======= STATE PRINCIPAL =======
+  dashboardHoy = signal<DashboardHoyResponse | null>(null);
+  dashboardSemana = signal<DashboardSemanalResponse | null>(null);
+  isLoading = signal<boolean>(true);
+  hasError = signal<boolean>(false);
+
+  // ======= DATOS DERIVADOS CON SIGNALS / COMPUTED =======
+
+  comidasHoy = computed<Comida[]>(() =>
+    this.dashboardHoy()?.comidas ?? []
+  );
+
+  ejerciciosHoy = computed<Ejercicio[]>(() =>
+    this.dashboardHoy()?.ejercicios ?? []
+  );
+
+  objetivo = computed<ObjetivoNutricional | null>(() =>
+    this.dashboardHoy()?.objetivoNutricional ?? null
+  );
+
+  metasDia = signal<MetaDiaResumen[]>([]);
+
+  // Nutrientes totales del día
+  totalNutricionHoy = computed<InformacionNutricional | null>(() => {
+    const comidas = this.comidasHoy();
+    if (!comidas.length) {
+      return null;
+    }
+    return comidas.reduce<InformacionNutricional>(
+      (acc, comida) => {
+        const n = comida.nutricionTotal;
+        acc.proteinasTotales += n.proteinasTotales;
+        acc.carbohidratosTotales += n.carbohidratosTotales;
+        acc.grasasTotales += n.grasasTotales;
+        acc.energiaTotal += n.energiaTotal;
+        acc.fibraTotal += n.fibraTotal;
+        acc.pesoTotal += n.pesoTotal;
+        return acc;
+      },
+      {
+        proteinasTotales: 0,
+        carbohidratosTotales: 0,
+        grasasTotales: 0,
+        energiaTotal: 0,
+        fibraTotal: 0,
+        pesoTotal: 0,
+      }
+    );
+  });
+
+  // Calorías de hoy
+  caloriasHoy = computed<number>(() =>
+    this.totalNutricionHoy()?.energiaTotal ?? 0
+  );
+
+  caloriasObjetivo = computed<number | null>(() =>
+    this.objetivo()?.caloriasObjetivo ?? null
+  );
+
+  caloriasRestantes = computed<number>(() => {
+    const objetivo = this.caloriasObjetivo();
+    if (!objetivo) return 0;
+    return objetivo - this.caloriasHoy();
+  });
+
+  caloriasPorcentaje = computed<number>(() => {
+    const objetivo = this.caloriasObjetivo();
+    if (!objetivo || objetivo <= 0) return 0;
+    return Math.min(200, (this.caloriasHoy() / objetivo) * 100);
+  });
+
+  // Metas del día
+  metasProgresoPorcentaje = computed<number>(() => {
+    const metas = this.metasDia();
+    if (!metas.length) return 0;
+    let sum = 0;
+    metas.forEach((m) => {
+      if (!m.objetivo || m.objetivo <= 0) return;
+      sum += Math.min(1, m.actual / m.objetivo);
+    });
+    return (sum / metas.length) * 100;
+  });
+
+  metasCompletadasLabel = computed<string>(() => {
+    const metas = this.metasDia();
+    if (!metas.length) return '0/0';
+    const completadas = metas.filter(
+      (m) => m.objetivo > 0 && m.actual >= m.objetivo
+    ).length;
+    return `${completadas}/${metas.length}`;
+  });
+
+  // Entrenamientos
+  entrenamientosHoy = computed<number>(() =>
+    this.ejerciciosHoy().length
+  );
+
+  caloriasQuemadasHoy = computed<number>(() => {
+    return this.ejerciciosHoy().reduce((acc, e) => {
+      if (e.caloriasQuemadasPorMinuto && e.duracionEstimadaMinutos) {
+        return (
+          acc +
+          e.caloriasQuemadasPorMinuto * e.duracionEstimadaMinutos
+        );
+      }
+      return acc;
+    }, 0);
+  });
+
+  rachaActivaDias = computed<number>(() =>
+    this.dashboardSemana()?.rachaActivaDias ?? 0
+  );
+
+  // Actividad reciente (comidas + ejercicios)
+  actividadReciente = computed(() => {
+    const items: {
+      icono: string;
+      color: 'green' | 'red' | 'yellow' | 'blue';
+      titulo: string;
+      subtitulo: string;
+      valor: string;
+    }[] = [];
+
+    // Últimas comidas
+    this.comidasHoy()
+      .slice(-2)
+      .reverse()
+      .forEach((c) => {
+        items.push({
+          icono: '🥗',
+          color: 'green',
+          titulo: `${c.nombre}`,
+          subtitulo: 'Comida registrada hoy',
+          valor: `${c.nutricionTotal.energiaTotal.toFixed(0)} cal`,
+        });
+      });
+
+    // Últimos ejercicios
+    this.ejerciciosHoy()
+      .slice(-2)
+      .reverse()
+      .forEach((e) => {
+        items.push({
+          icono: '🏃‍♂️',
+          color: 'red',
+          titulo: e.nombre,
+          subtitulo: 'Ejercicio de hoy',
+          valor: e.duracionEstimadaMinutos
+            ? `${e.duracionEstimadaMinutos} min`
+            : '—',
+        });
+      });
+
+    // Ordenamos por “reciente” aproximado (simplemente ya están en orden)
+    return items.slice(0, 4);
+  });
+
+  // =============== CICLO DE VIDA ===============
+
+  ngOnInit(): void {
+    this.cargarDashboard();
+  }
+
+  private cargarDashboard(): void {
+    this.isLoading.set(true);
+    this.hasError.set(false);
+
+    // Ajusta estas URLs a tus endpoints reales
+    const hoy$ = this.http.get<DashboardHoyResponse>(
+      '/api/v1/usuario/dashboard/hoy'
+    );
+    const semana$ = this.http.get<DashboardSemanalResponse>(
+      '/api/v1/usuario/dashboard/semanal'
+    );
+
+    hoy$.subscribe({
+      next: (data) => {
+        this.dashboardHoy.set(data);
+        this.metasDia.set(data.metasDia ?? []);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error cargando dashboard hoy', err);
+        this.hasError.set(true);
+        this.isLoading.set(false);
+      },
+    });
+
+    semana$.subscribe({
+      next: (data) => {
+        this.dashboardSemana.set(data);
+      },
+      error: (err) => {
+        console.error('Error cargando resumen semanal', err);
+      },
+    });
+  }
 }

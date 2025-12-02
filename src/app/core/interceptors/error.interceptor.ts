@@ -13,26 +13,26 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       let errorMessage = 'Ocurrió un error';
 
       if (error.error instanceof ErrorEvent) {
-        // Error del cliente
-        errorMessage = `Error: ${error.error.message}`;
+        errorMessage = error.error.message;
       } else {
-        // Error del servidor
-        errorMessage = `Error ${error.status}: ${error.error?.message || error.message}`;
+        errorMessage = error.error?.message || error.message;
 
-        // Si el error es 401 (Unauthorized), hacer logout
         if (error.status === 401) {
           authService.logout();
           router.navigate(['/login']);
         }
 
-        // Si el error es 403 (Forbidden), redirigir
         if (error.status === 403) {
           router.navigate(['/']);
         }
       }
 
-      console.error(errorMessage);
-      return throwError(() => new Error(errorMessage));
+      console.error('Intercepted Error:', errorMessage);
+
+      return throwError(() => ({
+        status: error.status,
+        message: errorMessage
+      }));
     })
   );
 };

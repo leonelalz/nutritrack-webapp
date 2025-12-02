@@ -12,7 +12,7 @@ export const routes: Routes = [
         path: '',
         loadChildren: () => import('./features/home/home.routes').then(m => m.HOME_ROUTES)
     },
-
+    
     // =============================================================================
     // LANDING LAYOUT - Rutas de Autenticación (Login, Register)
     // =============================================================================
@@ -25,6 +25,12 @@ export const routes: Routes = [
                 loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES)
             },
         ]
+    },
+    {
+        path: 'onboarding',
+        loadChildren: () =>
+            import('./features/onboarding/onboarding.routes')
+            .then(m => m.ONBOARDING_ROUTES)
     },
 
     // =============================================================================
@@ -76,10 +82,10 @@ export const routes: Routes = [
                 loadChildren: () => import('./features/metas/metas.routes').then(m => m.METAS_ROUTES)
             },
             // Módulo Seguimiento (US-21 a US-25)
-            {
+/*             {
                 path: 'seguimiento',
                 loadChildren: () => import('./features/seguimiento/seguimiento.routes').then(m => m.SEGUIMIENTO_ROUTES)
-            },
+            }, */
             // Módulo Admin (US-06 a US-15) - Solo para administradores
             {
                 path: 'admin',

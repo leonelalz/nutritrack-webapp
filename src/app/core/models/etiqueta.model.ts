@@ -48,16 +48,6 @@ export interface PageResponse<T> {
 }
 
 /**
- * Respuesta estándar de la API
- */
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp?: string;
-}
-
-/**
  * Etiquetas en español para los tipos
  */
 export const TIPO_ETIQUETA_LABELS: Record<TipoEtiqueta, string> = {

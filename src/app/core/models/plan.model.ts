@@ -69,23 +69,26 @@ export interface PlanResponse {
 
 export interface DiaPlanRequest {
   numeroDia: number;
-  tipoComida: TipoComida;
-  idComida: number;
+  tipoComidaId?: number;       // ID del tipo de comida (preferido)
+  tipoComidaNombre?: string;   // Nombre del tipo de comida (alternativo)
+  comidaId: number;
   notas?: string;
 }
 
 export interface ComidaInfo {
   id: number;
   nombre: string;
-  tipo: string;
-  tiempoPreparacion: number;
+  tipoComidaId?: number;
+  tipoComida?: string;
+  tiempoPreparacion?: number;
   calorias?: number;
 }
 
 export interface DiaPlanResponse {
   id: number;
   numeroDia: number;
-  tipoComida: TipoComida;
+  tipoComidaId: number;   // ID del tipo de comida
+  tipoComida: string;     // Nombre del tipo de comida
   comida: ComidaInfo;
   notas?: string;
   // Propiedades para compatibilidad con componentes (extraídas de comida)

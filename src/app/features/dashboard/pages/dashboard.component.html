@@ -1,0 +1,444 @@
+<div class="dashboard-container">
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-screen">
+      <div class="loading-content">
+        <div class="loading-spinner">
+          <div class="spinner-ring"></div>
+          <div class="spinner-ring"></div>
+          <div class="spinner-ring"></div>
+        </div>
+        <h2>Cargando tu dashboard...</h2>
+        <p>Preparando tus datos personalizados</p>
+      </div>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (hasError() && !isLoading()) {
+    <div class="error-screen">
+      <div class="error-content">
+        <div class="error-icon">😕</div>
+        <h2>¡Ups! Algo salió mal</h2>
+        <p>{{ errorMessage() }}</p>
+        <button (click)="refrescar()" class="btn-primary">
+          <span>🔄</span> Intentar de nuevo
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Main Dashboard -->
+  @if (!isLoading() && !hasError()) {
+    <!-- Page Header -->
+    <div class="page-header animate-fade-in">
+      <div class="header-greeting">
+        <h1>{{ getSaludo() }}, <span class="user-name">{{ nombreUsuario() }}</span> 👋</h1>
+        <p class="header-subtitle">{{ mensajeMotivacional() }}</p>
+      </div>
+      <div class="header-date">
+        <span class="date-icon">📅</span>
+        <span>{{ getDiaSemana() }}, {{ getFechaFormateada() }}</span>
+      </div>
+    </div>
+
+    <!-- Quick Actions Bar -->
+    <div class="quick-actions animate-fade-in-up">
+      <a routerLink="/comidas" class="quick-action-btn nutrition">
+        <span class="action-icon">🍽️</span>
+        <span class="action-text">Mis Comidas</span>
+      </a>
+      <a routerLink="/ejercicios" class="quick-action-btn exercise">
+        <span class="action-icon">💪</span>
+        <span class="action-text">Mis Ejercicios</span>
+      </a>
+      <a routerLink="/perfil" class="quick-action-btn measure">
+        <span class="action-icon">👤</span>
+        <span class="action-text">Mi Perfil</span>
+      </a>
+      <button (click)="refrescar()" class="quick-action-btn refresh">
+        <span class="action-icon">🔄</span>
+        <span class="action-text">Actualizar</span>
+      </button>
+    </div>
+
+    <!-- Stats Overview Grid -->
+    <div class="stats-overview">
+      <!-- Racha Card -->
+      <div class="stat-card racha animate-pop-in" style="--delay: 0.1s">
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper fire">
+            <span class="stat-icon pulse">🔥</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value counter">{{ rachaActual() }}</span>
+            <span class="stat-label">Días de Racha</span>
+          </div>
+          <div class="stat-badge" [class.active]="rachaActual() >= 7">
+            @if (rachaActual() >= 7) {
+              <span>🏆 ¡Increíble!</span>
+            } @else if (rachaActual() >= 3) {
+              <span>⭐ ¡Sigue así!</span>
+            } @else {
+              <span>💪 ¡Vamos!</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Días en App -->
+      <div class="stat-card days animate-pop-in" style="--delay: 0.2s">
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper calendar">
+            <span class="stat-icon">📅</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ diasEnApp() }}</span>
+            <span class="stat-label">Días en NutriTrack</span>
+          </div>
+          <div class="stat-trend positive">
+            <span>+1 hoy</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Peso Actual -->
+      <div class="stat-card weight animate-pop-in" style="--delay: 0.3s">
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper scale">
+            <span class="stat-icon">⚖️</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ pesoActual() | number:'1.1-1' }}</span>
+            <span class="stat-unit">kg</span>
+            <span class="stat-label">Peso Actual</span>
+          </div>
+          @if (cambiosPeso() !== 0) {
+            <div class="stat-trend" [class.positive]="cambiosPeso() < 0" [class.negative]="cambiosPeso() > 0">
+              <span>{{ cambiosPeso() > 0 ? '+' : '' }}{{ cambiosPeso() | number:'1.1-1' }} kg</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Logros -->
+      <div class="stat-card achievements animate-pop-in" style="--delay: 0.4s">
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper trophy">
+            <span class="stat-icon bounce">🏆</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ logrosDesbloqueados() }}/{{ totalLogros() }}</span>
+            <span class="stat-label">Logros Obtenidos</span>
+          </div>
+          <div class="stat-progress-mini">
+            <div class="progress-bar-mini" [style.width.%]="(logrosDesbloqueados() / totalLogros()) * 100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+      <!-- Columna Izquierda -->
+      <div class="dashboard-column left">
+        
+        <!-- Progreso Nutricional del Día -->
+        <div class="dashboard-card nutrition-card animate-slide-up" style="--delay: 0.2s">
+          <div class="card-header">
+            <h2><span class="header-icon">🍎</span> Nutrición de Hoy</h2>
+            <a routerLink="/comidas" class="card-link">Ver detalle →</a>
+          </div>
+          
+          <div class="nutrition-overview">
+            <!-- Círculo de Calorías Principal -->
+            <div class="calories-circle-container">
+              <svg class="calories-circle" viewBox="0 0 120 120">
+                <circle class="circle-bg" cx="60" cy="60" r="52" />
+                <circle 
+                  class="circle-progress" 
+                  cx="60" cy="60" r="52"
+                  [style.strokeDasharray]="'326.7'"
+                  [style.strokeDashoffset]="326.7 - (326.7 * porcentajeCalorias() / 100)"
+                  [style.stroke]="getColorProgreso(porcentajeCalorias())"
+                />
+              </svg>
+              <div class="calories-info">
+                <span class="calories-value">{{ animatedCalories() }}</span>
+                <span class="calories-label">de {{ caloriasObjetivo() }} kcal</span>
+              </div>
+            </div>
+
+            <!-- Macros -->
+            <div class="macros-grid">
+              <!-- Proteínas -->
+              <div class="macro-item protein">
+                <div class="macro-header">
+                  <span class="macro-icon">🥩</span>
+                  <span class="macro-name">Proteínas</span>
+                </div>
+                <div class="macro-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill protein" [style.width.%]="porcentajeProteinas()"></div>
+                  </div>
+                </div>
+                <div class="macro-values">
+                  <span class="macro-current">{{ animatedProtein() }}g</span>
+                  <span class="macro-target">/ {{ proteinasObjetivo() }}g</span>
+                </div>
+              </div>
+
+              <!-- Carbohidratos -->
+              <div class="macro-item carbs">
+                <div class="macro-header">
+                  <span class="macro-icon">🍞</span>
+                  <span class="macro-name">Carbohidratos</span>
+                </div>
+                <div class="macro-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill carbs" [style.width.%]="porcentajeCarbohidratos()"></div>
+                  </div>
+                </div>
+                <div class="macro-values">
+                  <span class="macro-current">{{ animatedCarbs() }}g</span>
+                  <span class="macro-target">/ {{ carbohidratosObjetivo() }}g</span>
+                </div>
+              </div>
+
+              <!-- Grasas -->
+              <div class="macro-item fats">
+                <div class="macro-header">
+                  <span class="macro-icon">🥑</span>
+                  <span class="macro-name">Grasas</span>
+                </div>
+                <div class="macro-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill fats" [style.width.%]="porcentajeGrasas()"></div>
+                  </div>
+                </div>
+                <div class="macro-values">
+                  <span class="macro-current">{{ animatedFat() }}g</span>
+                  <span class="macro-target">/ {{ grasasObjetivo() }}g</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comidas del día -->
+          <div class="meals-summary">
+            <div class="meals-header">
+              <span>Comidas de hoy</span>
+              <span class="meals-count">{{ comidasCompletadas() }}/{{ comidasProgramadas() }}</span>
+            </div>
+            <div class="meals-progress">
+              <div class="progress-bar large">
+                <div 
+                  class="progress-fill meals" 
+                  [style.width.%]="comidasProgramadas() > 0 ? (comidasCompletadas() / comidasProgramadas()) * 100 : 0"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfico Semanal -->
+        <div class="dashboard-card chart-card animate-slide-up" style="--delay: 0.3s">
+          <div class="card-header">
+            <h2><span class="header-icon">📊</span> Progreso Semanal</h2>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-dot consumed"></span> Consumido</span>
+              <span class="legend-item"><span class="legend-dot target"></span> Objetivo</span>
+            </div>
+          </div>
+          
+          <div class="weekly-chart">
+            @for (dia of datosSemana(); track dia.dia) {
+              <div class="chart-bar-container">
+                <div class="chart-bars">
+                  <div 
+                    class="chart-bar target" 
+                    [style.height.%]="100"
+                    title="Objetivo: {{ dia.objetivo }} kcal"
+                  ></div>
+                  <div 
+                    class="chart-bar consumed" 
+                    [style.height.%]="calcularAlturaBarra(dia.calorias, dia.objetivo)"
+                    [class.exceeded]="dia.calorias > dia.objetivo"
+                    title="Consumido: {{ dia.calorias }} kcal"
+                  ></div>
+                </div>
+                <span class="chart-label">{{ dia.dia }}</span>
+                @if (dia.completado) {
+                  <span class="chart-check">✓</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna Derecha -->
+      <div class="dashboard-column right">
+        
+        <!-- Ejercicios de Hoy -->
+        <div class="dashboard-card exercise-card animate-slide-up" style="--delay: 0.25s">
+          <div class="card-header">
+            <h2><span class="header-icon">💪</span> Entrenamiento de Hoy</h2>
+            <a routerLink="/ejercicios" class="card-link">Ver rutina →</a>
+          </div>
+
+          @if (rutinaActiva()) {
+            <div class="exercise-progress">
+              <div class="exercise-circle-container">
+                <svg class="exercise-circle" viewBox="0 0 100 100">
+                  <circle class="circle-bg" cx="50" cy="50" r="42" />
+                  <circle 
+                    class="circle-progress exercise" 
+                    cx="50" cy="50" r="42"
+                    [style.strokeDasharray]="'263.9'"
+                    [style.strokeDashoffset]="263.9 - (263.9 * porcentajeEjercicios() / 100)"
+                  />
+                </svg>
+                <div class="exercise-info">
+                  <span class="exercise-value">{{ ejerciciosCompletados() }}/{{ ejerciciosProgramados() }}</span>
+                  <span class="exercise-label">ejercicios</span>
+                </div>
+              </div>
+
+              <div class="exercise-stats">
+                <div class="exercise-stat">
+                  <span class="stat-icon">🔥</span>
+                  <div class="stat-detail">
+                    <span class="stat-number">{{ caloriasQuemadas() }}</span>
+                    <span class="stat-text">kcal quemadas</span>
+                  </div>
+                </div>
+                <div class="exercise-stat">
+                  <span class="stat-icon">⏱️</span>
+                  <div class="stat-detail">
+                    <span class="stat-number">{{ ejerciciosHoy()?.ejercicios?.length || 0 }}</span>
+                    <span class="stat-text">ejercicios hoy</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="routine-info">
+              <span class="routine-name">{{ rutinaActiva()?.rutinaNombre }}</span>
+              <span class="routine-week">Semana {{ rutinaActiva()?.semanaActual || 1 }}</span>
+            </div>
+          } @else {
+            <div class="no-routine">
+              <div class="no-routine-icon">🏋️</div>
+              <p>No tienes una rutina activa</p>
+              <a routerLink="/metas/rutinas" class="btn-outline">Explorar Rutinas</a>
+            </div>
+          }
+        </div>
+
+        <!-- Estado Físico / IMC -->
+        <div class="dashboard-card imc-card animate-slide-up" style="--delay: 0.35s">
+          <div class="card-header">
+            <h2><span class="header-icon">📈</span> Tu Estado Físico</h2>
+            <a routerLink="/perfil" class="card-link">Ver perfil →</a>
+          </div>
+
+          <div class="imc-display">
+            <div class="imc-gauge">
+              <div class="gauge-track">
+                <div class="gauge-fill" [style.width.%]="Math.min(100, (imcActual() / 40) * 100)"></div>
+                <div class="gauge-marker" [style.left.%]="Math.min(100, (imcActual() / 40) * 100)"></div>
+              </div>
+              <div class="gauge-labels">
+                <span>Bajo</span>
+                <span>Normal</span>
+                <span>Sobrepeso</span>
+                <span>Obesidad</span>
+              </div>
+            </div>
+            <div class="imc-value-display">
+              <span class="imc-number">{{ imcActual() | number:'1.1-1' }}</span>
+              <span class="imc-category">{{ categoriaIMC() }}</span>
+            </div>
+          </div>
+
+          @if (mediciones().length >= 2) {
+            <div class="weight-trend">
+              <div class="trend-header">
+                <span>Evolución de peso</span>
+              </div>
+              <div class="mini-chart">
+                @for (m of mediciones().slice(0, 7).reverse(); track m.id) {
+                  <div 
+                    class="mini-bar" 
+                    [style.height.%]="calcularAlturaBarra(m.peso, pesoInicial() * 1.2)"
+                    [title]="m.fechaMedicion + ': ' + m.peso + ' kg'"
+                  ></div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Logros -->
+        <div class="dashboard-card achievements-card animate-slide-up" style="--delay: 0.4s">
+          <div class="card-header">
+            <h2><span class="header-icon">🏆</span> Tus Logros</h2>
+            <span class="achievements-count">{{ logrosDesbloqueados() }} de {{ totalLogros() }}</span>
+          </div>
+
+          <div class="achievements-grid">
+            @for (logro of logros(); track logro.id) {
+              <div 
+                class="achievement-item" 
+                [class.unlocked]="logro.desbloqueado"
+                [class.locked]="!logro.desbloqueado"
+              >
+                <div class="achievement-icon">
+                  <span>{{ logro.icono }}</span>
+                  @if (!logro.desbloqueado) {
+                    <div class="lock-overlay">🔒</div>
+                  }
+                </div>
+                <div class="achievement-info">
+                  <span class="achievement-name">{{ logro.nombre }}</span>
+                  <span class="achievement-desc">{{ logro.descripcion }}</span>
+                  @if (!logro.desbloqueado) {
+                    <div class="achievement-progress">
+                      <div class="progress-bar mini">
+                        <div 
+                          class="progress-fill" 
+                          [style.width.%]="(logro.progreso / logro.objetivo) * 100"
+                        ></div>
+                      </div>
+                      <span class="progress-text">{{ logro.progreso }}/{{ logro.objetivo }}</span>
+                    </div>
+                  }
+                </div>
+                @if (logro.desbloqueado) {
+                  <div class="achievement-check">✓</div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plan Activo Footer -->
+    @if (planActivo()) {
+      <div class="plan-footer animate-fade-in-up" style="--delay: 0.5s">
+        <div class="plan-info">
+          <span class="plan-icon">📋</span>
+          <div class="plan-details">
+            <span class="plan-name">{{ planActivo()?.planNombre }}</span>
+            <span class="plan-progress">Día {{ planActivo()?.diaActual }} de {{ planActivo()?.planDuracionDias }}</span>
+          </div>
+        </div>
+        <div class="plan-actions">
+          <a routerLink="/metas/mis-asignaciones" class="btn-plan">Ver Mis Planes</a>
+        </div>
+      </div>
+    }
+  }
+</div>

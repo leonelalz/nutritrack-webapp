@@ -58,6 +58,19 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
+  // DELETE - Eliminar cuenta
+  
+  eliminarCuenta(): Observable<any> {
+     return this.http.delete(`${this.apiUrl}/cuenta`, 
+    ).pipe(
+      tap(() => {
+        // Si se eliminó correctamente la cuenta → cerrar sesión
+        this.logout();
+      })
+    );
+  }
+
+
   // Helpers privados
   private saveAuthData(data: any): void {
     this.storage.setItem('token', data.token);
@@ -99,7 +112,7 @@ export class AuthService {
     return this._token();
   }
 
-  get currentUserValue(): UserResponse | null {
+  getcurrentUserValue(): UserResponse | null {
     return this._currentUser();
   }
 }

@@ -188,6 +188,27 @@ export class PlanService {
   }
 
   /**
+   * Eliminar TODAS las comidas/días de un plan (Batch)
+   * DELETE /planes/{id}/dias
+   */
+  eliminarTodosDias(planId: number): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${this.baseUrl}/${planId}/dias`);
+  }
+
+  /**
+   * Reemplazar TODAS las comidas de un plan (Batch - Operación atómica)
+   * PUT /planes/{id}/dias/batch
+   * @param planId - ID del plan
+   * @param dias - Array de días/comidas a establecer
+   */
+  reemplazarDias(planId: number, dias: DiaPlanRequest[]): Observable<ApiResponse<DiaPlanResponse[]>> {
+    return this.http.put<ApiResponse<DiaPlanResponse[]>>(
+      `${this.baseUrl}/${planId}/dias/batch`,
+      dias
+    );
+  }
+
+  /**
    * Limpiar estado local
    */
   limpiarEstado(): void {

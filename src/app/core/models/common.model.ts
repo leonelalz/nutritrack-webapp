@@ -2,6 +2,13 @@
  * Modelos comunes compartidos entre diferentes módulos
  */
 
+export interface ApiResponse<T> {
+    success: boolean;
+    message: string;
+    data: T;
+    timestamp?: string;
+}
+
 // Respuesta paginada del API Spring Boot
 export interface PagedResponse<T> {
   content: T[];

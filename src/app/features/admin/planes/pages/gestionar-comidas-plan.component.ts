@@ -13,10 +13,16 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { PlanService } from '../../../../core/services/plan.service';
 import { ComidaService } from '../../../../core/services/comida.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { TipoComida, DiaPlanRequest, DiaPlanResponse, ComidaInfo } from '../../../../core/models/plan.model';
+import { TipoComidaService, TipoComidaResponse } from '../../../../core/services/tipo-comida.service';
+import { DiaPlanRequest, DiaPlanResponse, ComidaInfo } from '../../../../core/models/plan.model';
 import { Comida } from '../../../../core/models/comida.model';
 
-interface ComidaEnPlan extends DiaPlanRequest {
+interface ComidaEnPlan {
+  numeroDia: number;
+  tipoComidaId: number;  // ID del tipo de comida (requerido por backend)
+  tipoComida: string;    // Nombre del tipo de comida (ej: "DESAYUNO", "MERIENDA")
+  comidaId: number;
+  notas?: string;
   comida: ComidaInfo;
   tempId?: string;
   mostrarDetalles?: boolean;
@@ -101,7 +107,7 @@ interface DiaPlan {
                         </div>
                       }
 
-                      @for (comida of dia.comidas; track comida.tempId || comida.idComida; let idx = $index) {
+                      @for (comida of dia.comidas; track comida.tempId || comida.comidaId; let idx = $index) {
                         <div class="comida-en-dia">
                           <!-- Vista compacta -->
                           <div class="comida-compact-view">
@@ -159,12 +165,9 @@ interface DiaPlan {
                           <mat-form-field appearance="outline" class="full-width">
                             <mat-label>Tipo de Comida</mat-label>
                             <mat-select [(ngModel)]="tipoComidaSeleccionado">
-                              <mat-option value="DESAYUNO">Desayuno</mat-option>
-                              <mat-option value="ALMUERZO">Almuerzo</mat-option>
-                              <mat-option value="CENA">Cena</mat-option>
-                              <mat-option value="SNACK">Snack</mat-option>
-                              <mat-option value="MERIENDA">Merienda</mat-option>
-                              <mat-option value="COLACION">Colación</mat-option>
+                              @for (tipo of tiposComida(); track tipo.id) {
+                                <mat-option [value]="tipo.nombre">{{ formatearTipoComida(tipo.nombre) }}</mat-option>
+                              }
                             </mat-select>
                           </mat-form-field>
 
@@ -501,13 +504,16 @@ export class GestionarComidasPlanComponent implements OnInit {
   // Comidas disponibles del catálogo
   comidasDisponibles = signal<Comida[]>([]);
 
+  // Tipos de comida desde el backend
+  tiposComida = signal<TipoComidaResponse[]>([]);
+
   // Días del plan con comidas
   diasPlan = signal<DiaPlan[]>([]);
 
   mostrarFormAgregarComida = signal(false);
   diaSeleccionado = signal<number | null>(null);
   comidaSeleccionadaId: number | null = null;
-  tipoComidaSeleccionado: TipoComida | null = null;
+  tipoComidaSeleccionado: string | null = null;
 
   totalComidas = computed(() =>
     this.diasPlan().reduce((total, dia) => total + dia.comidas.length, 0)
@@ -518,7 +524,8 @@ export class GestionarComidasPlanComponent implements OnInit {
     private router: Router,
     private planService: PlanService,
     private comidaService: ComidaService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private tipoComidaService: TipoComidaService
   ) { }
 
   ngOnInit(): void {
@@ -531,7 +538,8 @@ export class GestionarComidasPlanComponent implements OnInit {
 
     Promise.all([
       this.cargarPlan(),
-      this.cargarComidasDisponibles()
+      this.cargarComidasDisponibles(),
+      this.cargarTiposComida()
     ]).finally(() => {
       this.cargando.set(false);
     });
@@ -579,22 +587,30 @@ export class GestionarComidasPlanComponent implements OnInit {
           response.data.forEach(diaData => {
             const diaPlan = dias.find(d => d.numeroDia === diaData.numeroDia);
             if (diaPlan) {
-              const comidaEnPlan: ComidaEnPlan = {
-                idComida: diaData.comida.id,
-                numeroDia: diaData.numeroDia,
-                tipoComida: diaData.tipoComida,
-                notas: diaData.notas,
-                comida: {
-                  id: diaData.comida.id,
-                  nombre: diaData.comida.nombre,
-                  tipo: diaData.comida.tipo,
-                  tiempoPreparacion: diaData.comida.tiempoPreparacion,
-                  calorias: diaData.comida.calorias
-                },
-                tempId: `existing-${diaData.id}`,
-                mostrarDetalles: false
-              };
-              diaPlan.comidas.push(comidaEnPlan);
+              // Verificar que no exista ya esta comida (evitar duplicados)
+              const yaExiste = diaPlan.comidas.some(
+                c => c.comidaId === diaData.comida.id && 
+                     c.tipoComidaId === diaData.tipoComidaId
+              );
+              if (!yaExiste) {
+                const comidaEnPlan: ComidaEnPlan = {
+                  comidaId: diaData.comida.id,
+                  numeroDia: diaData.numeroDia,
+                  tipoComidaId: diaData.tipoComidaId,  // Guardar el ID del tipo
+                  tipoComida: diaData.tipoComida,
+                  notas: diaData.notas,
+                  comida: {
+                    id: diaData.comida.id,
+                    nombre: diaData.comida.nombre,
+                    tipoComida: diaData.comida.tipoComida,
+                    tiempoPreparacion: diaData.comida.tiempoPreparacion,
+                    calorias: diaData.comida.calorias
+                  },
+                  tempId: `existing-${diaData.id}`,
+                  mostrarDetalles: false
+                };
+                diaPlan.comidas.push(comidaEnPlan);
+              }
             }
           });
 
@@ -625,6 +641,36 @@ export class GestionarComidasPlanComponent implements OnInit {
     });
   }
 
+  async cargarTiposComida(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.tipoComidaService.obtenerTiposComida().subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            // Ordenar por ordenVisualizacion
+            const tiposOrdenados = response.data
+              .filter(t => t.activo)
+              .sort((a, b) => a.ordenVisualizacion - b.ordenVisualizacion);
+            this.tiposComida.set(tiposOrdenados);
+          }
+          resolve();
+        },
+        error: (error) => {
+          console.error('Error al cargar tipos de comida:', error);
+          // Fallback: usar tipos por defecto
+          this.tiposComida.set([
+            { id: 1, nombre: 'DESAYUNO', descripcion: 'Primera comida del día', ordenVisualizacion: 1, activo: true },
+            { id: 2, nombre: 'ALMUERZO', descripcion: 'Comida principal del mediodía', ordenVisualizacion: 2, activo: true },
+            { id: 3, nombre: 'CENA', descripcion: 'Comida principal de la noche', ordenVisualizacion: 3, activo: true },
+            { id: 4, nombre: 'SNACK', descripcion: 'Refrigerio ligero', ordenVisualizacion: 4, activo: true },
+            { id: 5, nombre: 'MERIENDA', descripcion: 'Comida ligera de la tarde', ordenVisualizacion: 5, activo: true },
+            { id: 6, nombre: 'COLACION', descripcion: 'Tentempié pequeño', ordenVisualizacion: 6, activo: true }
+          ]);
+          resolve();
+        }
+      });
+    });
+  }
+
   abrirFormAgregarComida(numeroDia: number): void {
     this.mostrarFormAgregarComida.set(true);
     this.diaSeleccionado.set(numeroDia);
@@ -645,6 +691,13 @@ export class GestionarComidasPlanComponent implements OnInit {
     const comida = this.comidasDisponibles().find(c => c.id === this.comidaSeleccionadaId);
     if (!comida) return;
 
+    // Obtener el ID del tipo de comida seleccionado
+    const tipoComidaObj = this.tiposComida().find(t => t.nombre === this.tipoComidaSeleccionado);
+    if (!tipoComidaObj) {
+      this.notificationService.showError('Tipo de comida no válido');
+      return;
+    }
+
     const dias = this.diasPlan();
     const diaData = dias.find(d => d.numeroDia === numeroDia);
     if (!diaData) return;
@@ -653,15 +706,16 @@ export class GestionarComidasPlanComponent implements OnInit {
     const comidaInfo: ComidaInfo = {
       id: comida.id,
       nombre: comida.nombre,
-      tipo: comida.tipoComida,
+      tipoComida: comida.tipoComida,
       tiempoPreparacion: comida.tiempoPreparacionMinutos || 0,
       calorias: comida.nutricionTotal?.energiaTotal || 0
     };
 
     const nuevaComida: ComidaEnPlan = {
       tempId: `temp-${Date.now()}-${Math.random()}`,
-      idComida: comida.id,
+      comidaId: comida.id,
       numeroDia: numeroDia,
+      tipoComidaId: tipoComidaObj.id,  // Añadir ID del tipo
       tipoComida: this.tipoComidaSeleccionado,
       comida: comidaInfo,
       mostrarDetalles: false
@@ -703,74 +757,50 @@ export class GestionarComidasPlanComponent implements OnInit {
 
     this.guardando.set(true);
 
-    // PASO 1: Obtener todas las comidas existentes para eliminarlas
-    this.planService.obtenerDiasPlan(this.planId).subscribe({
-      next: (response) => {
-        const comidasExistentes = response.data || [];
-        const promesasEliminar: Promise<any>[] = [];
-
-        // Eliminar todas las comidas existentes
-        comidasExistentes.forEach(comida => {
-          const promesa = new Promise((resolve, reject) => {
-            this.planService.eliminarDiaDelPlan(this.planId, comida.id).subscribe({
-              next: () => resolve(true),
-              error: (err) => reject(err)
-            });
-          });
-          promesasEliminar.push(promesa);
+    // Recopilar todas las comidas a guardar
+    const comidas: DiaPlanRequest[] = [];
+    this.diasPlan().forEach(dia => {
+      dia.comidas.forEach(comida => {
+        comidas.push({
+          numeroDia: comida.numeroDia,
+          tipoComidaId: comida.tipoComidaId,      // Backend necesita el ID
+          tipoComidaNombre: comida.tipoComida,    // También enviamos el nombre como respaldo
+          comidaId: comida.comidaId,
+          notas: comida.notas
         });
+      });
+    });
 
-        // PASO 2: Después de eliminar, agregar todas las comidas actuales
-        Promise.all(promesasEliminar)
-          .then(() => {
-            const promesasAgregar: Promise<any>[] = [];
+    console.log('💾 Guardando plan con batch endpoint');
+    console.log('📋 Total comidas:', comidas.length);
+    comidas.forEach((c, idx) => {
+      console.log(`  ${idx + 1}. Comida ${c.comidaId}: día=${c.numeroDia}, tipoId=${c.tipoComidaId}, tipo=${c.tipoComidaNombre}`);
+    });
 
-            // Agregar TODAS las comidas
-            this.diasPlan().forEach(dia => {
-              dia.comidas.forEach(comida => {
-                const request: DiaPlanRequest = {
-                  numeroDia: comida.numeroDia,
-                  tipoComida: comida.tipoComida,
-                  idComida: comida.idComida,
-                  notas: comida.notas
-                };
-
-                const promesa = new Promise((resolve, reject) => {
-                  this.planService.agregarDiaAlPlan(this.planId, request).subscribe({
-                    next: () => resolve(true),
-                    error: (err) => reject(err)
-                  });
-                });
-
-                promesasAgregar.push(promesa);
-              });
-            });
-
-            return Promise.all(promesasAgregar);
-          })
-          .then(() => {
-            this.notificationService.showSuccess('Plan guardado correctamente');
-            this.router.navigate(['/admin/planes']);
-          })
-          .catch((error) => {
-            console.error('Error al guardar:', error);
-            this.notificationService.showError(
-              error.error?.message || 'Error al guardar el plan'
-            );
-          })
-          .finally(() => {
-            this.guardando.set(false);
-          });
+    // Usar el endpoint batch para reemplazar todas las comidas de una vez
+    this.planService.reemplazarDias(this.planId, comidas).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('✅ Plan guardado correctamente');
+          this.notificationService.showSuccess('Plan guardado correctamente');
+          this.router.navigate(['/admin/planes']);
+        } else {
+          console.error('❌ Error en respuesta:', response);
+          this.notificationService.showError(response.message || 'Error al guardar el plan');
+        }
+        this.guardando.set(false);
       },
       error: (error) => {
-        console.error('Error al obtener comidas:', error);
-        this.notificationService.showError('Error al guardar el plan');
+        console.error('❌ Error al guardar:', error);
+        this.notificationService.showError(
+          error.error?.message || 'Error al guardar el plan'
+        );
         this.guardando.set(false);
       }
     });
   }
 
-  formatearTipoComida(tipo: TipoComida): string {
+  formatearTipoComida(tipo: string): string {
     const tipos: Record<string, string> = {
       'DESAYUNO': 'Desayuno',
       'ALMUERZO': 'Almuerzo',
@@ -779,8 +809,9 @@ export class GestionarComidasPlanComponent implements OnInit {
       'MERIENDA': 'Merienda',
       'COLACION': 'Colación',
       'PRE_ENTRENAMIENTO': 'Pre-Entrenamiento',
-      'POST_ENTRENAMIENTO': 'Post-Entrenamiento'
+      'POST_ENTRENAMIENTO': 'Post-Entrenamiento',
+      'BRUNCH': 'Brunch'
     };
-    return tipos[tipo] || tipo;
+    return tipos[tipo] || tipo.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   }
 }

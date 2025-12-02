@@ -860,74 +860,54 @@ export class GestionarEjerciciosRutinaComponent implements OnInit {
 
     this.guardando.set(true);
 
-    // PASO 1: Obtener todos los ejercicios existentes para eliminarlos
-    this.rutinaService.obtenerEjerciciosRutina(this.rutinaId).subscribe({
-      next: (response) => {
-        const ejerciciosExistentes = response.data || [];
-        const promesasEliminar: Promise<any>[] = [];
-
-        // Eliminar todos los ejercicios existentes
-        ejerciciosExistentes.forEach(ej => {
-          const promesa = new Promise((resolve, reject) => {
-            this.rutinaService.eliminarEjercicio(this.rutinaId, ej.id).subscribe({
-              next: () => resolve(true),
-              error: (err) => reject(err)
-            });
-          });
-          promesasEliminar.push(promesa);
+    // Recopilar todos los ejercicios a guardar
+    const ejercicios: EjercicioRutinaRequest[] = [];
+    this.diasSemana().forEach(dia => {
+      dia.ejercicios.forEach(ejercicio => {
+        // Asegurar que diaSemana sea un número (1-7)
+        const diaSemanaNum = typeof ejercicio.diaSemana === 'number' 
+          ? ejercicio.diaSemana 
+          : Number(ejercicio.diaSemana);
+        
+        ejercicios.push({
+          ejercicioId: ejercicio.ejercicioId,
+          semanaBase: ejercicio.semanaBase,
+          diaSemana: diaSemanaNum as DiaSemana,
+          orden: ejercicio.orden,
+          series: ejercicio.series,
+          repeticiones: ejercicio.repeticiones,
+          peso: ejercicio.peso,
+          duracionMinutos: ejercicio.duracionMinutos,
+          descansoSegundos: ejercicio.descansoSegundos,
+          notas: ejercicio.notas
         });
+      });
+    });
 
-        // PASO 2: Después de eliminar, agregar todos los ejercicios actuales
-        Promise.all(promesasEliminar)
-          .then(() => {
-            const promesasAgregar: Promise<any>[] = [];
+    console.log('💾 Guardando rutina con batch endpoint');
+    console.log('📋 Total ejercicios:', ejercicios.length);
+    ejercicios.forEach((ej, idx) => {
+      console.log(`  ${idx + 1}. Ejercicio ${ej.ejercicioId}: semana=${ej.semanaBase}, dia=${ej.diaSemana}, orden=${ej.orden}`);
+    });
 
-            // Agregar TODOS los ejercicios (existentes modificados + nuevos)
-            this.diasSemana().forEach(dia => {
-              dia.ejercicios.forEach(ejercicio => {
-                const request: EjercicioRutinaRequest = {
-                  ejercicioId: ejercicio.ejercicioId,
-                  semanaBase: ejercicio.semanaBase,
-                  diaSemana: ejercicio.diaSemana,
-                  orden: ejercicio.orden,
-                  series: ejercicio.series,
-                  repeticiones: ejercicio.repeticiones,
-                  peso: ejercicio.peso,
-                  duracionMinutos: ejercicio.duracionMinutos,
-                  descansoSegundos: ejercicio.descansoSegundos,
-                  notas: ejercicio.notas
-                };
-
-                const promesa = new Promise((resolve, reject) => {
-                  this.rutinaService.agregarEjercicio(this.rutinaId, request).subscribe({
-                    next: () => resolve(true),
-                    error: (err) => reject(err)
-                  });
-                });
-
-                promesasAgregar.push(promesa);
-              });
-            });
-
-            return Promise.all(promesasAgregar);
-          })
-          .then(() => {
-            this.notificationService.showSuccess('Rutina guardada correctamente');
-            this.router.navigate(['/admin/rutinas']);
-          })
-          .catch((error) => {
-            console.error('Error al guardar:', error);
-            this.notificationService.showError(
-              error.error?.message || 'Error al guardar la rutina'
-            );
-          })
-          .finally(() => {
-            this.guardando.set(false);
-          });
+    // Usar el endpoint batch para reemplazar todos los ejercicios de una vez
+    this.rutinaService.reemplazarEjercicios(this.rutinaId, ejercicios).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('✅ Rutina guardada correctamente');
+          this.notificationService.showSuccess('Rutina guardada correctamente');
+          this.router.navigate(['/admin/rutinas']);
+        } else {
+          console.error('❌ Error en respuesta:', response);
+          this.notificationService.showError(response.message || 'Error al guardar la rutina');
+        }
+        this.guardando.set(false);
       },
       error: (error) => {
-        console.error('Error al obtener ejercicios:', error);
-        this.notificationService.showError('Error al guardar la rutina');
+        console.error('❌ Error al guardar:', error);
+        this.notificationService.showError(
+          error.error?.message || 'Error al guardar la rutina'
+        );
         this.guardando.set(false);
       }
     });

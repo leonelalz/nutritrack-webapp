@@ -40,7 +40,8 @@ export interface RecetaIngrediente {
 export interface Comida {
   id: number;
   nombre: string;
-  tipoComida: TipoComida;
+  tipoComidaId: number;      // ID del tipo de comida
+  tipoComida: string;        // Nombre del tipo de comida (ej: "ALMUERZO")
   descripcion?: string;
   tiempoPreparacionMinutos?: number;
   porciones?: number;
@@ -54,7 +55,8 @@ export interface Comida {
 
 export interface ComidaRequest {
   nombre: string;
-  tipoComida: TipoComida;
+  tipoComidaId?: number;       // ID del tipo de comida (preferido)
+  tipoComidaNombre?: string;   // Nombre del tipo de comida (alternativo)
   descripcion?: string;
   tiempoPreparacionMinutos?: number;
   porciones?: number;

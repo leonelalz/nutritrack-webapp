@@ -5,7 +5,8 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { MatIconModule } from '@angular/material/icon';
 import { PlanService } from '../../../../core/services/plan.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { DiaPlanResponse, TipoComida } from '../../../../core/models';
+import { TipoComidaService, TipoComidaResponse } from '../../../../core/services/tipo-comida.service';
+import { DiaPlanResponse } from '../../../../core/models';
 
 /**
  * Configurar Días del Plan (US-14)
@@ -53,12 +54,10 @@ import { DiaPlanResponse, TipoComida } from '../../../../core/models';
 
                 <div class="form-group">
                   <label>Tipo</label>
-                  <select formControlName="tipoComida">
-                    <option value="DESAYUNO">Desayuno</option>
-                    <option value="ALMUERZO">Almuerzo</option>
-                    <option value="CENA">Cena</option>
-                    <option value="SNACK">Snack</option>
-                    <option value="MERIENDA">Merienda</option>
+                  <select formControlName="tipoComidaNombre">
+                    @for (tipo of tiposComida(); track tipo.id) {
+                      <option [value]="tipo.nombre">{{ formatearTipoComida(tipo.nombre) }}</option>
+                    }
                   </select>
                 </div>
 
@@ -173,27 +172,53 @@ export class ConfigurarDiasPlanComponent implements OnInit {
   guardando = signal(false);
   dias = signal<DiaPlanResponse[]>([]);
   diasAgrupados = signal<{ dia: number; comidas: DiaPlanResponse[] }[]>([]);
+  tiposComida = signal<TipoComidaResponse[]>([]);
 
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
     private planService: PlanService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private tipoComidaService: TipoComidaService
   ) {
     this.inicializarFormulario();
   }
 
   ngOnInit(): void {
     this.planId = Number(this.route.snapshot.paramMap.get('id'));
+    this.cargarTiposComida();
     this.cargarPlan();
+  }
+
+  cargarTiposComida(): void {
+    this.tipoComidaService.obtenerTiposComida().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          const tiposOrdenados = response.data
+            .filter(t => t.activo)
+            .sort((a, b) => a.ordenVisualizacion - b.ordenVisualizacion);
+          this.tiposComida.set(tiposOrdenados);
+        }
+      },
+      error: () => {
+        // Fallback
+        this.tiposComida.set([
+          { id: 1, nombre: 'DESAYUNO', descripcion: '', ordenVisualizacion: 1, activo: true },
+          { id: 2, nombre: 'ALMUERZO', descripcion: '', ordenVisualizacion: 2, activo: true },
+          { id: 3, nombre: 'CENA', descripcion: '', ordenVisualizacion: 3, activo: true },
+          { id: 4, nombre: 'SNACK', descripcion: '', ordenVisualizacion: 4, activo: true },
+          { id: 5, nombre: 'MERIENDA', descripcion: '', ordenVisualizacion: 5, activo: true }
+        ]);
+      }
+    });
   }
 
   inicializarFormulario(): void {
     this.formulario = this.fb.group({
       numeroDia: [1, [Validators.required, Validators.min(1)]],
       comidaId: ['', [Validators.required, Validators.min(1)]],
-      tipoComida: ['DESAYUNO', Validators.required],
+      tipoComidaNombre: ['DESAYUNO', Validators.required],
       porcionesRecomendadas: [1, [Validators.required, Validators.min(0.5)]],
       orden: [1, [Validators.required, Validators.min(1)]]
     });
@@ -252,7 +277,7 @@ export class ConfigurarDiasPlanComponent implements OnInit {
           this.notificationService.showSuccess('Comida agregada al día');
           this.formulario.reset({
             numeroDia: 1,
-            tipoComida: 'DESAYUNO',
+            tipoComidaNombre: 'DESAYUNO',
             porcionesRecomendadas: 1,
             orden: 1
           });

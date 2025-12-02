@@ -5,7 +5,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../enviroments/enviroment';
 import { Comida, ComidaRequest, TipoComida, AgregarIngredienteRequest } from '../models/comida.model';
-import { ApiResponse, PageResponse } from '../models/etiqueta.model';
+import { PageResponse } from '../models/etiqueta.model';
+import { ApiResponse } from '../models/common.model';
 
 @Injectable({
   providedIn: 'root'
@@ -40,7 +41,7 @@ export class ComidaService {
   /**
    * Filtrar por tipo de comida
    */
-  filtrarPorTipo(tipo: TipoComida, page: number = 0, size: number = 20): Observable<ApiResponse<PageResponse<Comida>>> {
+  filtrarPorTipo(tipo: string, page: number = 0, size: number = 20): Observable<ApiResponse<PageResponse<Comida>>> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());

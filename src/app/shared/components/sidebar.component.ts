@@ -1,6 +1,6 @@
-import { Component, inject, signal, Output, EventEmitter } from '@angular/core';
+import { Component, inject, signal, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -8,325 +8,655 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
   template: `
-    <aside class="sidebar" [class.collapsed]="isCollapsed()">
-      <button class="toggle-btn" (click)="toggleSidebar()" title="Ocultar/Mostrar menú">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          @if (isCollapsed()) {
-            <polyline points="9 18 15 12 9 6"/>
+    <aside 
+      class="sidebar" 
+      [class.collapsed]="isCollapsed()"
+      [class.hovered]="isHovered()"
+      [class.pinned]="isPinned()"
+      (mouseenter)="onMouseEnter()"
+      (mouseleave)="onMouseLeave()">
+      
+      <!-- Logo Section -->
+      <div class="sidebar-header">
+        <a routerLink="/dashboard" class="logo">
+          <span class="logo-icon">🥗</span>
+          <span class="logo-text">Nutri<span class="logo-highlight">Track</span></span>
+        </a>
+        
+        <!-- Pin Button -->
+        <button 
+          class="pin-btn" 
+          (click)="togglePin()" 
+          [title]="isPinned() ? 'Expandir al pasar mouse' : 'Mantener compacto'">
+          @if (isPinned()) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
           } @else {
-            <polyline points="15 18 9 12 15 6"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
           }
-        </svg>
-      </button>
-    
+        </button>
+      </div>
+
+      <!-- Navigation -->
       <nav class="sidebar-nav">
+        <!-- Main Section -->
         <div class="nav-section">
-          <div class="header-content">
-            <a routerLink="/" class="logo">
-              <span class="logo-text">Nutri<span class="logo-highlight">Track</span></span>
-            </a>
-          </div>
+          <div class="section-title">Principal</div>
 
-        @if (isAdmin()) {
-        <!-- Sección de Administración - TEMPORALMENTE VISIBLE PARA TODOS (REMOVER @if PARA TESTING) -->
-        <div class="nav-section nav-section-divider admin-section">
-          <div class="section-title">Administración</div>
-          
-          <!-- ETIQUETAS -->
-          <a routerLink="/etiquetas" routerLinkActive="active" class="nav-item">
-            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-              <line x1="7" y1="7" x2="7.01" y2="7"/>
-            </svg>
-            <span class="nav-text">Etiquetas</span>
-          </a>
-
-          <a routerLink="/ingredientes" routerLinkActive="active" class="nav-item">
-            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-              <path d="M12 12v10"/>
-              <path d="M8 22h8"/>
-            </svg>
-            <span class="nav-text">Ingredientes</span>
-          </a>
-
-          <a routerLink="/ejercicios" routerLinkActive="active" class="nav-item">
-            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14.4 14.4L9.6 9.6"/>
-              <path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.828l-1.768 1.768a2 2 0 1 1 2.828 2.828z"/>
-              <path d="M21.5 21.5l-1.4-1.4"/>
-              <path d="M3.9 3.9l1.4 1.4"/>
-            </svg>
-            <span class="nav-text">Ejercicios</span>
+          <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+            <div class="nav-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+              </svg>
+            </div>
+            <span class="nav-text">Dashboard</span>
+            <span class="nav-tooltip">Dashboard</span>
           </a>
 
           <a routerLink="/comidas" routerLinkActive="active" class="nav-item">
-            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="8" r="6"/>
-              <path d="M12 14v8"/>
-              <path d="M8.5 14l-1 8"/>
-              <path d="M15.5 14l1 8"/>
-            </svg>
-            <span class="nav-text">Comidas</span>
+            <div class="nav-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                <line x1="6" y1="1" x2="6" y2="4"/>
+                <line x1="10" y1="1" x2="10" y2="4"/>
+                <line x1="14" y1="1" x2="14" y2="4"/>
+              </svg>
+            </div>
+            <span class="nav-text">Mis Comidas</span>
+            <span class="nav-tooltip">Mis Comidas</span>
+          </a>
+
+          <a routerLink="/ejercicios" routerLinkActive="active" class="nav-item">
+            <div class="nav-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6.5 6.5L17.5 17.5"/>
+                <path d="M6.5 6.5l-3.5 3.5"/>
+                <path d="M6.5 6.5l3.5-3.5"/>
+                <path d="M17.5 17.5l3.5-3.5"/>
+                <path d="M17.5 17.5l-3.5 3.5"/>
+                <circle cx="6.5" cy="6.5" r="2.5"/>
+                <circle cx="17.5" cy="17.5" r="2.5"/>
+              </svg>
+            </div>
+            <span class="nav-text">Mis Ejercicios</span>
+            <span class="nav-tooltip">Mis Ejercicios</span>
+          </a>
+
+          <a routerLink="/metas" routerLinkActive="active" class="nav-item">
+            <div class="nav-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6"/>
+                <circle cx="12" cy="12" r="2"/>
+              </svg>
+            </div>
+            <span class="nav-text">Mis Metas</span>
+            <span class="nav-tooltip">Mis Metas</span>
           </a>
         </div>
-        }@else{
-          <div class="section-title">Principal</div>
 
-            <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
-              <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7"/>
-                <rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/>
-                <rect x="3" y="14" width="7" height="7"/>
-              </svg>
-              <span class="nav-text">Dashboard</span>
+        <!-- Admin Section -->
+        @if (isAdmin()) {
+          <div class="nav-section admin-section">
+            <div class="section-title">
+              <span class="admin-badge">Admin</span>
+            </div>
+
+            <a routerLink="/admin" routerLinkActive="active" class="nav-item admin-item">
+              <div class="nav-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+                </svg>
+              </div>
+              <span class="nav-text">Panel Admin</span>
+              <span class="nav-tooltip">Panel Admin</span>
             </a>
-
-            <a routerLink="/comidas" routerLinkActive="active" class="nav-item">
-              <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 20 23" fill="none" >
-                <path d="M2.79125 1.16974C2.85687 0.592236 2.44125 0.0759864 1.86375 0.0103614C1.28625 -0.0552636 0.77 0.360362 0.704375 0.937862L0.00437493 7.23786L0 7.29474V8.05161C0 10.1779 1.72375 11.9016 3.85 11.9016H4.2V21.3516C4.2 21.9335 4.66813 22.4016 5.25 22.4016C5.83188 22.4016 6.3 21.9335 6.3 21.3516V11.9016H6.65C8.77625 11.9016 10.5 10.1779 10.5 8.05161V7.29474L10.4956 7.23786L9.79562 0.937862C9.72563 0.360362 9.205 -0.0552636 8.6275 0.00598643C8.05 0.0672364 7.63438 0.587861 7.7 1.16536L8.39562 7.40849V8.05161C8.39562 9.01849 7.6125 9.80161 6.64562 9.80161H3.84562C2.87875 9.80161 2.09562 9.01849 2.09562 8.05161V7.40849L2.79125 1.16536V1.16974ZM6.29562 1.05161C6.29562 0.469737 5.8275 0.0016115 5.24563 0.0016115C4.66375 0.0016115 4.19562 0.469737 4.19562 1.05161V7.35161C4.19562 7.93349 4.66375 8.40161 5.24563 8.40161C5.8275 8.40161 6.29562 7.93349 6.29562 7.35161V1.05161ZM14.3456 7.70161C14.3456 5.17724 15.295 3.82536 16.1569 3.07724C16.4937 2.78849 16.835 2.56974 17.1456 2.41224V13.3016H15.0456C14.6606 13.3016 14.3456 12.9866 14.3456 12.6016V7.70161ZM17.1456 15.4016V21.3516C17.1456 21.9335 17.6137 22.4016 18.1956 22.4016C18.7775 22.4016 19.2456 21.9335 19.2456 21.3516V1.40161C19.2456 0.627236 18.62 0.0016115 17.8456 0.0016115C17.1456 0.0016115 12.2456 1.40161 12.2456 7.70161V12.6016C12.2456 14.146 13.5012 15.4016 15.0456 15.4016H17.1456Z" fill="#64748B"/>
-              </svg>
-              <span class="nav-text">Mis Comidas</span>
-            </a>
-
-            <a routerLink="/ejercicios" routerLinkActive="active" class="nav-item">
-              <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 20 27" fill="none">
-                <path d="M12.0049 0C13.4534 0 14.6299 1.17656 14.6299 2.625C14.6299 4.07344 13.4534 5.25 12.0049 5.25C10.5565 5.25 9.37992 4.07344 9.37992 2.625C9.37992 1.17656 10.5565 0 12.0049 0ZM5.75649 9C5.4518 9 5.17992 9.18281 5.06274 9.45937L3.67055 12.8062C3.43149 13.3781 2.77524 13.65 2.19867 13.4109C1.62211 13.1719 1.35492 12.5156 1.59399 11.9391L2.98617 8.59219C3.45024 7.47656 4.54242 6.75 5.75649 6.75H10.1534C11.7143 6.75 13.144 7.63125 13.8424 9.02812L15.2252 11.7891C15.2909 11.9156 15.4174 11.9953 15.5627 11.9953H18.3846C19.0081 11.9953 19.5096 12.4969 19.5096 13.1203C19.5096 13.7437 19.0081 14.2453 18.3846 14.2453H15.5627C14.569 14.2453 13.6596 13.6828 13.2143 12.7922L13.069 12.5016L11.8455 16.3781L14.4424 17.0531C15.5627 17.3437 16.1534 18.5719 15.6846 19.6312L13.0315 25.5797C12.7784 26.1469 12.1127 26.4047 11.5455 26.1516C10.9784 25.8984 10.7205 25.2328 10.9737 24.6656L13.4346 19.125L7.5893 17.6016C6.15492 17.2266 5.31586 15.7406 5.73305 14.3203L7.17211 9.43125L7.29867 9H5.7518H5.75649ZM9.6518 9C9.62836 9.075 9.04711 11.0625 7.89867 14.9578C7.83774 15.1594 7.95961 15.375 8.16586 15.4266L9.66586 15.8156L11.6018 9.67969C11.2502 9.25312 10.7205 9 10.158 9H9.65649H9.6518ZM5.49399 19.0828C5.94867 19.3922 6.45961 19.6312 7.02211 19.7812L7.57992 19.9266L7.33617 20.6109C7.08774 21.3 6.66117 21.9141 6.09867 22.3828L1.84711 25.9453C1.36899 26.3437 0.661173 26.2828 0.262736 25.8047C-0.135702 25.3266 -0.0747643 24.6187 0.403361 24.2203L4.65492 20.6578C4.91274 20.4422 5.10492 20.1656 5.21742 19.8516L5.49399 19.0828Z" fill="#64748B"/>
-              </svg>
-              <span class="nav-text">Mis Ejercicios</span>
-            </a>
-
-            <a routerLink="/metas" routerLinkActive="active" class="nav-item">
-              <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 14 10" fill="none">
-                <path d="M12.5303 0.530334L4.28033 8.78033L0.530334 5.03033" stroke="#64748B" stroke-width="1.5"/>
-              </svg>
-              <span class="nav-text">Mis Metas</span>
-            </a>
-
+          </div>
         }
 
-        <div class="nav-section nav-section-bottom">
-          <div class="section-title">Cuenta</div>
-          <a routerLink="/perfil" routerLinkActive="active" class="nav-item">
-            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            <span class="nav-text">Mi Perfil</span>
+        <!-- Spacer -->
+        <div class="nav-spacer"></div>
+
+        <!-- User Section -->
+        <div class="user-section">
+          <a routerLink="/perfil" class="user-profile-link">
+            <div class="user-avatar">
+              {{ getUserInitial() }}
+            </div>
+            <div class="user-info">
+              <span class="user-name">{{ authService.currentUser()?.nombre || 'Usuario' }}</span>
+              <span class="user-role">{{ isAdmin() ? 'Administrador' : 'Usuario' }}</span>
+            </div>
+            <span class="nav-tooltip user-tooltip">Mi Perfil</span>
           </a>
-        </div>
+          
+          <button class="logout-btn" (click)="logout()" title="Cerrar sesión">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span class="logout-text">Salir</span>
+            <span class="nav-tooltip logout-tooltip">Cerrar Sesión</span>
+          </button>
         </div>
       </nav>
     </aside>
   `,
   styles: [`
+    :host {
+      --sidebar-expanded: 240px;
+      --sidebar-collapsed: 72px;
+      --transition-speed: 0.25s;
+    }
+
     .sidebar {
       position: fixed;
       left: 0;
+      top: 0;
       height: 100vh;
-      width: var(--sidebar-width);
-      background: var(--color-background-light);
-      box-shadow: var(--shadow-md);
-      transition: var(--transition-base);
-      z-index: 1
+      width: var(--sidebar-expanded);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border-right: 1px solid #e2e8f0;
       display: flex;
       flex-direction: column;
+      transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      overflow: hidden;
     }
 
+    .sidebar:hover,
+    .sidebar.hovered {
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Collapsed state */
     .sidebar.collapsed {
-      transform: translateX(calc(-1 * var(--sidebar-width)));
+      width: var(--sidebar-collapsed);
     }
 
-    .header-content {
-      width: 100%;
-      margin: 0 auto;
+    /* Expand on hover when collapsed but NOT pinned */
+    .sidebar.collapsed:not(.pinned):hover {
+      width: var(--sidebar-expanded);
+    }
+
+    /* Stay collapsed when pinned */
+    .sidebar.collapsed.pinned {
+      width: var(--sidebar-collapsed);
+    }
+
+    .sidebar.collapsed.pinned:hover {
+      width: var(--sidebar-collapsed);
+    }
+
+    /* Header */
+    .sidebar-header {
       display: flex;
-      justify-content: center;
-      padding: 10px 0;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      min-height: 64px;
+      overflow: hidden;
     }
 
     .logo {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       text-decoration: none;
-      font-size: 1.5rem;
-      font-weight: 700;
+      white-space: nowrap;
     }
 
     .logo-icon {
-      font-size: 2rem;
+      font-size: 1.6rem;
+      flex-shrink: 0;
     }
 
     .logo-text {
-      color: var(--color-primary);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #22c55e;
+      opacity: 1;
+      transition: opacity var(--transition-speed), width var(--transition-speed);
+    }
+
+    .sidebar.collapsed .logo-text {
+      opacity: 0;
+      width: 0;
+    }
+
+    .sidebar.collapsed:not(.pinned):hover .logo-text {
+      opacity: 1;
+      width: auto;
     }
 
     .logo-highlight {
-      color: var(--color-secondary);
+      color: #3b82f6;
     }
 
-    .toggle-btn {
-      position: absolute;
-      right: -25px;
-      top: calc(100vh / 2 - 100px);
-      width: 25px;
-      height: 200px;
-      background: var(--color-secondary);
-      color: var(--color-text-light);
+    /* Pin Button */
+    .pin-btn {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      border-radius: 6px;
       border: none;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      background: #f1f5f9;
+      color: #64748b;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: var(--transition-base);
-      z-index: var(--z-index-fixed);
-    }
-
-    .toggle-btn:hover {
-      background: var(--color-secondary-dark);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
-      transform: scale(1.05);
-    }
-
-    .toggle-btn svg {
-      transition: var(--transition-base);
-    }
-
-    .sidebar-nav {
-      padding: var(--spacing-md) 0;
-      overflow-y: auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .nav-section {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .nav-section-divider {
-      padding-top: var(--spacing-md);
-      margin-top: var(--spacing-md);
-      border-top: 2px solid var(--color-border-light);
-    }
-
-    .nav-section-bottom {
-      margin-top: auto;
-      padding-top: var(--spacing-md);
-      border-top: 2px solid var(--color-border-light);
-    }
-
-    .section-title {
-      padding: 0.75rem var(--spacing-lg) var(--spacing-sm) var(--spacing-lg);
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-bold);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--color-text-muted);
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-md);
-      padding: var(--spacing-md) var(--spacing-lg);
-      color: var(--color-text-secondary);
-      text-decoration: none;
-      transition: var(--transition-base);
-      position: relative;
-    }
-
-    .nav-item:hover {
-      background: var(--color-background);
-      color: var(--color-secondary);
-    }
-
-    .nav-item.active {
-      background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
-      color: var(--color-secondary);
-      border-left: 3px solid var(--color-secondary);
-    }
-
-    .nav-item.active .nav-icon {
-      color: var(--color-secondary);
-    }
-
-    .nav-icon {
-      width: 24px;
-      height: 24px;
+      transition: all 0.2s ease;
       flex-shrink: 0;
     }
 
-    .nav-text {
-      font-size: 0.95rem;
-      font-weight: var(--font-weight-medium);
-      white-space: nowrap;
+    .pin-btn:hover {
+      background: #dbeafe;
+      color: #3b82f6;
     }
 
-    /* Sección de administración */
+    .sidebar.collapsed .pin-btn {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sidebar.collapsed:not(.pinned):hover .pin-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Navigation */
+    .sidebar-nav {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 8px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .nav-section {
+      margin-bottom: 8px;
+    }
+
+    .nav-spacer {
+      flex: 1;
+    }
+
     .admin-section {
-      border-top: 2px solid var(--color-warning);
-      background: linear-gradient(180deg, rgba(255, 193, 7, 0.05) 0%, transparent 100%);
+      border-top: 1px solid #fbbf24;
+      padding-top: 12px;
+      margin-top: 8px;
+      background: linear-gradient(180deg, rgba(251, 191, 36, 0.05) 0%, transparent 100%);
     }
 
-    .admin-section .section-title {
-      color: var(--color-warning);
-      font-weight: var(--font-weight-bold);
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+      padding: 8px 12px 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: opacity var(--transition-speed);
     }
 
-    .admin-section .nav-item {
-      border-left: 3px solid transparent;
+    .sidebar.collapsed .section-title {
+      opacity: 0;
     }
 
-    .admin-section .nav-item:hover {
-      background: rgba(255, 193, 7, 0.1);
-      color: var(--color-warning);
-      border-left: 3px solid var(--color-warning);
+    .sidebar.collapsed:not(.pinned):hover .section-title {
+      opacity: 1;
     }
 
-    .admin-section .nav-item.active {
-      background: linear-gradient(90deg, rgba(255, 193, 7, 0.15) 0%, transparent 100%);
-      color: var(--color-warning);
-      border-left: 3px solid var(--color-warning);
+    .admin-badge {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.65rem;
     }
 
-    .admin-section .nav-item.active .nav-icon {
-      color: var(--color-warning);
+    /* Nav Items */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      margin: 2px 0;
+      border-radius: 12px;
+      color: #64748b;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
     }
 
+    .nav-item:hover {
+      background: #f1f5f9;
+      color: #3b82f6;
+    }
+
+    .nav-item:hover .nav-icon-wrapper {
+      background: #dbeafe;
+      color: #3b82f6;
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+      color: #3b82f6;
+    }
+
+    .nav-item.active .nav-icon-wrapper {
+      background: #3b82f6;
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Admin item special styles */
+    .nav-item.admin-item:hover .nav-icon-wrapper {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .nav-item.admin-item.active .nav-icon-wrapper {
+      background: #f59e0b;
+      color: white;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .nav-icon-wrapper {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .nav-text {
+      font-size: 0.9rem;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 1;
+      transition: opacity var(--transition-speed);
+    }
+
+    .sidebar.collapsed .nav-text {
+      opacity: 0;
+    }
+
+    .sidebar.collapsed:not(.pinned):hover .nav-text {
+      opacity: 1;
+    }
+
+    /* Tooltips - only show when collapsed AND pinned */
+    .nav-tooltip {
+      position: absolute;
+      left: calc(var(--sidebar-collapsed) + 8px);
+      background: #1e293b;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      transform: translateX(-8px);
+      z-index: 1001;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .nav-tooltip::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 6px solid transparent;
+      border-right-color: #1e293b;
+    }
+
+    .sidebar.collapsed.pinned .nav-item:hover .nav-tooltip,
+    .sidebar.collapsed.pinned .user-profile-link:hover .nav-tooltip,
+    .sidebar.collapsed.pinned .logout-btn:hover .nav-tooltip {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* User Section */
+    .user-section {
+      border-top: 1px solid #e2e8f0;
+      padding: 12px 8px;
+      margin-top: auto;
+    }
+
+    .user-profile-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      text-decoration: none;
+      color: #475569;
+      transition: all 0.2s ease;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .user-profile-link:hover {
+      background: #f1f5f9;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      opacity: 1;
+      transition: opacity var(--transition-speed);
+    }
+
+    .sidebar.collapsed .user-info {
+      opacity: 0;
+    }
+
+    .sidebar.collapsed:not(.pinned):hover .user-info {
+      opacity: 1;
+    }
+
+    .user-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-role {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 8px;
+      border: none;
+      border-radius: 12px;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .logout-btn:hover {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .logout-btn svg {
+      flex-shrink: 0;
+    }
+
+    .logout-text {
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 1;
+      transition: opacity var(--transition-speed);
+    }
+
+    .sidebar.collapsed .logout-text {
+      opacity: 0;
+    }
+
+    .sidebar.collapsed:not(.pinned):hover .logout-text {
+      opacity: 1;
+    }
+
+    /* Scrollbar */
+    .sidebar-nav::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Mobile */
     @media (max-width: 768px) {
       .sidebar {
-        top: 60px;
-        height: calc(100vh - 60px);
+        transform: translateX(-100%);
       }
 
-      .toggle-btn {
-        right: -38px;
+      .sidebar.hovered,
+      .sidebar:not(.collapsed) {
+        transform: translateX(0);
       }
     }
   `]
 })
-export class SidebarComponent {
-  private authService = inject(AuthService);
+export class SidebarComponent implements OnInit {
+  authService = inject(AuthService);
+  private router = inject(Router);
+  private readonly STORAGE_KEY = 'nutritrack_sidebar_state';
 
   @Output() sidebarToggle = new EventEmitter<boolean>();
 
-  isCollapsed = signal(false); // Visible por defecto
+  isCollapsed = signal(true);
+  isPinned = signal(false);
+  isHovered = signal(false);
 
-  toggleSidebar() {
-    this.isCollapsed.update(value => !value);
-    // Emitir al parent (AuthLayout)
-    this.sidebarToggle.emit(this.isCollapsed());
+  ngOnInit(): void {
+    this.loadSavedState();
+    this.emitState();
+  }
+
+  private loadSavedState(): void {
+    try {
+      const saved = localStorage.getItem(this.STORAGE_KEY);
+      if (saved) {
+        const state = JSON.parse(saved);
+        this.isPinned.set(state.pinned ?? false);
+        this.isCollapsed.set(state.collapsed ?? true);
+      }
+    } catch {
+      // Usar valores por defecto
+    }
+  }
+
+  private saveState(): void {
+    const state = {
+      pinned: this.isPinned(),
+      collapsed: this.isCollapsed()
+    };
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(state));
+  }
+
+  onMouseEnter(): void {
+    this.isHovered.set(true);
+  }
+
+  onMouseLeave(): void {
+    this.isHovered.set(false);
+  }
+
+  togglePin(): void {
+    const newPinned = !this.isPinned();
+    this.isPinned.set(newPinned);
+    
+    if (newPinned) {
+      this.isCollapsed.set(true);
+    } else {
+      this.isCollapsed.set(false);
+    }
+    
+    this.saveState();
+    this.emitState();
+  }
+
+  private emitState(): void {
+    const effectivelyCollapsed = this.isCollapsed() && (this.isPinned() || !this.isHovered());
+    this.sidebarToggle.emit(effectivelyCollapsed);
   }
 
   isAdmin(): boolean {
     return this.authService.isAdmin();
   }
 
+  getUserInitial(): string {
+    const nombre = this.authService.currentUser()?.nombre;
+    return nombre ? nombre.charAt(0).toUpperCase() : 'U';
+  }
 
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
 }

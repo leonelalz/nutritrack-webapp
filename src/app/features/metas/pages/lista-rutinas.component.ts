@@ -106,8 +106,9 @@ import { MockDataService } from "../../../core/services/mock-data.service";
                   <button
                     class="btn-activate"
                     (click)="activarRutina(rutina)"
+                    [disabled]="activandoRutina() === rutina.id"
                   >
-                    🚀 Activar Rutina
+                    {{ activandoRutina() === rutina.id ? 'Activando...' : '🚀 Activar Rutina' }}
                   </button>
                   <button
                     class="btn-primary"
@@ -500,11 +501,13 @@ import { MockDataService } from "../../../core/services/mock-data.service";
 })
 export class MetasListaRutinasComponent implements OnInit {
   loading = signal(false);
+  activandoRutina = signal<number | null>(null);
   filtroNombre = '';
   filtroNivel = '';
   soloSugeridos = false;
   rutinas = signal<any[]>([]);
   rutinasFiltradas = signal<any[]>([]);
+  rutinasActivasIds = signal<Set<number>>(new Set()); // IDs de rutinas ya activas
 
   constructor(
     private readonly catalogoService: CatalogoService,
@@ -514,34 +517,73 @@ export class MetasListaRutinasComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.cargarRutinasActivas();
     this.cargarRutinas();
+  }
+
+  /**
+   * Carga las rutinas activas del usuario para filtrarlas del catálogo
+   */
+  cargarRutinasActivas(): void {
+    this.metasService.obtenerRutinasActivas().subscribe({
+      next: (response: any) => {
+        if (response.success && response.data) {
+          // Extraer los rutinaId (no el id de asignación) de las rutinas activas
+          const idsActivos = new Set<number>(
+            response.data.map((r: any) => r.rutinaId)
+          );
+          this.rutinasActivasIds.set(idsActivos);
+          // Re-filtrar para aplicar el filtro de activas
+          this.filtrarRutinas();
+        }
+      },
+      error: (err) => {
+        console.warn('No se pudieron cargar rutinas activas:', err);
+      }
+    });
   }
 
   cargarRutinas(): void {
     this.loading.set(true);
     
-    // Usar rutinas del mockData (siempre disponibles)
-    this.rutinas.set(this.mockData.rutinasDisponibles());
-    this.filtrarRutinas();
-    this.loading.set(false);
-    
-    // Intentar cargar desde API (opcional)
+    // Intentar cargar desde API primero
     this.catalogoService.verCatalogoRutinas(this.soloSugeridos, 0, 100).subscribe({
       next: (response: any) => {
+        this.loading.set(false);
         if (response.success && response.data) {
-          this.rutinas.set(response.data.content || []);
+          const data = response.data.content || response.data || [];
+          if (data.length > 0) {
+            this.rutinas.set(data);
+            this.filtrarRutinas();
+          } else {
+            // API conectado pero sin datos, usar mock como fallback
+            this.rutinas.set(this.mockData.rutinasDisponibles());
+            this.filtrarRutinas();
+            this.notificationService.showInfo('No hay rutinas en el catálogo. Mostrando ejemplos.');
+          }
+        } else {
+          // Respuesta no exitosa, usar mock
+          this.rutinas.set(this.mockData.rutinasDisponibles());
           this.filtrarRutinas();
         }
       },
-      error: () => {
-        // Ya mostramos datos del mockData
-        this.notificationService.showSuccess('Modo demo: rutinas cargadas sin conexión');
+      error: (err) => {
+        this.loading.set(false);
+        console.error('Error cargando catálogo de rutinas:', err);
+        // Fallback a datos mock
+        this.rutinas.set(this.mockData.rutinasDisponibles());
+        this.filtrarRutinas();
+        this.notificationService.showWarning('Sin conexión al servidor. Mostrando datos de ejemplo.');
       }
     });
   }
 
   filtrarRutinas(): void {
     let filtrados = this.rutinas();
+
+    // Filtrar rutinas que ya están activas (no mostrarlas)
+    const idsActivos = this.rutinasActivasIds();
+    filtrados = filtrados.filter(rutina => !idsActivos.has(rutina.id));
 
     if (this.filtroNombre) {
       const filtro = this.filtroNombre.toLowerCase();
@@ -560,27 +602,28 @@ export class MetasListaRutinasComponent implements OnInit {
   }
 
   activarRutina(rutina: any): void {
-    // Activar en mockData primero (siempre funciona)
-    this.mockData.activarRutina(rutina.id);
+    this.activandoRutina.set(rutina.id);
     
-    // Intentar activar en API (opcional)
+    // Intentar activar en API
     this.metasService.activarRutina({ rutinaId: rutina.id }).subscribe({
       next: (response: any) => {
+        this.activandoRutina.set(null);
         if (response.success) {
           this.notificationService.showSuccess(
             `Rutina "${rutina.nombre}" activada exitosamente`
           );
+          // Recargar rutinas activas para que desaparezca del catálogo
+          this.cargarRutinasActivas();
         } else {
-          this.notificationService.showSuccess(
-            `Rutina "${rutina.nombre}" activada (demo)`
+          this.notificationService.showError(
+            response.message || 'Error al activar la rutina'
           );
         }
       },
-      error: () => {
-        // API falló pero ya actualizamos mockData
-        this.notificationService.showSuccess(
-          `Rutina "${rutina.nombre}" activada (demo)`
-        );
+      error: (err) => {
+        this.activandoRutina.set(null);
+        const mensaje = err?.message || 'Error al activar la rutina';
+        this.notificationService.showError(mensaje);
       }
     });
   }

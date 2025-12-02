@@ -406,6 +406,7 @@ export class MetasListaPlanesComponent implements OnInit {
   soloSugeridos = false;
   planes = signal<any[]>([]);
   planesFiltrados = signal<any[]>([]);
+  planesActivosIds = signal<Set<number>>(new Set()); // IDs de planes ya activos
 
   constructor(
     private readonly catalogoService: CatalogoService,
@@ -415,35 +416,73 @@ export class MetasListaPlanesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.cargarPlanesActivos();
     this.cargarPlanes();
+  }
+
+  /**
+   * Carga los planes activos del usuario para filtrarlos del catálogo
+   */
+  cargarPlanesActivos(): void {
+    this.metasService.obtenerPlanesActivos().subscribe({
+      next: (response: any) => {
+        if (response.success && response.data) {
+          // Extraer los planId (no el id de asignación) de los planes activos
+          const idsActivos = new Set<number>(
+            response.data.map((p: any) => p.planId)
+          );
+          this.planesActivosIds.set(idsActivos);
+          // Re-filtrar para aplicar el filtro de activos
+          this.filtrarPlanes();
+        }
+      },
+      error: (err) => {
+        console.warn('No se pudieron cargar planes activos:', err);
+      }
+    });
   }
 
   cargarPlanes(): void {
     this.loading.set(true);
     
-    // Usar planes del mockData (siempre disponibles)
-    this.planes.set(this.mockData.planesDisponibles());
-    this.filtrarPlanes();
-    this.loading.set(false);
-    
-    // Intentar cargar desde API (opcional)
+    // Intentar cargar desde API primero
     this.catalogoService.verCatalogo(this.soloSugeridos).subscribe({
       next: (response: any) => {
+        this.loading.set(false);
         if (response.success) {
           const data = response.data?.content || response.data || [];
-          this.planes.set(data);
+          if (data.length > 0) {
+            this.planes.set(data);
+            this.filtrarPlanes();
+          } else {
+            // API conectado pero sin datos, usar mock como fallback
+            this.planes.set(this.mockData.planesDisponibles());
+            this.filtrarPlanes();
+            this.notificationService.showInfo('No hay planes en el catálogo. Mostrando ejemplos.');
+          }
+        } else {
+          // Respuesta no exitosa, usar mock
+          this.planes.set(this.mockData.planesDisponibles());
           this.filtrarPlanes();
         }
       },
-      error: () => {
-        // Ya mostramos datos del mockData
-        this.notificationService.showSuccess('Modo demo: planes cargados sin conexión');
+      error: (err) => {
+        this.loading.set(false);
+        console.error('Error cargando catálogo de planes:', err);
+        // Fallback a datos mock
+        this.planes.set(this.mockData.planesDisponibles());
+        this.filtrarPlanes();
+        this.notificationService.showWarning('Sin conexión al servidor. Mostrando datos de ejemplo.');
       }
     });
   }
 
   filtrarPlanes(): void {
     let filtrados = this.planes();
+
+    // Filtrar planes que ya están activos (no mostrarlos)
+    const idsActivos = this.planesActivosIds();
+    filtrados = filtrados.filter(plan => !idsActivos.has(plan.id));
 
     if (this.filtroNombre) {
       const filtro = this.filtroNombre.toLowerCase();
@@ -466,10 +505,7 @@ export class MetasListaPlanesComponent implements OnInit {
   activarPlan(plan: any): void {
     this.activandoPlan.set(plan.id);
     
-    // Activar en mockData primero (siempre funciona)
-    this.mockData.activarPlan(plan.id);
-    
-    // Intentar activar en API (opcional)
+    // Intentar activar en API
     this.metasService.activarPlan({ planId: plan.id }).subscribe({
       next: (response: any) => {
         this.activandoPlan.set(null);
@@ -477,18 +513,18 @@ export class MetasListaPlanesComponent implements OnInit {
           this.notificationService.showSuccess(
             `Plan "${plan.nombre}" activado exitosamente`
           );
+          // Recargar planes activos para que desaparezca del catálogo
+          this.cargarPlanesActivos();
         } else {
-          this.notificationService.showSuccess(
-            `Plan "${plan.nombre}" activado (demo)`
+          this.notificationService.showError(
+            response.message || 'Error al activar el plan'
           );
         }
       },
-      error: () => {
+      error: (err) => {
         this.activandoPlan.set(null);
-        // API falló pero ya actualizamos mockData
-        this.notificationService.showSuccess(
-          `Plan "${plan.nombre}" activado (demo)`
-        );
+        const mensaje = err?.message || 'Error al activar el plan';
+        this.notificationService.showError(mensaje);
       }
     });
   }

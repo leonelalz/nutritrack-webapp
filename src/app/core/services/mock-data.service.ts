@@ -77,7 +77,7 @@ export class MockDataService {
 
   readonly planActivo = signal<any>(null);
 
-  readonly comidasProgramadas = signal([
+  readonly comidasProgramadas = signal<any[]>([
     { 
       id: 1, 
       numeroDia: 1,
@@ -85,6 +85,7 @@ export class MockDataService {
       comida: { id: 1, nombre: 'Avena con frutas y miel', tipoComida: 'DESAYUNO', calorias: 350 },
       notas: 'Desayuno balanceado',
       completada: false,
+      registroId: null as number | null,
       fecha: new Date().toISOString().split('T')[0]
     },
     { 
@@ -94,6 +95,7 @@ export class MockDataService {
       comida: { id: 2, nombre: 'Pollo a la plancha con arroz integral', tipoComida: 'ALMUERZO', calorias: 600 },
       notas: 'Incluye ensalada verde',
       completada: false,
+      registroId: null as number | null,
       fecha: new Date().toISOString().split('T')[0]
     },
     { 
@@ -103,6 +105,7 @@ export class MockDataService {
       comida: { id: 3, nombre: 'Yogur griego con almendras', tipoComida: 'SNACK', calorias: 180 },
       notas: 'Snack de media tarde',
       completada: false,
+      registroId: null as number | null,
       fecha: new Date().toISOString().split('T')[0]
     },
     { 
@@ -112,6 +115,7 @@ export class MockDataService {
       comida: { id: 4, nombre: 'Salmón al horno con verduras', tipoComida: 'CENA', calorias: 500 },
       notas: 'Cena ligera y nutritiva',
       completada: false,
+      registroId: null as number | null,
       fecha: new Date().toISOString().split('T')[0]
     }
   ]);
@@ -253,6 +257,17 @@ export class MockDataService {
     const comida = comidas.find(c => c.id === comidaId);
     if (comida) {
       comida.completada = true;
+      this.comidasProgramadas.set([...comidas]);
+      this.actualizarEstadisticasComidas();
+    }
+  }
+
+  desmarcarComidaCompletada(comidaId: number): void {
+    const comidas = this.comidasProgramadas();
+    const comida = comidas.find(c => c.id === comidaId);
+    if (comida) {
+      comida.completada = false;
+      comida.registroId = null;
       this.comidasProgramadas.set([...comidas]);
       this.actualizarEstadisticasComidas();
     }

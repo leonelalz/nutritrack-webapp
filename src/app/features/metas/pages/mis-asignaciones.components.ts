@@ -10,11 +10,6 @@ import { NotificationService } from "../../../core/services/notification.service
   imports: [CommonModule, RouterLink],
   template: `
     <div class="mis-asignaciones-container">
-      <div class="header">
-        <h1>Mis Planes y Rutinas</h1>
-        <p class="subtitle">Gestiona tus asignaciones activas</p>
-      </div>
-
       @if (loading()) {
         <div class="loading">
           <p>Cargando tus asignaciones...</p>
@@ -59,6 +54,17 @@ import { NotificationService } from "../../../core/services/notification.service
                     <div class="progress-bar">
                       <div class="progress-fill" [style.width.%]="plan.porcentajeCompletado"></div>
                     </div>
+                    @if (plan.comidasTotalHoy > 0) {
+                      <div class="activity-stats">
+                        <span class="stat-item" [class.completed]="plan.diaCompletadoHoy">
+                          @if (plan.diaCompletadoHoy) {
+                            ✅ Día completado
+                          } @else {
+                            🍽️ {{ plan.comidasCompletadasHoy }}/{{ plan.comidasTotalHoy }} comidas hoy
+                          }
+                        </span>
+                      </div>
+                    }
                   </div>
 
                   <div class="card-info">
@@ -66,40 +72,51 @@ import { NotificationService } from "../../../core/services/notification.service
                       <span class="label">Fecha Inicio:</span>
                       <span class="value">{{ formatearFecha(plan.fechaInicio) }}</span>
                     </div>
+                    @if (plan.fechaFin) {
+                      <div class="info-item">
+                        <span class="label">Fecha Fin:</span>
+                        <span class="value">{{ formatearFecha(plan.fechaFin) }}</span>
+                      </div>
+                    }
                   </div>
 
                   <div class="card-actions">
-                    @if (plan.estado === 'ACTIVO') {
-                      <button
-                        class="btn-secondary"
-                        (click)="pausarPlan(plan.id)"
-                      >
-                        Pausar
-                      </button>
-                    }
+                    <!-- Si está listo para completar (100%), solo mostrar botón de completar con estilo especial -->
+                    @if (plan.porcentajeCompletado >= 100) {
+                      <div class="ready-to-complete">
+                        <p class="congrats-text">🎉 ¡Has completado todos los días!</p>
+                        <button
+                          class="btn-complete-final"
+                          (click)="completarPlan(plan.id)"
+                        >
+                          🏆 Finalizar Plan
+                        </button>
+                      </div>
+                    } @else {
+                      <!-- Acciones normales cuando no está al 100% -->
+                      @if (plan.estado === 'ACTIVO') {
+                        <button
+                          class="btn-secondary"
+                          (click)="pausarPlan(plan.id)"
+                        >
+                          Pausar
+                        </button>
+                      }
 
-                    @if (plan.estado === 'PAUSADO') {
-                      <button
-                        class="btn-secondary"
-                        (click)="reanudarPlan(plan.id)"
-                      >
-                        Reanudar
-                      </button>
-                    }
+                      @if (plan.estado === 'PAUSADO') {
+                        <button
+                          class="btn-secondary"
+                          (click)="reanudarPlan(plan.id)"
+                        >
+                          Reanudar
+                        </button>
+                      }
 
-                    <button
-                      class="btn-danger"
-                      (click)="cancelarPlan(plan.id)"
-                    >
-                      Cancelar
-                    </button>
-
-                    @if (plan.estado === 'ACTIVO' || plan.estado === 'PAUSADO') {
                       <button
-                        class="btn-success"
-                        (click)="completarPlan(plan.id)"
+                        class="btn-danger"
+                        (click)="cancelarPlan(plan.id)"
                       >
-                        Marcar Completado
+                        Cancelar
                       </button>
                     }
                   </div>
@@ -140,12 +157,23 @@ import { NotificationService } from "../../../core/services/notification.service
 
                   <div class="progress-info">
                     <div class="progress-text">
-                      <span>Día {{ rutina.diaActual }} de {{ rutina.diasTotales }}</span>
+                      <span>Día {{ rutina.diaActualTotal || rutina.diaActual }} de {{ rutina.diasTotales }}</span>
                       <span class="percentage">{{ rutina.porcentajeCompletado }}%</span>
                     </div>
                     <div class="progress-bar">
                       <div class="progress-fill" [style.width.%]="rutina.porcentajeCompletado"></div>
                     </div>
+                    @if (rutina.ejerciciosTotalHoy > 0) {
+                      <div class="activity-stats">
+                        <span class="stat-item" [class.completed]="rutina.diaCompletadoHoy">
+                          @if (rutina.diaCompletadoHoy) {
+                            ✅ Día completado
+                          } @else {
+                            💪 {{ rutina.ejerciciosCompletadosHoy }}/{{ rutina.ejerciciosTotalHoy }} ejercicios hoy
+                          }
+                        </span>
+                      </div>
+                    }
                   </div>
 
                   <div class="card-info">
@@ -153,40 +181,51 @@ import { NotificationService } from "../../../core/services/notification.service
                       <span class="label">Fecha Inicio:</span>
                       <span class="value">{{ formatearFecha(rutina.fechaInicio) }}</span>
                     </div>
+                    @if (rutina.semanaActual) {
+                      <div class="info-item">
+                        <span class="label">Semana actual:</span>
+                        <span class="value">Semana {{ rutina.semanaActual }}</span>
+                      </div>
+                    }
                   </div>
 
                   <div class="card-actions">
-                    @if (rutina.estado === 'ACTIVO') {
-                      <button
-                        class="btn-secondary"
-                        (click)="pausarRutina(rutina.id)"
-                      >
-                        Pausar
-                      </button>
-                    }
+                    <!-- Si está listo para completar (100%), solo mostrar botón de completar con estilo especial -->
+                    @if (rutina.porcentajeCompletado >= 100) {
+                      <div class="ready-to-complete">
+                        <p class="congrats-text">🎉 ¡Has completado toda la rutina!</p>
+                        <button
+                          class="btn-complete-final"
+                          (click)="completarRutina(rutina.id)"
+                        >
+                          🏆 Finalizar Rutina
+                        </button>
+                      </div>
+                    } @else {
+                      <!-- Acciones normales cuando no está al 100% -->
+                      @if (rutina.estado === 'ACTIVO') {
+                        <button
+                          class="btn-secondary"
+                          (click)="pausarRutina(rutina.id)"
+                        >
+                          Pausar
+                        </button>
+                      }
 
-                    @if (rutina.estado === 'PAUSADO') {
-                      <button
-                        class="btn-secondary"
-                        (click)="reanudarRutina(rutina.id)"
-                      >
-                        Reanudar
-                      </button>
-                    }
+                      @if (rutina.estado === 'PAUSADO') {
+                        <button
+                          class="btn-secondary"
+                          (click)="reanudarRutina(rutina.id)"
+                        >
+                          Reanudar
+                        </button>
+                      }
 
-                    <button
-                      class="btn-danger"
-                      (click)="cancelarRutina(rutina.id)"
-                    >
-                      Cancelar
-                    </button>
-
-                    @if (rutina.estado === 'ACTIVO' || rutina.estado === 'PAUSADO') {
                       <button
-                        class="btn-success"
-                        (click)="completarRutina(rutina.id)"
+                        class="btn-danger"
+                        (click)="cancelarRutina(rutina.id)"
                       >
-                        Marcar Completado
+                        Cancelar
                       </button>
                     }
                   </div>
@@ -356,6 +395,28 @@ import { NotificationService } from "../../../core/services/notification.service
       transition: width 0.3s ease;
     }
 
+    .activity-stats {
+      margin-top: 0.5rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .stat-item {
+      font-size: 0.75rem;
+      color: #718096;
+      background: #f0fff4;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      border: 1px solid #c6f6d5;
+    }
+
+    .stat-item.completed {
+      background: #48bb78;
+      color: white;
+      border-color: #38a169;
+      font-weight: 600;
+    }
+
     .card-info {
       display: flex;
       flex-direction: column;
@@ -427,6 +488,55 @@ import { NotificationService } from "../../../core/services/notification.service
       background: #9ae6b4;
     }
 
+    /* Estilos para el estado "listo para completar" */
+    .ready-to-complete {
+      width: 100%;
+      text-align: center;
+      padding: 1rem;
+      background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%);
+      border-radius: 12px;
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% {
+        box-shadow: 0 0 5px rgba(236, 201, 75, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 20px rgba(236, 201, 75, 0.8);
+      }
+    }
+
+    .congrats-text {
+      margin: 0 0 0.75rem 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #744210;
+    }
+
+    .btn-complete-final {
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.125rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+    }
+
+    .btn-complete-final:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6);
+    }
+
+    .btn-complete-final:active {
+      transform: translateY(0);
+    }
+
     .empty-state {
       text-align: center;
       padding: 3rem;
@@ -480,39 +590,121 @@ export class MisAsignacionesComponent implements OnInit {
 
     Promise.all([
       this.metasService.obtenerPlanesActivos().toPromise(),
-      this.metasService.obtenerRutinasActivas().toPromise()
+      this.metasService.obtenerRutinasActivas().toPromise(),
+      this.metasService.obtenerPlanHoyConEstado().toPromise(),
+      this.metasService.obtenerRutinaHoyConEstado().toPromise()
     ])
-      .then(([respPlanes, respRutinas]: any) => {
+      .then(([respPlanes, respRutinas, respPlanHoy, respRutinaHoy]: any) => {
         this.loading.set(false);
+        
+        // Extraer datos de hoy (comidas/ejercicios completados hoy)
+        const planHoy = respPlanHoy?.data || respPlanHoy || {};
+        const rutinaHoy = respRutinaHoy?.data || respRutinaHoy || {};
+        
+        console.log('📊 Plan Hoy:', planHoy);
+        console.log('📊 Rutina Hoy:', rutinaHoy);
+        
+        // Calcular comidas completadas hoy
+        const comidasHoy = planHoy.comidas || [];
+        const comidasCompletadasHoy = comidasHoy.filter((c: any) => c.registrada).length;
+        const comidasTotalHoy = comidasHoy.length;
+        
+        // Calcular ejercicios completados hoy
+        const ejerciciosHoy = rutinaHoy.ejercicios || [];
+        const ejerciciosCompletadosHoy = ejerciciosHoy.filter((e: any) => e.registrado).length;
+        const ejerciciosTotalHoy = ejerciciosHoy.length;
+        
+        // Procesar planes
         if (respPlanes?.success) {
-          // Mapear datos del API para incluir campos calculados
-          const planesProcessed = (respPlanes.data || []).map((plan: any) => ({
-            ...plan,
-            diasTotales: plan.planDuracionDias || plan.duracionDias || 0,
-            porcentajeCompletado: this.calcularPorcentaje(
-              plan.diaActual || 0,
-              plan.planDuracionDias || plan.duracionDias || 0
-            )
-          }));
+          const planesData = respPlanes.data || [];
+          console.log('=== PLANES ACTIVOS DEL API ===');
+          
+          const planesProcessed = planesData.map((plan: any) => {
+            const diasTotales = plan.planDuracionDias || this.calcularDiasTotales(plan.fechaInicio, plan.fechaFin);
+            const diaActual = plan.diaActual || 1;
+            
+            // El progreso se basa en:
+            // - Días anteriores: se asumen completados (diaActual - 1)
+            // - Día actual: proporción de comidas completadas hoy
+            const diasCompletados = diaActual - 1; // Días anteriores al actual
+            const progresoHoy = comidasTotalHoy > 0 ? (comidasCompletadasHoy / comidasTotalHoy) : 0;
+            
+            // Progreso total = (días completados + fracción de hoy) / días totales
+            const progresoTotal = ((diasCompletados + progresoHoy) / diasTotales) * 100;
+            const porcentajeReal = Math.min(100, Math.round(progresoTotal));
+            
+            console.log(`Plan "${plan.planNombre}": día ${diaActual}/${diasTotales}, comidas hoy ${comidasCompletadasHoy}/${comidasTotalHoy}, progreso=${porcentajeReal}%`);
+            
+            return {
+              ...plan,
+              diasTotales,
+              porcentajeCompletado: porcentajeReal,
+              comidasCompletadasHoy,
+              comidasTotalHoy,
+              diaCompletadoHoy: comidasTotalHoy > 0 && comidasCompletadasHoy === comidasTotalHoy
+            };
+          });
           this.planesActivos.set(planesProcessed);
+        } else {
+          console.warn('Respuesta de planes no exitosa:', respPlanes);
+          this.planesActivos.set([]);
         }
+        
+        // Procesar rutinas
         if (respRutinas?.success) {
-          // Mapear datos del API para incluir campos calculados
-          const rutinasProcessed = (respRutinas.data || []).map((rutina: any) => ({
-            ...rutina,
-            diasTotales: rutina.rutinaDuracionDias || rutina.duracionDias || 0,
-            porcentajeCompletado: this.calcularPorcentaje(
-              rutina.diaActual || 0,
-              rutina.rutinaDuracionDias || rutina.duracionDias || 0
-            )
-          }));
+          const rutinasData = respRutinas.data || [];
+          console.log('Rutinas activas del API:', rutinasData);
+          
+          const rutinasProcessed = rutinasData.map((rutina: any) => {
+            const semanasTotal = rutina.rutinaDuracionSemanas || 4;
+            const diasTotales = semanasTotal * 7;
+            
+            const diaActualTotal = rutina.semanaActual 
+              ? ((rutina.semanaActual - 1) * 7) + 1
+              : 1;
+            
+            // El progreso se basa en días + ejercicios de hoy
+            const diasCompletados = diaActualTotal - 1;
+            const progresoHoy = ejerciciosTotalHoy > 0 ? (ejerciciosCompletadosHoy / ejerciciosTotalHoy) : 0;
+            
+            const progresoTotal = ((diasCompletados + progresoHoy) / diasTotales) * 100;
+            const porcentajeReal = Math.min(100, Math.round(progresoTotal));
+            
+            console.log(`Rutina "${rutina.rutinaNombre}": día ${diaActualTotal}/${diasTotales}, ejercicios hoy ${ejerciciosCompletadosHoy}/${ejerciciosTotalHoy}, progreso=${porcentajeReal}%`);
+            
+            return {
+              ...rutina,
+              diasTotales,
+              diaActualTotal,
+              porcentajeCompletado: porcentajeReal,
+              ejerciciosCompletadosHoy,
+              ejerciciosTotalHoy,
+              diaCompletadoHoy: ejerciciosTotalHoy > 0 && ejerciciosCompletadosHoy === ejerciciosTotalHoy
+            };
+          });
           this.rutinasActivas.set(rutinasProcessed);
+        } else {
+          console.warn('Respuesta de rutinas no exitosa:', respRutinas);
+          this.rutinasActivas.set([]);
         }
       })
-      .catch(() => {
+      .catch((error) => {
         this.loading.set(false);
-        this.notificationService.showError('Error al cargar asignaciones');
+        console.error('Error al cargar asignaciones:', error);
+        this.notificationService.showError('Error al cargar tus asignaciones. Verifica tu conexión.');
       });
+  }
+            
+  /**
+   * Calcula días totales entre dos fechas
+   */
+  private calcularDiasTotales(fechaInicio: string, fechaFin: string): number {
+    if (!fechaInicio || !fechaFin) return 7; // Default 7 días
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+    const diffTime = fin.getTime() - inicio.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir ambos días
+    return diffDays > 0 ? diffDays : 7;
   }
 
   private calcularPorcentaje(diaActual: number, diasTotales: number): number {
@@ -520,86 +712,139 @@ export class MisAsignacionesComponent implements OnInit {
     return Math.round((diaActual / diasTotales) * 100);
   }
 
-  // Plan Actions
-  pausarPlan(planId: number): void {
-    this.metasService.pausarPlan(planId).subscribe({
+  // Plan Actions - Usa el ID de la asignación (UsuarioPlan), NO el planId
+  pausarPlan(usuarioPlanId: number): void {
+    console.log('Pausando plan con ID de asignación:', usuarioPlanId);
+    this.metasService.pausarPlan(usuarioPlanId).subscribe({
       next: () => {
         this.notificationService.showSuccess('Plan pausado');
         this.cargarAsignaciones();
       },
-      error: () => this.notificationService.showError('Error al pausar plan')
+      error: (err) => {
+        console.error('Error al pausar plan:', err);
+        this.notificationService.showError('Error al pausar plan');
+      }
     });
   }
 
-  reanudarPlan(planId: number): void {
-    this.metasService.reanudarPlan(planId).subscribe({
+  reanudarPlan(usuarioPlanId: number): void {
+    console.log('Reanudando plan con ID de asignación:', usuarioPlanId);
+    this.metasService.reanudarPlan(usuarioPlanId).subscribe({
       next: () => {
         this.notificationService.showSuccess('Plan reanudado');
         this.cargarAsignaciones();
       },
-      error: () => this.notificationService.showError('Error al reanudar plan')
+      error: (err) => {
+        console.error('Error al reanudar plan:', err);
+        this.notificationService.showError('Error al reanudar plan');
+      }
     });
   }
 
-  completarPlan(planId: number): void {
-    this.metasService.completarPlan(planId).subscribe({
+  completarPlan(usuarioPlanId: number): void {
+    console.log('Completando plan con ID de asignación:', usuarioPlanId);
+    this.metasService.completarPlan(usuarioPlanId).subscribe({
       next: () => {
-        this.notificationService.showSuccess('Plan completado');
+        // Mostrar felicitación especial
+        this.mostrarFelicitacion('plan');
         this.cargarAsignaciones();
       },
-      error: () => this.notificationService.showError('Error al completar plan')
+      error: (err) => {
+        console.error('Error al completar plan:', err);
+        this.notificationService.showError('Error al completar plan');
+      }
     });
   }
 
-  cancelarPlan(planId: number): void {
-    this.metasService.cancelarPlan(planId).subscribe({
+  cancelarPlan(usuarioPlanId: number): void {
+    console.log('Cancelando plan con ID de asignación:', usuarioPlanId);
+    this.metasService.cancelarPlan(usuarioPlanId).subscribe({
       next: () => {
         this.notificationService.showSuccess('Plan cancelado');
         this.cargarAsignaciones();
       },
-      error: () => this.notificationService.showError('Error al cancelar plan')
+      error: (err) => {
+        console.error('Error al cancelar plan:', err);
+        this.notificationService.showError('Error al cancelar plan');
+      }
     });
   }
 
-  // Rutina Actions
-  pausarRutina(rutinaId: number): void {
-    this.metasService.pausarRutina(rutinaId).subscribe({
+  // Rutina Actions - Usa el ID de la asignación (UsuarioRutina), NO el rutinaId
+  pausarRutina(usuarioRutinaId: number): void {
+    console.log('Pausando rutina con ID de asignación:', usuarioRutinaId);
+    this.metasService.pausarRutina(usuarioRutinaId).subscribe({
       next: () => {
         this.notificationService.showSuccess('Rutina pausada');
         this.cargarAsignaciones();
       },
-      error: () => this.notificationService.showError('Error al pausar rutina')
+      error: (err) => {
+        console.error('Error al pausar rutina:', err);
+        this.notificationService.showError('Error al pausar rutina');
+      }
     });
   }
 
-  reanudarRutina(rutinaId: number): void {
-    this.metasService.reanudarRutina(rutinaId).subscribe({
+  reanudarRutina(usuarioRutinaId: number): void {
+    console.log('Reanudando rutina con ID de asignación:', usuarioRutinaId);
+    this.metasService.reanudarRutina(usuarioRutinaId).subscribe({
       next: () => {
         this.notificationService.showSuccess('Rutina reanudada');
         this.cargarAsignaciones();
       },
-      error: () => this.notificationService.showError('Error al reanudar rutina')
+      error: (err) => {
+        console.error('Error al reanudar rutina:', err);
+        this.notificationService.showError('Error al reanudar rutina');
+      }
     });
   }
 
-  completarRutina(rutinaId: number): void {
-    this.metasService.completarRutina(rutinaId).subscribe({
+  completarRutina(usuarioRutinaId: number): void {
+    console.log('Completando rutina con ID de asignación:', usuarioRutinaId);
+    this.metasService.completarRutina(usuarioRutinaId).subscribe({
       next: () => {
-        this.notificationService.showSuccess('Rutina completada');
+        // Mostrar felicitación especial
+        this.mostrarFelicitacion('rutina');
         this.cargarAsignaciones();
       },
-      error: () => this.notificationService.showError('Error al completar rutina')
+      error: (err) => {
+        console.error('Error al completar rutina:', err);
+        this.notificationService.showError('Error al completar rutina');
+      }
     });
   }
 
-  cancelarRutina(rutinaId: number): void {
-    this.metasService.cancelarRutina(rutinaId).subscribe({
+  cancelarRutina(usuarioRutinaId: number): void {
+    console.log('Cancelando rutina con ID de asignación:', usuarioRutinaId);
+    this.metasService.cancelarRutina(usuarioRutinaId).subscribe({
       next: () => {
         this.notificationService.showSuccess('Rutina cancelada');
         this.cargarAsignaciones();
       },
-      error: () => this.notificationService.showError('Error al cancelar rutina')
+      error: (err) => {
+        console.error('Error al cancelar rutina:', err);
+        this.notificationService.showError('Error al cancelar rutina');
+      }
     });
+  }
+
+  /**
+   * Muestra una notificación de felicitación especial al completar
+   */
+  mostrarFelicitacion(tipo: 'plan' | 'rutina'): void {
+    const mensajes = {
+      plan: {
+        titulo: '🏆 ¡Felicitaciones!',
+        mensaje: '¡Has completado tu plan nutricional con éxito! Tu dedicación y compromiso han dado frutos. ¡Sigue así!'
+      },
+      rutina: {
+        titulo: '💪 ¡Excelente trabajo!',
+        mensaje: '¡Has completado tu rutina de ejercicios! Tu esfuerzo y constancia te han llevado al éxito. ¡Eres increíble!'
+      }
+    };
+    
+    const msg = mensajes[tipo];
+    this.notificationService.success(msg.titulo, msg.mensaje, 8000);
   }
 
   formatearEstado(estado: string): string {

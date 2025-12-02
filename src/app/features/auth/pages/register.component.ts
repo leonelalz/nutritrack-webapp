@@ -7,6 +7,7 @@ import { RegisterRequest } from '../../../core/models/user.model';
 import { AuthValidators } from '../validators/auth.validators';
 import { CommonValidators } from '../../../core/validators/common-validators';
 import { NATIONALITIES } from '../../../core/constants/nationalities';
+import { PerfilService } from '../../../core/services/perfil.service';
 
 @Component({
   selector: 'app-register',
@@ -154,7 +155,7 @@ import { NATIONALITIES } from '../../../core/constants/nationalities';
                       [type]="showPassword() ? 'text' : 'password'"
                       formControlName="password"
                       class="form-input"
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mínimo 12 caracteres"
                       [class.error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
                     <button type="button" class="toggle-password" (click)="togglePassword()">
                       @if (showPassword()) {
@@ -169,10 +170,15 @@ import { NATIONALITIES } from '../../../core/constants/nationalities';
                       @if (registerForm.get('password')?.errors?.['required']) {
                         La contraseña es requerida
                       } @else if (registerForm.get('password')?.errors?.['minlength']) {
-                        La contraseña debe tener al menos 6 caracteres
+                        La contraseña debe tener al menos 12 caracteres
                       } @else if (registerForm.get('password')?.errors?.['weakPassword']) {
-                        La contraseña debe contener mayúsculas, minúsculas, números y mínimo 8 caracteres
+                        La contraseña debe contener mayúsculas, minúsculas, números, símbolos (@ $ ! % * ? &)
                       }
+                    </span>
+                  }
+                  @if (registerForm.errors?.['passwordContainsEmail'] && registerForm.get('password')?.touched) {
+                    <span class="error-text">
+                      La contraseña no debe contener tu email.
                     </span>
                   }
                 </div>
@@ -776,6 +782,7 @@ export class RegisterComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private perfilService = inject(PerfilService)
 
   loading = signal(false);
   errorMessage = signal('');
@@ -786,7 +793,7 @@ export class RegisterComponent {
   registerForm: FormGroup = this.fb.group({
     // Campos requeridos
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6), AuthValidators.strongPassword()]],
+    password: ['', [Validators.required, Validators.minLength(12), AuthValidators.strongPassword()]],
     nombre: ['', [Validators.required, Validators.minLength(3)]],
     apellido: ['', [Validators.required, Validators.minLength(3)]],
     // Campos opcionales con validaciones
@@ -796,7 +803,13 @@ export class RegisterComponent {
     dateOfBirth: ['', [CommonValidators.minAge(18)]],
     nationality: [''],
     occupation: ['']
-  });
+  },
+  {
+    validators: [
+      AuthValidators.passwordNotContainingEmail('email', 'password')
+    ]
+  }
+);
 
   nextStep() {
     // Validar campos del paso actual antes de avanzar
@@ -866,34 +879,63 @@ export class RegisterComponent {
   }
 
   onSubmit() {
-    if (this.registerForm.valid) {
-      this.loading.set(true);
-      this.errorMessage.set('');
+  if (this.registerForm.valid) {
+    this.loading.set(true);
+    this.errorMessage.set('');
 
-      // Construir RegisterRequest con todos los campos
-      const formData = this.registerForm.value;
-      const registerData: RegisterRequest = {
-        email: formData.email,
-        password: formData.password,
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        phone: formData.phone || undefined,
-        dni: formData.dni || undefined,
-        address: formData.address || undefined,
-        dateOfBirth: formData.dateOfBirth || undefined,
-        nationality: formData.nationality || undefined,
-        occupation: formData.occupation || undefined
-      };
+    const formData = this.registerForm.value;
+    const registerData: RegisterRequest = {
+      email: formData.email,
+      password: formData.password,
+      nombre: formData.nombre,
+      apellido: formData.apellido,
+      phone: formData.phone || undefined,
+      dni: formData.dni || undefined,
+      address: formData.address || undefined,
+      dateOfBirth: formData.dateOfBirth || undefined,
+      nationality: formData.nationality || undefined,
+      occupation: formData.occupation || undefined
+    };
 
-      this.authService.register(registerData).subscribe({
-        next: () => {
-          this.router.navigate(['/dashboard']);
-        },
-        error: () => {
-          this.errorMessage.set('Error al registrar usuario. Por favor, verifica tus datos.');
+    this.authService.register(registerData).subscribe({
+      next: () => {
+        
+        // ⭐ AUTO-LOGIN
+        this.authService.login({
+          email: registerData.email,
+          password: registerData.password
+        }).subscribe(() => {
+          
+           // ⭐ Verificar si necesita onboarding
+          this.perfilService.obtenerPerfilSalud().subscribe(perfil => {
+
+            const p = perfil.data;
+
+            const necesitaOnboarding =
+              !p ||
+              !p.objetivoActual ||
+              !p.nivelActividadActual ||
+              (p.etiquetas?.length ?? 0) === 0;
+
+            if (necesitaOnboarding) {
+              this.router.navigate(['/onboarding']);
+            } else {
+              this.router.navigate(['/dashboard']);
+            }
+
+          });
+
           this.loading.set(false);
-        }
-      });
-    }
+
+        });
+
+      },
+      error: (err) => {
+        this.errorMessage.set(err.message || 'Error al registrar usuario.');
+        this.loading.set(false);
+      }
+    });
   }
+}
+
 }

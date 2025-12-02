@@ -12,6 +12,7 @@ export interface Notification {
   providedIn: 'root'
 })
 export class NotificationService {
+
   private notifications = signal<Notification[]>([]);
   private nextId = 0;
 
@@ -134,6 +135,13 @@ export class NotificationService {
    */
   showWarning(message: string, duration: number = 6000): void {
     this.warning('Advertencia', message, duration);
+  }
+
+  /**
+   * Alias simple para mostrar info con solo mensaje
+   */
+  showInfo(message: string, duration: number = 5000): void {
+    this.info('Información', message, duration);
   }
 
   /**

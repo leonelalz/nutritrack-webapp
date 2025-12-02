@@ -190,6 +190,29 @@ export class RutinaService {
   }
 
   /**
+   * Eliminar TODOS los ejercicios de una rutina (Batch)
+   * DELETE /rutinas/{id}/ejercicios
+   */
+  eliminarTodosEjercicios(rutinaId: number): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(
+      `${this.baseUrl}/${rutinaId}/ejercicios`
+    );
+  }
+
+  /**
+   * Reemplazar TODOS los ejercicios de una rutina (Batch - Operación atómica)
+   * PUT /rutinas/{id}/ejercicios/batch
+   * @param rutinaId - ID de la rutina
+   * @param ejercicios - Array de ejercicios a establecer
+   */
+  reemplazarEjercicios(rutinaId: number, ejercicios: EjercicioRutinaRequest[]): Observable<ApiResponse<EjercicioRutinaResponse[]>> {
+    return this.http.put<ApiResponse<EjercicioRutinaResponse[]>>(
+      `${this.baseUrl}/${rutinaId}/ejercicios/batch`,
+      ejercicios
+    );
+  }
+
+  /**
    * Limpiar estado
    */
   limpiarEstado(): void {
