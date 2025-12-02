@@ -190,11 +190,7 @@ import { AuthService } from '../../core/services/auth.service';
 
     /* Stay collapsed when pinned */
     .sidebar.collapsed.pinned {
-      width: var(--sidebar-collapsed);
-    }
-
-    .sidebar.collapsed.pinned:hover {
-      width: var(--sidebar-collapsed);
+      width: var(--sidebar-expanded);
     }
 
     /* Header */
@@ -631,18 +627,20 @@ export class SidebarComponent implements OnInit {
     const newPinned = !this.isPinned();
     this.isPinned.set(newPinned);
     
-    if (newPinned) {
-      this.isCollapsed.set(true);
-    } else {
-      this.isCollapsed.set(false);
-    }
+      // Si está pinned, debe estar expandido SIEMPRE
+      if (newPinned) {
+        this.isCollapsed.set(false);
+      } else {
+        // Si deja de estar pinned, se colapsa otra vez
+        this.isCollapsed.set(true);
+      }
     
     this.saveState();
     this.emitState();
   }
 
   private emitState(): void {
-    const effectivelyCollapsed = this.isCollapsed() && (this.isPinned() || !this.isHovered());
+    const effectivelyCollapsed = this.isCollapsed() && !this.isPinned();
     this.sidebarToggle.emit(effectivelyCollapsed);
   }
 
