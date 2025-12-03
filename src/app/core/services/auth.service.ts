@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
-import { environment } from '../../../enviroments/enviroment';
+import { environment } from '../../../enviroments/environment.config';
 import { StorageService } from './storage.service';
 import { LoginRequest, RegisterRequest, AuthResponse, UserResponse, RoleType } from '../models/user.model';
 

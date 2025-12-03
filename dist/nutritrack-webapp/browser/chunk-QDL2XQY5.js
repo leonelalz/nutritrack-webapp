@@ -1,0 +1,1 @@
+import"./chunk-2VMXMS7J.js";var o=[{path:"",loadComponent:()=>import("./chunk-SAQ2WXET.js").then(t=>t.ComidasListComponent),data:{title:"Gesti\xF3n de Comidas y Recetas"}}];export{o as COMIDAS_ROUTES};

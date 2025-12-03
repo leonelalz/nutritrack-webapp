@@ -305,18 +305,18 @@ const MET_VALUES: { [key: string]: number } = {
                     <h4>Registrar datos reales (opcional)</h4>
                     <div class="input-group">
                       <label>Series realizadas</label>
-                      <input type="number" [(ngModel)]="seriesReales" [max]="ejercicioActivo()?.series" min="1">
+                      <input type="number" [(ngModel)]="seriesReales" min="1" (ngModelChange)="recalcularCalorias()">
                     </div>
                     @if (ejercicioActivo()?.repeticiones) {
                       <div class="input-group">
                         <label>Repeticiones por serie</label>
-                        <input type="number" [(ngModel)]="repsReales" min="1">
+                        <input type="number" [(ngModel)]="repsReales" min="1" (ngModelChange)="recalcularCalorias()">
                       </div>
                     }
                     @if (ejercicioActivo()?.peso) {
                       <div class="input-group">
                         <label>Peso utilizado (kg)</label>
-                        <input type="number" [(ngModel)]="pesoReal" step="0.5" min="0">
+                        <input type="number" [(ngModel)]="pesoReal" step="0.5" min="0" (ngModelChange)="recalcularCalorias()">
                       </div>
                     }
                   </div>
@@ -1517,6 +1517,43 @@ export class MisEjerciciosComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.cargarEjerciciosProgramados();
         this.cargarRutinaActiva();
+        this.cargarProgresoDelDia();
+    }
+
+    /**
+     * Carga las estadísticas del día (calorías quemadas, tiempo activo) desde el API
+     */
+    private cargarProgresoDelDia(): void {
+        const hoy = new Date().toISOString().split('T')[0];
+        
+        this.metasService.obtenerProgresoSemanal(hoy).subscribe({
+            next: (response: any) => {
+                console.log('📊 [MisEjercicios] Progreso semanal:', response);
+                const data = response.data || response;
+                
+                // Buscar el día de hoy en los datos de la semana
+                const diasSemana = data.diasSemana || [];
+                const diaHoy = diasSemana.find((dia: any) => dia.fecha === hoy);
+                
+                if (diaHoy) {
+                    // Calorías quemadas hoy
+                    const caloriasHoy = diaHoy.caloriasQuemadas || 0;
+                    this.caloriasQuemadas.set(Math.round(caloriasHoy));
+                    
+                    // Tiempo activo hoy (en minutos)
+                    const tiempoHoy = diaHoy.tiempoMinutos || 0;
+                    this.tiempoActivo.set(tiempoHoy);
+                    
+                    console.log(`🔥 [MisEjercicios] Hoy: ${caloriasHoy} kcal, ${tiempoHoy} min`);
+                } else {
+                    console.log('ℹ️ [MisEjercicios] No hay datos de progreso para hoy');
+                }
+            },
+            error: (err) => {
+                console.log('⚠️ [MisEjercicios] Error cargando progreso:', err.message);
+                // No es crítico, las estadísticas se actualizan al completar ejercicios
+            }
+        });
     }
 
     cargarEjerciciosProgramados(): void {
@@ -1564,9 +1601,16 @@ export class MisEjerciciosComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             this.cargando.set(false);
-            console.error('❌ [MisEjercicios] Error en /registros/rutina/hoy:', err);
-            // Fallback al método alternativo
-            this.cargarEjerciciosFallback();
+            // 404 significa que no hay rutina activa - no es un error real
+            if (err.status === 404) {
+              console.log('ℹ️ [MisEjercicios] No hay rutina activa para hoy');
+              this.ejerciciosProgramados.set([]);
+              this.actualizarEstadisticas();
+            } else {
+              console.error('❌ [MisEjercicios] Error en /registros/rutina/hoy:', err);
+              // Fallback al método alternativo solo para errores reales
+              this.cargarEjerciciosFallback();
+            }
           }
         });
     }
@@ -1699,11 +1743,8 @@ export class MisEjerciciosComponent implements OnInit, OnDestroy {
         const completados = ejercicios.filter(e => e.completado).length;
         this.sesionesSemanales.set(completados);
         
-        // Calcular tiempo activo
-        const tiempoTotal = ejercicios
-            .filter(e => e.completado)
-            .reduce((sum, e) => sum + (e.duracionMinutos || 0), 0);
-        this.tiempoActivo.set(tiempoTotal);
+        // NO resetear calorías ni tiempo aquí - esos vienen del API
+        // Solo actualizar el contador de ejercicios completados
     }
 
     loadEjerciciosHoy(): void {
@@ -1809,13 +1850,29 @@ export class MisEjerciciosComponent implements OnInit, OnDestroy {
         const ejercicio = this.ejercicioActivo();
         if (!ejercicio) return;
         
-        // Fórmula: Calorías = MET × peso(kg) × tiempo(horas)
+        // Fórmula basada en trabajo realizado, no solo tiempo
+        // Calorías = (series_completadas × repeticiones × factor_peso × factor_intensidad) + componente_tiempo
+        const seriesCompletadas = this.seriesCompletadas();
+        const repeticiones = ejercicio.repeticiones || 10;
+        const peso = ejercicio.peso || 0;
+        
+        // Factor de intensidad basado en el tipo de ejercicio
         const tipo = ejercicio.tipoEjercicio || 'DEFAULT';
         const met = MET_VALUES[tipo] || MET_VALUES['DEFAULT'];
-        const tiempoHoras = this.tiempoTotalEjercicio() / 3600;
-        const calorias = Math.round(met * this.pesoUsuario * tiempoHoras);
         
-        this.caloriasEstimadas.set(calorias);
+        // Componente de trabajo mecánico (series × reps × peso)
+        // Aproximación: 0.05 kcal por kg levantado por repetición para ejercicios de fuerza
+        const factorPeso = peso > 0 ? 0.05 : 0.1; // Sin peso = ejercicio corporal
+        const caloriasPorTrabajo = seriesCompletadas * repeticiones * (peso > 0 ? peso * factorPeso : this.pesoUsuario * 0.02);
+        
+        // Componente de tiempo (menor peso, solo para cardio o tiempo de descanso activo)
+        const tiempoHoras = this.tiempoTotalEjercicio() / 3600;
+        const caloriasPorTiempo = met * this.pesoUsuario * tiempoHoras * 0.3; // 30% del cálculo basado en tiempo
+        
+        // Total: trabajo realizado + componente temporal
+        const calorias = Math.round(caloriasPorTrabajo + caloriasPorTiempo);
+        
+        this.caloriasEstimadas.set(Math.max(calorias, 1)); // Mínimo 1 caloría
     }
 
     completarSerie(): void {
@@ -1880,17 +1937,93 @@ export class MisEjerciciosComponent implements OnInit, OnDestroy {
         this.limpiarIntervals();
         this.estadoEntrenamiento.set('completado');
         
-        // Calcular calorías finales
+        // Calcular calorías finales basado en el TRABAJO REAL realizado
         const ejercicio = this.ejercicioActivo();
-        const tipo = ejercicio?.tipoEjercicio || 'DEFAULT';
+        if (!ejercicio) {
+            this.caloriasFinales.set(0);
+            return;
+        }
+        
+        const seriesCompletadas = this.seriesCompletadas();
+        const repeticiones = this.repsReales || ejercicio.repeticiones || 10;
+        const peso = this.pesoReal || ejercicio.peso || 0;
+        
+        // Factor de intensidad basado en el tipo de ejercicio
+        const tipo = ejercicio.tipoEjercicio || 'DEFAULT';
         const met = MET_VALUES[tipo] || MET_VALUES['DEFAULT'];
+        
+        // Fórmula de calorías basada en trabajo realizado:
+        // 1. Trabajo mecánico: series × repeticiones × peso × factor
+        // 2. Esfuerzo cardiovascular: MET × peso_corporal × tiempo × factor_reducido
+        
+        let caloriasFinales = 0;
+        
+        if (peso > 0) {
+            // Ejercicio con peso: mayor énfasis en el trabajo mecánico
+            // Aproximación: 0.05-0.08 kcal por kg levantado por repetición
+            const trabajoTotal = seriesCompletadas * repeticiones * peso;
+            caloriasFinales = Math.round(trabajoTotal * 0.06);
+        } else {
+            // Ejercicio sin peso (peso corporal): basado en repeticiones y peso corporal
+            // Aproximación: 0.3-0.5 kcal por repetición según intensidad
+            const factorIntensidad = met / 5; // Normalizar MET
+            caloriasFinales = Math.round(seriesCompletadas * repeticiones * factorIntensidad * 0.4);
+        }
+        
+        // Añadir componente de esfuerzo cardiovascular (menor peso)
         const tiempoHoras = this.tiempoTotalEjercicio() / 3600;
-        const caloriasFinales = Math.round(met * this.pesoUsuario * tiempoHoras);
+        const componenteTiempo = Math.round(met * this.pesoUsuario * tiempoHoras * 0.2);
+        caloriasFinales += componenteTiempo;
+        
+        // Mínimo razonable de calorías
+        caloriasFinales = Math.max(caloriasFinales, seriesCompletadas * 2);
         
         this.caloriasFinales.set(caloriasFinales);
         
+        console.log(`🔥 Calorías calculadas: ${caloriasFinales} kcal`);
+        console.log(`   Series: ${seriesCompletadas}, Reps: ${repeticiones}, Peso: ${peso}kg`);
+        console.log(`   Tiempo: ${Math.round(this.tiempoTotalEjercicio() / 60)} min, MET: ${met}`);
+        
         // Reproducir feedback de éxito
         this.reproducirFeedback();
+    }
+
+    // Recalcular calorías cuando el usuario modifica los datos reales
+    recalcularCalorias(): void {
+        const ejercicio = this.ejercicioActivo();
+        if (!ejercicio) return;
+        
+        const seriesRealizadas = this.seriesReales || 1;
+        const repeticiones = this.repsReales || ejercicio.repeticiones || 10;
+        const peso = this.pesoReal || ejercicio.peso || 0;
+        
+        // Factor de intensidad basado en el tipo de ejercicio
+        const tipo = ejercicio.tipoEjercicio || 'DEFAULT';
+        const met = MET_VALUES[tipo] || MET_VALUES['DEFAULT'];
+        
+        let caloriasCalculadas = 0;
+        
+        if (peso > 0) {
+            // Ejercicio con peso: trabajo mecánico
+            const trabajoTotal = seriesRealizadas * repeticiones * peso;
+            caloriasCalculadas = Math.round(trabajoTotal * 0.06);
+        } else {
+            // Ejercicio sin peso (peso corporal)
+            const factorIntensidad = met / 5;
+            caloriasCalculadas = Math.round(seriesRealizadas * repeticiones * factorIntensidad * 0.4);
+        }
+        
+        // Añadir componente de tiempo
+        const tiempoHoras = this.tiempoTotalEjercicio() / 3600;
+        const componenteTiempo = Math.round(met * this.pesoUsuario * tiempoHoras * 0.2);
+        caloriasCalculadas += componenteTiempo;
+        
+        // Mínimo razonable
+        caloriasCalculadas = Math.max(caloriasCalculadas, seriesRealizadas * 2);
+        
+        this.caloriasFinales.set(caloriasCalculadas);
+        
+        console.log(`🔄 Calorías recalculadas: ${caloriasCalculadas} kcal (${seriesRealizadas} series × ${repeticiones} reps × ${peso}kg)`);
     }
 
     guardarYCerrar(): void {
@@ -1915,7 +2048,8 @@ export class MisEjerciciosComponent implements OnInit, OnDestroy {
             series: this.seriesReales || ejercicio.series || 1,
             repeticiones: this.repsReales || ejercicio.repeticiones || 1,
             pesoKg: this.pesoReal || ejercicio.peso || 0,
-            duracionMinutos: Math.ceil(this.tiempoTotalEjercicio() / 60) || ejercicio.duracionMinutos || 0
+            duracionMinutos: Math.ceil(this.tiempoTotalEjercicio() / 60) || ejercicio.duracionMinutos || 0,
+            caloriasQuemadas: this.caloriasFinales() || 0
         };
         
         console.log('📤 Guardando entrenamiento:', requestBody);
@@ -1923,16 +2057,31 @@ export class MisEjerciciosComponent implements OnInit, OnDestroy {
         this.metasService.registrarEjercicioCompletado(requestBody).subscribe({
             next: (response: any) => {
                 console.log('✅ Entrenamiento guardado:', response);
-                const registroId = response.id || response.data?.id;
+                const data = response.data || response;
+                const registroId = data.id;
                 if (registroId) {
                     ejercicio.registroId = registroId;
                 }
                 
+                // Usar calorías del backend si están disponibles, si no usar las locales
+                const caloriasDelBackend = data.caloriasQuemadas || 0;
+                const caloriasFinales = caloriasDelBackend > 0 ? caloriasDelBackend : this.caloriasFinales();
+                
+                // Actualizar signal con las calorías correctas
+                this.caloriasFinales.set(caloriasFinales);
+                
                 // Actualizar calorías quemadas del día
-                this.caloriasQuemadas.update(c => c + this.caloriasFinales());
+                this.caloriasQuemadas.update(c => c + caloriasFinales);
+                
+                // Actualizar tiempo activo del día
+                const tiempoEjercicio = Math.ceil(this.tiempoTotalEjercicio() / 60);
+                this.tiempoActivo.update(t => t + tiempoEjercicio);
+                
+                console.log(`🔥 Calorías registradas: ${caloriasFinales} kcal (backend: ${caloriasDelBackend})`);
+                console.log(`⏱️ Tiempo añadido: ${tiempoEjercicio} min`);
                 
                 this.notificationService.showSuccess(
-                    `🎉 ¡${ejercicio.ejercicioNombre} completado! +${this.caloriasFinales()} kcal`
+                    `🎉 ¡${ejercicio.ejercicioNombre} completado! +${caloriasFinales} kcal`
                 );
                 this.actualizarEstadisticas();
             },

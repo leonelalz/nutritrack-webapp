@@ -12,7 +12,6 @@ import { AuthService } from '../../core/services/auth.service';
       class="sidebar" 
       [class.collapsed]="isCollapsed()"
       [class.hovered]="isHovered()"
-      [class.pinned]="isPinned()"
       (mouseenter)="onMouseEnter()"
       (mouseleave)="onMouseLeave()">
       
@@ -22,22 +21,6 @@ import { AuthService } from '../../core/services/auth.service';
           <span class="logo-icon">🥗</span>
           <span class="logo-text">Nutri<span class="logo-highlight">Track</span></span>
         </a>
-        
-        <!-- Pin Button -->
-        <button 
-          class="pin-btn" 
-          (click)="togglePin()" 
-          [title]="isPinned() ? 'Expandir al pasar mouse' : 'Mantener compacto'">
-          @if (isPinned()) {
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          } @else {
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          }
-        </button>
       </div>
 
       <!-- Navigation -->
@@ -56,7 +39,6 @@ import { AuthService } from '../../core/services/auth.service';
               </svg>
             </div>
             <span class="nav-text">Dashboard</span>
-            <span class="nav-tooltip">Dashboard</span>
           </a>
 
           <a routerLink="/comidas" routerLinkActive="active" class="nav-item">
@@ -70,7 +52,6 @@ import { AuthService } from '../../core/services/auth.service';
               </svg>
             </div>
             <span class="nav-text">Mis Comidas</span>
-            <span class="nav-tooltip">Mis Comidas</span>
           </a>
 
           <a routerLink="/ejercicios" routerLinkActive="active" class="nav-item">
@@ -86,7 +67,6 @@ import { AuthService } from '../../core/services/auth.service';
               </svg>
             </div>
             <span class="nav-text">Mis Ejercicios</span>
-            <span class="nav-tooltip">Mis Ejercicios</span>
           </a>
 
           <a routerLink="/metas" routerLinkActive="active" class="nav-item">
@@ -98,7 +78,6 @@ import { AuthService } from '../../core/services/auth.service';
               </svg>
             </div>
             <span class="nav-text">Mis Metas</span>
-            <span class="nav-tooltip">Mis Metas</span>
           </a>
         </div>
 
@@ -117,7 +96,6 @@ import { AuthService } from '../../core/services/auth.service';
                 </svg>
               </div>
               <span class="nav-text">Panel Admin</span>
-              <span class="nav-tooltip">Panel Admin</span>
             </a>
           </div>
         }
@@ -135,7 +113,6 @@ import { AuthService } from '../../core/services/auth.service';
               <span class="user-name">{{ authService.currentUser()?.nombre || 'Usuario' }}</span>
               <span class="user-role">{{ isAdmin() ? 'Administrador' : 'Usuario' }}</span>
             </div>
-            <span class="nav-tooltip user-tooltip">Mi Perfil</span>
           </a>
           
           <button class="logout-btn" (click)="logout()" title="Cerrar sesión">
@@ -145,7 +122,6 @@ import { AuthService } from '../../core/services/auth.service';
               <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
             <span class="logout-text">Salir</span>
-            <span class="nav-tooltip logout-tooltip">Cerrar Sesión</span>
           </button>
         </div>
       </nav>
@@ -163,7 +139,7 @@ import { AuthService } from '../../core/services/auth.service';
       left: 0;
       top: 0;
       height: 100vh;
-      width: var(--sidebar-expanded);
+      width: var(--sidebar-collapsed);
       background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
       border-right: 1px solid #e2e8f0;
       display: flex;
@@ -173,31 +149,17 @@ import { AuthService } from '../../core/services/auth.service';
       overflow: hidden;
     }
 
+    /* Expandir al hacer hover */
     .sidebar:hover,
     .sidebar.hovered {
+      width: var(--sidebar-expanded);
       box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
-    }
-
-    /* Collapsed state */
-    .sidebar.collapsed {
-      width: var(--sidebar-collapsed);
-    }
-
-    /* Expand on hover when collapsed but NOT pinned */
-    .sidebar.collapsed:not(.pinned):hover {
-      width: var(--sidebar-expanded);
-    }
-
-    /* Stay collapsed when pinned */
-    .sidebar.collapsed.pinned {
-      width: var(--sidebar-expanded);
     }
 
     /* Header */
     .sidebar-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       padding: 16px;
       border-bottom: 1px solid #e2e8f0;
       min-height: 64px;
@@ -221,54 +183,20 @@ import { AuthService } from '../../core/services/auth.service';
       font-size: 1.2rem;
       font-weight: 700;
       color: #22c55e;
-      opacity: 1;
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
       transition: opacity var(--transition-speed), width var(--transition-speed);
     }
 
-    .sidebar.collapsed .logo-text {
-      opacity: 0;
-      width: 0;
-    }
-
-    .sidebar.collapsed:not(.pinned):hover .logo-text {
+    .sidebar:hover .logo-text,
+    .sidebar.hovered .logo-text {
       opacity: 1;
       width: auto;
     }
 
     .logo-highlight {
       color: #3b82f6;
-    }
-
-    /* Pin Button */
-    .pin-btn {
-      width: 28px;
-      height: 28px;
-      min-width: 28px;
-      border-radius: 6px;
-      border: none;
-      background: #f1f5f9;
-      color: #64748b;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      flex-shrink: 0;
-    }
-
-    .pin-btn:hover {
-      background: #dbeafe;
-      color: #3b82f6;
-    }
-
-    .sidebar.collapsed .pin-btn {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .sidebar.collapsed:not(.pinned):hover .pin-btn {
-      opacity: 1;
-      pointer-events: auto;
     }
 
     /* Navigation */
@@ -305,14 +233,12 @@ import { AuthService } from '../../core/services/auth.service';
       padding: 8px 12px 4px;
       white-space: nowrap;
       overflow: hidden;
+      opacity: 0;
       transition: opacity var(--transition-speed);
     }
 
-    .sidebar.collapsed .section-title {
-      opacity: 0;
-    }
-
-    .sidebar.collapsed:not(.pinned):hover .section-title {
+    .sidebar:hover .section-title,
+    .sidebar.hovered .section-title {
       opacity: 1;
     }
 
@@ -390,52 +316,16 @@ import { AuthService } from '../../core/services/auth.service';
       font-size: 0.9rem;
       font-weight: 500;
       white-space: nowrap;
-      opacity: 1;
-      transition: opacity var(--transition-speed);
-    }
-
-    .sidebar.collapsed .nav-text {
       opacity: 0;
+      width: 0;
+      overflow: hidden;
+      transition: opacity var(--transition-speed), width var(--transition-speed);
     }
 
-    .sidebar.collapsed:not(.pinned):hover .nav-text {
+    .sidebar:hover .nav-text,
+    .sidebar.hovered .nav-text {
       opacity: 1;
-    }
-
-    /* Tooltips - only show when collapsed AND pinned */
-    .nav-tooltip {
-      position: absolute;
-      left: calc(var(--sidebar-collapsed) + 8px);
-      background: #1e293b;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      transform: translateX(-8px);
-      z-index: 1001;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .nav-tooltip::before {
-      content: '';
-      position: absolute;
-      left: -6px;
-      top: 50%;
-      transform: translateY(-50%);
-      border: 6px solid transparent;
-      border-right-color: #1e293b;
-    }
-
-    .sidebar.collapsed.pinned .nav-item:hover .nav-tooltip,
-    .sidebar.collapsed.pinned .user-profile-link:hover .nav-tooltip,
-    .sidebar.collapsed.pinned .logout-btn:hover .nav-tooltip {
-      opacity: 1;
-      transform: translateX(0);
+      width: auto;
     }
 
     /* User Section */
@@ -481,16 +371,15 @@ import { AuthService } from '../../core/services/auth.service';
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      opacity: 1;
-      transition: opacity var(--transition-speed);
-    }
-
-    .sidebar.collapsed .user-info {
       opacity: 0;
+      width: 0;
+      transition: opacity var(--transition-speed), width var(--transition-speed);
     }
 
-    .sidebar.collapsed:not(.pinned):hover .user-info {
+    .sidebar:hover .user-info,
+    .sidebar.hovered .user-info {
       opacity: 1;
+      width: auto;
     }
 
     .user-name {
@@ -535,16 +424,16 @@ import { AuthService } from '../../core/services/auth.service';
     .logout-text {
       font-size: 0.9rem;
       font-weight: 500;
-      opacity: 1;
-      transition: opacity var(--transition-speed);
-    }
-
-    .sidebar.collapsed .logout-text {
       opacity: 0;
+      width: 0;
+      overflow: hidden;
+      transition: opacity var(--transition-speed), width var(--transition-speed);
     }
 
-    .sidebar.collapsed:not(.pinned):hover .logout-text {
+    .sidebar:hover .logout-text,
+    .sidebar.hovered .logout-text {
       opacity: 1;
+      width: auto;
     }
 
     /* Scrollbar */
@@ -571,8 +460,7 @@ import { AuthService } from '../../core/services/auth.service';
         transform: translateX(-100%);
       }
 
-      .sidebar.hovered,
-      .sidebar:not(.collapsed) {
+      .sidebar.hovered {
         transform: translateX(0);
       }
     }
@@ -581,67 +469,29 @@ import { AuthService } from '../../core/services/auth.service';
 export class SidebarComponent implements OnInit {
   authService = inject(AuthService);
   private router = inject(Router);
-  private readonly STORAGE_KEY = 'nutritrack_sidebar_state';
 
   @Output() sidebarToggle = new EventEmitter<boolean>();
 
   isCollapsed = signal(true);
-  isPinned = signal(false);
   isHovered = signal(false);
 
   ngOnInit(): void {
-    this.loadSavedState();
     this.emitState();
-  }
-
-  private loadSavedState(): void {
-    try {
-      const saved = localStorage.getItem(this.STORAGE_KEY);
-      if (saved) {
-        const state = JSON.parse(saved);
-        this.isPinned.set(state.pinned ?? false);
-        this.isCollapsed.set(state.collapsed ?? true);
-      }
-    } catch {
-      // Usar valores por defecto
-    }
-  }
-
-  private saveState(): void {
-    const state = {
-      pinned: this.isPinned(),
-      collapsed: this.isCollapsed()
-    };
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(state));
   }
 
   onMouseEnter(): void {
     this.isHovered.set(true);
+    this.emitState();
   }
 
   onMouseLeave(): void {
     this.isHovered.set(false);
-  }
-
-  togglePin(): void {
-    const newPinned = !this.isPinned();
-    this.isPinned.set(newPinned);
-    
-      // Si está pinned, debe estar expandido SIEMPRE
-      if (newPinned) {
-        this.isCollapsed.set(false);
-      } else {
-        // Si deja de estar pinned, se colapsa otra vez
-        this.isCollapsed.set(true);
-      }
-    
-    this.saveState();
     this.emitState();
   }
 
   private emitState(): void {
-    const effectivelyCollapsed = this.isCollapsed() && !this.isPinned();
-    this.sidebarToggle.emit(effectivelyCollapsed);
+    // El sidebar está efectivamente colapsado cuando no hay hover
+    this.sidebarToggle.emit(!this.isHovered());
   }
 
   isAdmin(): boolean {

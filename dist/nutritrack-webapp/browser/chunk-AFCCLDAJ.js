@@ -1,0 +1,1 @@
+import"./chunk-2VMXMS7J.js";var e=[{path:"",loadComponent:()=>import("./chunk-5EGNHZA4.js").then(t=>t.IngredientesListComponent),data:{title:"Gesti\xF3n de Ingredientes"}}];export{e as INGREDIENTES_ROUTES};

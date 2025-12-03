@@ -3,7 +3,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../enviroments/enviroment';
+import { environment } from '../../../enviroments/environment.config';
 import { Ingrediente, IngredienteRequest, CategoriaAlimento } from '../models/ingrediente.model';
 import { PageResponse } from '../models/etiqueta.model';
 import { ApiResponse } from '../models/common.model';

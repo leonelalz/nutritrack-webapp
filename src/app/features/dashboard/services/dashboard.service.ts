@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, of, map, catchError } from 'rxjs';
-import { environment } from '../../../../enviroments/enviroment';
+import { environment } from '../../../../enviroments/environment.config';
 import { ApiResponse } from '../../../core/models/common.model';
 
 // ===== INTERFACES PARA RESPUESTAS DE API =====

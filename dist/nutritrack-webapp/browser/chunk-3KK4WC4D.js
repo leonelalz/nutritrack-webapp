@@ -1,1 +1,0 @@
-import"./chunk-2VMXMS7J.js";var o=[{path:"",loadComponent:()=>import("./chunk-ZFH5TJYZ.js").then(t=>t.EjerciciosListComponent),data:{title:"Gesti\xF3n de Ejercicios"}}];export{o as EJERCICIOS_ROUTES};

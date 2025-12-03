@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../enviroments/enviroment';
+import { environment } from '../../../enviroments/environment.config';
 import { ApiResponse } from '../models/common.model';
 import { HistorialMedidasRequest, HistorialMedidasResponse, PerfilCompletoResponse, PerfilSaludRequest, PerfilSaludResponse} from '../models/perfil.model';
 

@@ -88,6 +88,7 @@ import { NotificationService } from "../../../core/services/notification.service
                         <button
                           class="btn-complete-final"
                           (click)="completarPlan(plan.id)"
+                          [disabled]="isPlanProcesando(plan.id)"
                         >
                           🏆 Finalizar Plan
                         </button>
@@ -98,6 +99,7 @@ import { NotificationService } from "../../../core/services/notification.service
                         <button
                           class="btn-secondary"
                           (click)="pausarPlan(plan.id)"
+                          [disabled]="isPlanProcesando(plan.id)"
                         >
                           Pausar
                         </button>
@@ -107,6 +109,7 @@ import { NotificationService } from "../../../core/services/notification.service
                         <button
                           class="btn-secondary"
                           (click)="reanudarPlan(plan.id)"
+                          [disabled]="isPlanProcesando(plan.id)"
                         >
                           Reanudar
                         </button>
@@ -115,8 +118,13 @@ import { NotificationService } from "../../../core/services/notification.service
                       <button
                         class="btn-danger"
                         (click)="cancelarPlan(plan.id)"
+                        [disabled]="isPlanProcesando(plan.id)"
                       >
-                        Cancelar
+                        @if (isPlanProcesando(plan.id)) {
+                          Cancelando...
+                        } @else {
+                          Cancelar
+                        }
                       </button>
                     }
                   </div>
@@ -197,6 +205,7 @@ import { NotificationService } from "../../../core/services/notification.service
                         <button
                           class="btn-complete-final"
                           (click)="completarRutina(rutina.id)"
+                          [disabled]="isRutinaProcesando(rutina.id)"
                         >
                           🏆 Finalizar Rutina
                         </button>
@@ -207,6 +216,7 @@ import { NotificationService } from "../../../core/services/notification.service
                         <button
                           class="btn-secondary"
                           (click)="pausarRutina(rutina.id)"
+                          [disabled]="isRutinaProcesando(rutina.id)"
                         >
                           Pausar
                         </button>
@@ -216,6 +226,7 @@ import { NotificationService } from "../../../core/services/notification.service
                         <button
                           class="btn-secondary"
                           (click)="reanudarRutina(rutina.id)"
+                          [disabled]="isRutinaProcesando(rutina.id)"
                         >
                           Reanudar
                         </button>
@@ -224,8 +235,13 @@ import { NotificationService } from "../../../core/services/notification.service
                       <button
                         class="btn-danger"
                         (click)="cancelarRutina(rutina.id)"
+                        [disabled]="isRutinaProcesando(rutina.id)"
                       >
-                        Cancelar
+                        @if (isRutinaProcesando(rutina.id)) {
+                          Cancelando...
+                        } @else {
+                          Cancelar
+                        }
                       </button>
                     }
                   </div>
@@ -461,6 +477,13 @@ import { NotificationService } from "../../../core/services/notification.service
       min-width: 80px;
     }
 
+    .btn-secondary:disabled, .btn-danger:disabled, .btn-success:disabled,
+    .btn-complete-final:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
     .btn-secondary {
       background: #edf2f7;
       color: #4a5568;
@@ -575,11 +598,25 @@ export class MisAsignacionesComponent implements OnInit {
   loading = signal(false);
   planesActivos = signal<any[]>([]);
   rutinasActivas = signal<any[]>([]);
+  
+  // Set para rastrear IDs que están siendo procesados
+  private procesandoPlanes = new Set<number>();
+  private procesandoRutinas = new Set<number>();
 
   constructor(
     private readonly metasService: MetasService,
     private readonly notificationService: NotificationService
   ) { }
+
+  // Verificar si un plan está siendo procesado
+  isPlanProcesando(id: number): boolean {
+    return this.procesandoPlanes.has(id);
+  }
+
+  // Verificar si una rutina está siendo procesada
+  isRutinaProcesando(id: number): boolean {
+    return this.procesandoRutinas.has(id);
+  }
 
   ngOnInit(): void {
     this.cargarAsignaciones();
@@ -588,13 +625,20 @@ export class MisAsignacionesComponent implements OnInit {
   cargarAsignaciones(): void {
     this.loading.set(true);
 
-    Promise.all([
+    // Usar Promise.allSettled para que un 404 no haga fallar todo
+    // Los endpoints de "hoy" devuelven 404 cuando no hay plan/rutina activa
+    Promise.allSettled([
       this.metasService.obtenerPlanesActivos().toPromise(),
       this.metasService.obtenerRutinasActivas().toPromise(),
       this.metasService.obtenerPlanHoyConEstado().toPromise(),
       this.metasService.obtenerRutinaHoyConEstado().toPromise()
     ])
-      .then(([respPlanes, respRutinas, respPlanHoy, respRutinaHoy]: any) => {
+      .then((results) => {
+        // Extraer valores de los resultados settled
+        const respPlanes = results[0].status === 'fulfilled' ? results[0].value : null;
+        const respRutinas = results[1].status === 'fulfilled' ? results[1].value : null;
+        const respPlanHoy = results[2].status === 'fulfilled' ? results[2].value : null;
+        const respRutinaHoy = results[3].status === 'fulfilled' ? results[3].value : null;
         this.loading.set(false);
         
         // Extraer datos de hoy (comidas/ejercicios completados hoy)
@@ -689,8 +733,9 @@ export class MisAsignacionesComponent implements OnInit {
         }
       })
       .catch((error) => {
+        // Este catch ya no debería ejecutarse con allSettled, pero lo dejamos por seguridad
         this.loading.set(false);
-        console.error('Error al cargar asignaciones:', error);
+        console.error('Error inesperado al cargar asignaciones:', error);
         this.notificationService.showError('Error al cargar tus asignaciones. Verifica tu conexión.');
       });
   }
@@ -757,15 +802,36 @@ export class MisAsignacionesComponent implements OnInit {
   }
 
   cancelarPlan(usuarioPlanId: number): void {
+    // Evitar múltiples clicks
+    if (this.procesandoPlanes.has(usuarioPlanId)) {
+      console.log('Plan ya está siendo procesado, ignorando click');
+      return;
+    }
+    
+    this.procesandoPlanes.add(usuarioPlanId);
     console.log('Cancelando plan con ID de asignación:', usuarioPlanId);
+    
+    // Remover de la lista inmediatamente para feedback visual
+    const planesActuales = this.planesActivos();
+    this.planesActivos.set(planesActuales.filter(p => p.id !== usuarioPlanId));
+    
     this.metasService.cancelarPlan(usuarioPlanId).subscribe({
       next: () => {
+        this.procesandoPlanes.delete(usuarioPlanId);
         this.notificationService.showSuccess('Plan cancelado');
-        this.cargarAsignaciones();
       },
       error: (err) => {
+        this.procesandoPlanes.delete(usuarioPlanId);
         console.error('Error al cancelar plan:', err);
-        this.notificationService.showError('Error al cancelar plan');
+        
+        // Si es 409, significa que ya estaba cancelado - no es un error real
+        if (err.status === 409) {
+          this.notificationService.showSuccess('Plan cancelado');
+        } else {
+          // Restaurar el plan en la lista si hubo un error real
+          this.cargarAsignaciones();
+          this.notificationService.showError('Error al cancelar plan');
+        }
       }
     });
   }
@@ -815,15 +881,36 @@ export class MisAsignacionesComponent implements OnInit {
   }
 
   cancelarRutina(usuarioRutinaId: number): void {
+    // Evitar múltiples clicks
+    if (this.procesandoRutinas.has(usuarioRutinaId)) {
+      console.log('Rutina ya está siendo procesada, ignorando click');
+      return;
+    }
+    
+    this.procesandoRutinas.add(usuarioRutinaId);
     console.log('Cancelando rutina con ID de asignación:', usuarioRutinaId);
+    
+    // Remover de la lista inmediatamente para feedback visual
+    const rutinasActuales = this.rutinasActivas();
+    this.rutinasActivas.set(rutinasActuales.filter(r => r.id !== usuarioRutinaId));
+    
     this.metasService.cancelarRutina(usuarioRutinaId).subscribe({
       next: () => {
+        this.procesandoRutinas.delete(usuarioRutinaId);
         this.notificationService.showSuccess('Rutina cancelada');
-        this.cargarAsignaciones();
       },
       error: (err) => {
+        this.procesandoRutinas.delete(usuarioRutinaId);
         console.error('Error al cancelar rutina:', err);
-        this.notificationService.showError('Error al cancelar rutina');
+        
+        // Si es 409, significa que ya estaba cancelada - no es un error real
+        if (err.status === 409) {
+          this.notificationService.showSuccess('Rutina cancelada');
+        } else {
+          // Restaurar la lista si hubo un error real
+          this.cargarAsignaciones();
+          this.notificationService.showError('Error al cancelar rutina');
+        }
       }
     });
   }

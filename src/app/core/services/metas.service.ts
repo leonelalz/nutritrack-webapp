@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable, switchMap, map } from "rxjs";
 import { ApiResponse } from "../models";
-import { environment } from "../../../enviroments/enviroment";
+import { environment } from "../../../enviroments/environment.config";
 
 @Injectable({
   providedIn: 'root'
@@ -448,6 +448,7 @@ export class MetasService {
     repeticiones?: number;
     pesoKg?: number;
     duracionMinutos?: number;
+    caloriasQuemadas?: number;
     notas?: string;
   }): Observable<ApiResponse<any>> {
     return this.http.post<ApiResponse<any>>(

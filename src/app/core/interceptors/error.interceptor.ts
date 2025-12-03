@@ -4,6 +4,16 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
+// Mensajes de 404 que son esperados y no deben loguearse como errores
+const EXPECTED_404_MESSAGES = [
+  'No hay rutina activa',
+  'No hay plan activo',
+  'No hay registro de rutina para hoy',
+  'No hay registro de plan para hoy',
+  'No tienes plan activo',
+  'No tienes rutina activa'
+];
+
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const authService = inject(AuthService);
@@ -27,7 +37,13 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
-      console.error('Intercepted Error:', errorMessage);
+      // No loguear errores 404 esperados (como "No hay rutina activa")
+      const isExpected404 = error.status === 404 && 
+        EXPECTED_404_MESSAGES.some(msg => errorMessage.toLowerCase().includes(msg.toLowerCase()));
+      
+      if (!isExpected404) {
+        console.error('Intercepted Error:', errorMessage);
+      }
 
       return throwError(() => ({
         status: error.status,

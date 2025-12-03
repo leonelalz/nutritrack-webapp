@@ -3,7 +3,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../enviroments/enviroment';
+import { environment } from '../../../enviroments/environment.config';
 import { Usuario, ApiResponse, PageResponse } from '../models/user.model';
 
 @Injectable({

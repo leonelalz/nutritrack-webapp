@@ -331,7 +331,7 @@ import { FormsModule } from '@angular/forms';
               <div class="seccion">
                 <h4>🥗 Ingredientes</h4>
                 <ul class="ingredientes-list">
-                  @for (ing of comidaSeleccionada()?.comida?.ingredientes; track ing.id) {
+                  @for (ing of comidaSeleccionada()?.comida?.ingredientes; track $index) {
                     <li>
                       <span class="cantidad">{{ ing.cantidad }} {{ ing.unidad }}</span>
                       <span class="nombre">{{ ing.ingredienteNombre || ing.nombre }}</span>
@@ -349,22 +349,36 @@ import { FormsModule } from '@angular/forms';
               </div>
             }
 
-            <!-- Ajustar Porciones -->
-            <div class="seccion porciones-section">
-              <h4>🍽️ Porciones a Registrar</h4>
-              <div class="porciones-control">
-                <button class="btn-porcion" (click)="ajustarPorciones(-0.5)" [disabled]="porcionesRegistrar() <= 0.5">
-                  <mat-icon>remove</mat-icon>
-                </button>
-                <span class="porciones-valor">{{ porcionesRegistrar() }}</span>
-                <button class="btn-porcion" (click)="ajustarPorciones(0.5)">
-                  <mat-icon>add</mat-icon>
-                </button>
+            <!-- Ajustar Porciones - Solo visible cuando NO está registrada -->
+            @if (!comidaSeleccionada()?.completada) {
+              <div class="seccion porciones-section">
+                <h4>🍽️ Porciones a Registrar</h4>
+                <div class="porciones-control">
+                  <button class="btn-porcion" (click)="ajustarPorciones(-0.5)" [disabled]="porcionesRegistrar() <= 0.5">
+                    <mat-icon>remove</mat-icon>
+                  </button>
+                  <span class="porciones-valor">{{ porcionesRegistrar() }}</span>
+                  <button class="btn-porcion" (click)="ajustarPorciones(0.5)">
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
+                <div class="calorias-ajustadas">
+                  <span>Total: {{ caloriasAjustadas() }} kcal</span>
+                </div>
               </div>
-              <div class="calorias-ajustadas">
-                <span>Total: {{ caloriasAjustadas() }} kcal</span>
+            }
+
+            <!-- Mostrar porciones registradas cuando ya está completada -->
+            @if (comidaSeleccionada()?.completada) {
+              <div class="seccion porciones-registradas">
+                <h4>✅ Porciones Registradas</h4>
+                <div class="porciones-info">
+                  <span class="porciones-valor-registrado">{{ comidaSeleccionada()?.porciones || 1 }} porción(es)</span>
+                  <span class="calorias-registradas">{{ (comidaSeleccionada()?.calorias || 0) * (comidaSeleccionada()?.porciones || 1) }} kcal consumidas</span>
+                </div>
+                <p class="hint-desmarcar">Para cambiar las porciones, desmarca y vuelve a registrar.</p>
               </div>
-            </div>
+            }
 
             @if (comidaSeleccionada()?.notas) {
               <div class="seccion">
@@ -1028,6 +1042,41 @@ import { FormsModule } from '@angular/forms';
     .ingredientes-list .nombre { color: #4a5568; }
 
     .porciones-section { text-align: center; }
+
+    .porciones-registradas {
+      text-align: center;
+      background: #f0fff4;
+      border: 1px solid #c6f6d5;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .porciones-registradas h4 { color: #22543d; }
+
+    .porciones-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: 0.75rem 0;
+    }
+
+    .porciones-valor-registrado {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #22543d;
+    }
+
+    .calorias-registradas {
+      font-size: 0.9rem;
+      color: #38a169;
+    }
+
+    .hint-desmarcar {
+      font-size: 0.75rem;
+      color: #718096;
+      font-style: italic;
+      margin: 0;
+    }
 
     .porciones-control {
       display: flex;
@@ -1868,8 +1917,14 @@ export class MisComidasComponent implements OnInit {
             this.cargando.set(false);
           },
           error: (err) => {
-            console.error('❌ [MisComidas] Error cargando comidas:', err);
-            this.notificationService.showError('Error al cargar comidas del plan');
+            // 404 significa que no hay plan activo - no es un error real
+            if (err.status === 404) {
+              console.log('ℹ️ [MisComidas] No hay plan activo para hoy');
+              this.mockData.comidasProgramadas.set([]);
+            } else {
+              console.error('❌ [MisComidas] Error cargando comidas:', err);
+              this.notificationService.showError('Error al cargar comidas del plan');
+            }
             this.cargando.set(false);
           }
         });
